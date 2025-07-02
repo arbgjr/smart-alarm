@@ -4,6 +4,7 @@ This section documents the system architecture of Smart Alarm, explaining how te
 
 ## 📋 Contents
 
+- **[Architecture Overview](architecture_overview.md)** - Comprehensive insights into our technical decisions, system design, and architectural patterns.
 - **[System Overview](system-overview.md)** - High-level architecture and service interactions
 - **[ADR-001: Multi-Language Backend](adr-001-multi-language-backend.md)** - Architecture decision record
 - **[Security Architecture](security-architecture.md)** - Privacy-by-design implementation
