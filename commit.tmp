@@ -1,10 +1,10 @@
-docs(architecture): document sophisticated multi-language service design
+docs(development): add comprehensive guides for accessibility-first development
 
-- Comprehensive architecture overview explaining Go/Python/Node.js specialization
-- Architecture Decision Record documenting backend design rationale and trade-offs
-- Security architecture emphasizing privacy-by-design principles throughout
-- Performance and scalability considerations for neurodivergent user growth
+- Frontend guide emphasizing accessible React component development patterns
+- Backend guide covering multi-service coordination and security implementation
+- PWA implementation guide ensuring reliable offline functionality across platforms
+- Testing strategies including accessibility validation with real users
 
-The multi-language architecture optimizes each service for specific needs:
-Go provides high-performance alarm operations, Python enables privacy-preserving
-AI analysis, and Node.js orchestrates external integrations.
+These guides help contributors understand how technical implementation choices
+directly impact neurodivergent user experience, treating accessibility as a
+design philosophy rather than a compliance checklist.
