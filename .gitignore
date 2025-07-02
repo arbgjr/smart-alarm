@@ -1,139 +1,414 @@
+# Smart Alarm - Comprehensive .gitignore
+# Multi-language project covering React/TypeScript, Go, Python, Node.js
+
+# ===== ENVIRONMENT & SECRETS =====
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*.local
+config/secrets.yaml
+config/production.yaml
+secrets/
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+service-account.json
+firebase-adminsdk-*.json
+
+# ===== FRONTEND (React + TypeScript) =====
+# Dependencies
+frontend/node_modules/
+frontend/.pnp
+frontend/.pnp.js
+
+# Production builds
+frontend/build/
+frontend/dist/
+frontend/out/
+
+# Development
+frontend/.DS_Store
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/lerna-debug.log*
+
+# Runtime data
+frontend/pids
+frontend/*.pid
+frontend/*.seed
+frontend/*.pid.lock
+
+# Coverage directory used by tools like istanbul
+frontend/coverage/
+frontend/nyc_output/
+
+# Dependency directories
+frontend/node_modules/
+frontend/jspm_packages/
+
+# Optional npm cache directory
+frontend/.npm
+
+# Optional eslint cache
+frontend/.eslintcache
+
+# PWA cache
+frontend/workbox-*
+frontend/sw.js
+frontend/service-worker.js
+
+# TypeScript cache
+frontend/*.tsbuildinfo
+
+# ===== BACKEND SERVICES =====
+
+# ===== GO SERVICE =====
+# Binaries for programs and plugins
+services/alarm-service/*.exe
+services/alarm-service/*.exe~
+services/alarm-service/*.dll
+services/alarm-service/*.so
+services/alarm-service/*.dylib
+services/alarm-service/main
+services/alarm-service/alarm-service
+services/alarm-service/cmd/server/server
+
+# Test binary, built with `go test -c`
+services/alarm-service/*.test
+
+# Output of the go coverage tool
+services/alarm-service/*.out
+services/alarm-service/coverage.html
+
+# Go workspace files
+services/alarm-service/go.work
+services/alarm-service/go.work.sum
+
+# Dependency directories
+services/alarm-service/vendor/
+
+# Go module cache
+go.sum
+
+# Air live reload
+services/alarm-service/tmp/
+services/alarm-service/.air.toml
+
+# ===== PYTHON AI SERVICE =====
+# Python bytecode
+services/ai-service/__pycache__/
+services/ai-service/*.py[cod]
+services/ai-service/*$py.class
+
+# Distribution / packaging
+services/ai-service/.Python
+services/ai-service/build/
+services/ai-service/develop-eggs/
+services/ai-service/dist/
+services/ai-service/downloads/
+services/ai-service/eggs/
+services/ai-service/.eggs/
+services/ai-service/lib/
+services/ai-service/lib64/
+services/ai-service/parts/
+services/ai-service/sdist/
+services/ai-service/var/
+services/ai-service/wheels/
+services/ai-service/share/python-wheels/
+services/ai-service/*.egg-info/
+services/ai-service/.installed.cfg
+services/ai-service/*.egg
+services/ai-service/MANIFEST
+
+# PyInstaller
+services/ai-service/*.manifest
+services/ai-service/*.spec
+
+# Installer logs
+services/ai-service/pip-log.txt
+services/ai-service/pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+services/ai-service/htmlcov/
+services/ai-service/.tox/
+services/ai-service/.nox/
+services/ai-service/.coverage
+services/ai-service/.coverage.*
+services/ai-service/.cache
+services/ai-service/nosetests.xml
+services/ai-service/coverage.xml
+services/ai-service/*.cover
+services/ai-service/*.py,cover
+services/ai-service/.hypothesis/
+services/ai-service/.pytest_cache/
+services/ai-service/cover/
+
+# Virtual environments
+services/ai-service/.env
+services/ai-service/.venv
+services/ai-service/env/
+services/ai-service/venv/
+services/ai-service/ENV/
+services/ai-service/env.bak/
+services/ai-service/venv.bak/
+
+# ML Models and Data
+services/ai-service/models/*.pkl
+services/ai-service/models/*.joblib
+services/ai-service/models/*.h5
+services/ai-service/models/*.pb
+services/ai-service/models/saved_model/
+services/ai-service/data/raw/
+services/ai-service/data/processed/
+services/ai-service/data/interim/
+services/ai-service/datasets/
+services/ai-service/checkpoints/
+services/ai-service/logs/
+services/ai-service/tensorboard_logs/
+
+# Jupyter Notebook
+services/ai-service/.ipynb_checkpoints
+
+# IPython
+services/ai-service/profile_default/
+services/ai-service/ipython_config.py
+
+# ===== NODE.JS INTEGRATION SERVICE =====
+# Dependencies
+services/integration-service/node_modules/
+services/integration-service/.pnp
+services/integration-service/.pnp.js
+
+# Production builds
+services/integration-service/build/
+services/integration-service/dist/
+
+# Runtime data
+services/integration-service/pids
+services/integration-service/*.pid
+services/integration-service/*.seed
+services/integration-service/*.pid.lock
+
+# Coverage directory
+services/integration-service/coverage/
+services/integration-service/nyc_output/
+
+# Dependency directories
+services/integration-service/node_modules/
+services/integration-service/jspm_packages/
+
+# Optional npm cache directory
+services/integration-service/.npm
+
+# Optional eslint cache
+services/integration-service/.eslintcache
+
+# TypeScript cache
+services/integration-service/*.tsbuildinfo
+
+# ===== INFRASTRUCTURE & DEPLOYMENT =====
+# Terraform
+infrastructure/**/*.tfstate
+infrastructure/**/*.tfstate.*
+infrastructure/**/*.tfplan
+infrastructure/**/*.tfvars
+infrastructure/.terraform/
+infrastructure/.terraform.lock.hcl
+
+# Kubernetes
+infrastructure/k8s/secrets/
+*.kubeconfig
+kubeconfig
+kube-config
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+docker-compose.override.yaml
+
+# Helm
+infrastructure/helm/charts/*.tgz
+infrastructure/helm/charts/*/charts/
+infrastructure/helm/charts/*/requirements.lock
+
+# ===== DEVELOPMENT TOOLS =====
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
 # Logs
-logs
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 
-# Diagnostic reports (https://nodejs.org/api/report.html)
-report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
-
 # Runtime data
-pids
+pids/
 *.pid
 *.seed
 *.pid.lock
 
-# Directory for instrumented libs generated by jscoverage/JSCover
-lib-cov
+# ===== TESTING =====
+# Test results
+test-results/
+coverage/
+.nyc_output/
+junit.xml
+test-reports/
 
-# Coverage directory used by tools like istanbul
-coverage
-*.lcov
+# E2E testing
+e2e/screenshots/
+e2e/videos/
+e2e/downloads/
 
-# nyc test coverage
-.nyc_output
+# Playwright
+playwright-report/
+test-results/
 
-# Grunt intermediate storage (https://gruntjs.com/creating-plugins#storing-task-files)
-.grunt
+# ===== DATABASE & CACHE =====
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+data/
 
-# Bower dependency directory (https://bower.io/)
-bower_components
+# Redis dumps
+dump.rdb
 
-# node-waf configuration
-.lock-wscript
+# ===== MONITORING & OBSERVABILITY =====
+# Prometheus
+prometheus/data/
+grafana/data/
+jaeger/data/
 
-# Compiled binary addons (https://nodejs.org/api/addons.html)
-build/Release
+# Log files
+*.log
+logs/
+log/
 
-# Dependency directories
-node_modules/
-jspm_packages/
+# ===== BACKUP & TEMP FILES =====
+# Backup files
+*.bak
+*.backup
+*.orig
+*.tmp
+.tmp/
+tmp/
 
-# Snowpack dependency directory (https://snowpack.dev/)
-web_modules/
+# Archives
+*.zip
+*.tar.gz
+*.rar
+*.7z
 
-# TypeScript cache
-*.tsbuildinfo
+# ===== CERTIFICATES & KEYS =====
+# SSL certificates
+ssl/
+certs/
+*.crt
+*.cer
+*.pem
+*.key
+*.p12
+*.pfx
 
-# Optional npm cache directory
-.npm
-
-# Optional eslint cache
-.eslintcache
-
-# Optional stylelint cache
-.stylelintcache
-
-# Optional REPL history
-.node_repl_history
-
-# Output of 'npm pack'
-*.tgz
-
-# Yarn Integrity file
-.yarn-integrity
-
-# dotenv environment variable files
-.env
-.env.*
-!.env.example
-
-# parcel-bundler cache (https://parceljs.org/)
-.cache
-.parcel-cache
-
-# Next.js build output
-.next
-out
-
-# Nuxt.js build / generate output
-.nuxt
-dist
-
-# Gatsby files
-.cache/
-# Comment in the public line in if your project uses Gatsby and not Next.js
-# https://nextjs.org/blog/next-9-1#public-directory-support
-# public
-
-# vuepress build output
-.vuepress/dist
-
-# vuepress v2.x temp and cache directory
-.temp
-.cache
-
-# Sveltekit cache directory
-.svelte-kit/
-
-# vitepress build output
-**/.vitepress/dist
-
-# vitepress cache directory
-**/.vitepress/cache
-
-# Docusaurus cache and generated files
-.docusaurus
-
-# Serverless directories
-.serverless/
-
-# FuseBox cache
-.fusebox/
-
-# DynamoDB Local files
-.dynamodb/
-
-# Firebase cache directory
+# ===== THIRD-PARTY INTEGRATIONS =====
+# Firebase
 .firebase/
+firebase-debug.log
+.firebaserc
 
-# TernJS port file
-.tern-port
+# AWS
+.aws/
 
-# Stores VSCode versions used for testing VSCode extensions
-.vscode-test
+# Google Cloud
+.gcloud/
+gcloud-service-key.json
 
-# yarn v3
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/sdks
-!.yarn/versions
+# ===== AI & ML SPECIFIC =====
+# Model files
+*.model
+*.weights
+*.h5
+*.pb
+*.onnx
+*.tflite
 
-# Vite logs files
-vite.config.js.timestamp-*
-vite.config.ts.timestamp-*
+# Training data
+training_data/
+validation_data/
+test_data/
+datasets/
+
+# Experiment tracking
+mlruns/
+.mlflow/
+wandb/
+
+# ===== DOCUMENTATION BUILD =====
+# Generated documentation
+docs/_build/
+docs/.build/
+site/
+
+# ===== PACKAGE MANAGERS =====
+# npm
+package-lock.json
+yarn.lock
+
+# Go modules (keep go.mod but ignore go.sum for security)
+go.sum
+
+# Python
+Pipfile.lock
+poetry.lock
+
+# ===== SECURITY SCANNING =====
+# Security scan reports
+security-reports/
+vulnerability-reports/
+.snyk
+
+# ===== PERFORMANCE MONITORING =====
+# Performance reports
+perf-reports/
+lighthouse-reports/
+bundle-analyzer-reports/
+
+# ===== CUSTOM PROJECT SPECIFIC =====
+# User-specific alarm data (for development)
+user-data/
+alarm-backups/
+test-notifications/
+
+# Local configuration overrides
+config/local/
+config/development/
+
+# Cache directories
+.cache/
+.parcel-cache/
+.next/cache/
+
+# Temporary uploads
+uploads/temp/
+temp-files/
