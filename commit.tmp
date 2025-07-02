@@ -1,8 +1,9 @@
-Refactor documentation structure and update service APIs to C#/.NET
+docs: Add comprehensive instructions and guidelines for various services and code practices
 
-- Updated architecture documentation to reflect the transition to a single-language backend in C#.
-- Revised AI Service and Alarm Service documentation to specify C#/.NET implementation details.
-- Added new ADR for the migration to a unified C# backend, outlining context, decisions, and implications.
-- Created README files for AI Service, Alarm Service, and Integration Service, detailing technologies and patterns used.
-- Removed references to Go, Python, and Node.js from documentation to emphasize the focus on C#/.NET.
-- Organized business and development documentation for clarity and accessibility.
+- Introduced detailed instructions for AI, Alarm, Integration, and other services.
+- Established code review standards for C#/.NET and frontend projects.
+- Created guidelines for commit messages, testing standards, and error handling.
+- Developed a Memory Bank system for maintaining project context and updates.
+- Implemented prompts for API development, code review, and unit test generation.
+- Documented system patterns and best practices for architecture and code organization.
+- Enhanced GitHub Copilot integration with custom instruction files for improved code quality.

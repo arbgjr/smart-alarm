@@ -5,8 +5,14 @@
 
 version: 2
 updates:
-  - package-ecosystem: "" # See documentation for possible values
+  - package-ecosystem: "dotnet-sdk" # C#
     directory: "/" # Location of package manifests
     schedule:
       interval: "weekly"
+  - package-ecosystem: "npm" # JavaScript/React/Typescript
+    directory: "/" # Location of package manifests
+    schedule:
+      interval: "weekly"
+
+
 

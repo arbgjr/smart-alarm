@@ -19,12 +19,12 @@ smart-alarm/
 │   ├── architecture/                  # System architecture documentation
 │   │   ├── README.md                  # Architecture overview
 │   │   ├── adr-001-backend.md         # Architecture Decision Record
-│   │   ├── alarm-service-api.md       # API do serviço de alarmes (.NET)
-│   │   ├── ai-service-api.md          # API do serviço de IA (.NET)
-│   │   ├── integration-api.md         # API do serviço de integração (.NET)
+│   │   ├── alarm-service-api.md       # Alarm service API (.NET)
+│   │   ├── ai-service-api.md          # AI service API (.NET)
+│   │   ├── integration-api.md         # Integration service API (.NET)
 │   │   └── user-research.md          # User research findings and insights
 │   │
-│   ├── business/                      # Visão de negócio e instruções
+│   ├── business/                      # Business view and instructions
 │   │   ├── README.md                  # Business overview
 │   │   ├── compliance-requirements.md # Compliance and privacy requirements
 │   │   └── user-personas.md          # Neurodivergent user personas
@@ -97,9 +97,9 @@ smart-alarm/
 │   └── scripts/                      # Deployment and utility scripts
 │
 ├── services/                         # Backend services
-│   ├── alarm-service/                # Serviço de alarmes (.NET)
-│   ├── ai-service/                   # Serviço de IA (.NET)
-│   └── integration-service/          # Serviço de integração (.NET)
+│   ├── alarm-service/                # Alarm service (.NET)
+│   ├── ai-service/                   # AI service (.NET)
+│   └── integration-service/          # Integration service (.NET)
 │
 ├── frontend/                         # React frontend application
 │
@@ -119,8 +119,8 @@ smart-alarm/
 Here's how the existing knowledge base documents will be organized:
 
 ### Architecture Documentation
-- `Stack Técnico Completo` → `docs/architecture/system-overview.md`
-- `ADR-001: Arquitetura Webapp` → `docs/architecture/adr-001-backend.md`
+- `Full Technical Stack` → `docs/architecture/system-overview.md`
+- `ADR-001: Webapp Architecture` → `docs/architecture/adr-001-backend.md`
 
 ### Development Guides
 - `Frontend Development Instructions` → `docs/development/frontend-development.md`
@@ -134,7 +134,7 @@ Here's how the existing knowledge base documents will be organized:
 - Monitoring sections → `docs/deployment/monitoring-observability.md`
 
 ### Planning and Roadmap
-- `Roadmap MVP` → `docs/research/roadmap-planning.md`
+- `MVP Roadmap` → `docs/research/roadmap-planning.md`
 - Market analysis sections → `docs/research/market-analysis.md`
 
 ## 🎯 Documentation Categories Explained

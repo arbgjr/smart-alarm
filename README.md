@@ -1,24 +1,24 @@
 # Smart Alarm
 
-O Smart Alarm é uma solução inovadora para gerenciamento de alarmes e rotinas, com foco em acessibilidade, neurodiversidade e integração inteligente. Toda a arquitetura backend é baseada exclusivamente em C#/.NET, utilizando Clean Architecture, Azure Functions e práticas modernas de segurança, testabilidade e integração.
+Smart Alarm is an innovative solution for managing alarms and routines, focused on accessibility, neurodiversity, and intelligent integration. The entire backend architecture is based exclusively on C#/.NET, using Clean Architecture, Azure Functions, and modern practices for security, testability, and integration.
 
-## Stack Tecnológica
+## Technology Stack
 
 - **Backend:** C# (.NET 6+), Clean Architecture, Azure Functions, ML.NET
-- **Frontend:** Mantido conforme arquitetura original (ex: React, PWA)
+- **Frontend:** Maintained as per the original architecture (e.g., React, PWA)
 - **Cloud:** Azure (Functions, Key Vault, Application Insights, etc.)
-- **Integrações:** APIs externas via HttpClientFactory, OAuth2/OpenID Connect
+- **Integrations:** External APIs via HttpClientFactory, OAuth2/OpenID Connect
 
-## Princípios
+## Principles
 
-- Testabilidade, segurança, acessibilidade e manutenção a longo prazo
-- Sem dependências de Go, Python ou Node.js no backend
-- Observabilidade, logging estruturado e monitoramento contínuo
+- Testability, security, accessibility, and long-term maintainability
+- No dependencies on Go, Python, or Node.js in the backend
+- Observability, structured logging, and continuous monitoring
 
-## Documentação
+## Documentation
 
-- Consulte os diretórios `docs/architecture`, `docs/development` e `docs/business` para detalhes técnicos e funcionais
+- See the `docs/architecture`, `docs/development`, and `docs/business` directories for technical and functional details
 
-## Contribuição
+## Contribution
 
-Contribuições são bem-vindas! Veja o [CONTRIBUTING.md](CONTRIBUTING.md) para detalhes.
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for details.

@@ -92,9 +92,6 @@ services/alarm-service/go.work.sum
 # Dependency directories
 services/alarm-service/vendor/
 
-# Go module cache
-go.sum
-
 # Air live reload
 services/alarm-service/tmp/
 services/alarm-service/.air.toml
