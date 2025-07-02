@@ -1,13 +1,13 @@
-# Roadmap MVP - Alarmes Inteligentes Neurodivergentes
+# Roadmap MVP - Sistema de Alarmes Inteligentes
 *Planejamento para desenvolvimento híbrido: Vibe Coding + IA-Assisted*
 
 ## 🎯 Definição do MVP (Produto Mínimo Viável)
 
 ### Core Features Essenciais
-**Criação e gestão básica de alarmes** com interface simples e acessível, permitindo criar, editar e deletar alarmes com horários específicos. **Notificações browser nativas** utilizando Service Workers para alertas confiáveis. **Armazenamento local** com persistência usando localStorage/IndexedDB para funcionar offline. **Interface responsiva** otimizada para dispositivos móveis e desktop com foco em acessibilidade.
+**Criação e gestão básica de alarmes** com interface simples e acessível, permitindo criar, editar e deletar alarmes com horários específicos, análise de IA comportamental, integração com calendários externos. **Notificações browser nativas** utilizando Service Workers para alertas confiáveis. **Armazenamento local** com persistência usando localStorage/IndexedDB para funcionar offline. **Interface responsiva** otimizada para dispositivos móveis e desktop com foco em acessibilidade.
 
 ### Funcionalidades Excluídas do MVP
-Sincronização em nuvem, análise de IA comportamental, integração com calendários externos, backup automático e autenticação de usuários ficarão para versões futuras.
+Sincronização em nuvem, backup automático e autenticação de usuários ficarão para versões futuras.
 
 ## 📊 Stack Técnico Zero-Cost
 

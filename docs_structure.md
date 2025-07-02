@@ -18,21 +18,16 @@ smart-alarm/
 │   │
 │   ├── architecture/                  # System architecture documentation
 │   │   ├── README.md                  # Architecture overview
-│   │   ├── adr-001-multi-language-backend.md  # Architecture Decision Record
-│   │   ├── system-overview.md         # High-level system design
-│   │   ├── data-flow.md              # Data flow diagrams and explanations
-│   │   ├── security-architecture.md   # Security design principles
-│   │   └── performance-considerations.md # Performance and scaling decisions
+│   │   ├── adr-001-backend.md         # Architecture Decision Record
+│   │   ├── alarm-service-api.md       # API do serviço de alarmes (.NET)
+│   │   ├── ai-service-api.md          # API do serviço de IA (.NET)
+│   │   ├── integration-api.md         # API do serviço de integração (.NET)
+│   │   └── user-research.md          # User research findings and insights
 │   │
-│   ├── development/                   # Development guides and instructions
-│   │   ├── README.md                  # Development overview
-│   │   ├── getting-started.md         # Quick start guide for developers
-│   │   ├── frontend-development.md    # Frontend development guidelines
-│   │   ├── backend-development.md     # Backend services development
-│   │   ├── pwa-notifications.md       # PWA and notifications implementation
-│   │   ├── testing-guidelines.md      # Testing strategies and frameworks
-│   │   ├── code-style.md             # Coding standards and conventions
-│   │   └── debugging-guide.md         # Common issues and debugging
+│   ├── business/                      # Visão de negócio e instruções
+│   │   ├── README.md                  # Business overview
+│   │   ├── compliance-requirements.md # Compliance and privacy requirements
+│   │   └── user-personas.md          # Neurodivergent user personas
 │   │
 │   ├── deployment/                    # Deployment and operations
 │   │   ├── README.md                  # Deployment overview
@@ -43,22 +38,15 @@ smart-alarm/
 │   │   ├── disaster-recovery.md       # Backup and recovery procedures
 │   │   └── scaling-guide.md          # Horizontal and vertical scaling
 │   │
-│   ├── api/                          # API documentation
-│   │   ├── README.md                  # API overview
-│   │   ├── authentication.md          # Authentication and authorization
-│   │   ├── alarm-service-api.md       # Go service API reference
-│   │   ├── ai-service-api.md          # Python service API reference
-│   │   ├── integration-api.md         # Node.js service API reference
-│   │   ├── error-handling.md          # Error codes and handling
-│   │   └── rate-limiting.md          # Rate limiting and quotas
-│   │
-│   ├── accessibility/                 # Accessibility and UX guidelines
-│   │   ├── README.md                  # Accessibility overview
-│   │   ├── neurodivergent-design.md   # Design principles for neurodivergent users
-│   │   ├── wcag-compliance.md         # WCAG 2.1 AA compliance details
-│   │   ├── testing-accessibility.md   # Accessibility testing procedures
-│   │   ├── screen-reader-support.md   # Screen reader optimization
-│   │   └── user-research.md          # User research findings and insights
+│   ├── development/                   # Development guides and instructions
+│   │   ├── README.md                  # Development overview
+│   │   ├── getting-started.md         # Quick start guide for developers
+│   │   ├── frontend-development.md    # Frontend development guidelines
+│   │   ├── backend-development.md     # Backend services development
+│   │   ├── pwa-notifications.md       # PWA and notifications implementation
+│   │   ├── testing-guidelines.md      # Testing strategies and frameworks
+│   │   ├── code-style.md             # Coding standards and conventions
+│   │   └── debugging-guide.md         # Common issues and debugging
 │   │
 │   ├── security/                      # Security documentation
 │   │   ├── README.md                  # Security overview
@@ -109,9 +97,9 @@ smart-alarm/
 │   └── scripts/                      # Deployment and utility scripts
 │
 ├── services/                         # Backend services
-│   ├── alarm-service/                # Go service
-│   ├── ai-service/                   # Python service
-│   └── integration-service/          # Node.js service
+│   ├── alarm-service/                # Serviço de alarmes (.NET)
+│   ├── ai-service/                   # Serviço de IA (.NET)
+│   └── integration-service/          # Serviço de integração (.NET)
 │
 ├── frontend/                         # React frontend application
 │
@@ -132,7 +120,7 @@ Here's how the existing knowledge base documents will be organized:
 
 ### Architecture Documentation
 - `Stack Técnico Completo` → `docs/architecture/system-overview.md`
-- `ADR-001: Arquitetura Webapp` → `docs/architecture/adr-001-multi-language-backend.md`
+- `ADR-001: Arquitetura Webapp` → `docs/architecture/adr-001-backend.md`
 
 ### Development Guides
 - `Frontend Development Instructions` → `docs/development/frontend-development.md`

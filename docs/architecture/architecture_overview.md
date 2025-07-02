@@ -1,40 +1,40 @@
 # Architecture Overview - Smart Alarm System
 
-Welcome to the architecture documentation for the Smart Alarm system. This section provides comprehensive insights into our technical decisions, system design, and architectural patterns that make this neurodivergent-focused application both powerful and accessible.
+Welcome to the architecture documentation for the Smart Alarm system. This section provides comprehensive insights into our technical decisions, system design, and architectural patterns that make this inclusive application both powerful and accessible.
 
 ## 🏗️ System Philosophy
 
-Our architecture is built around a fundamental understanding that neurodivergent users have unique relationships with technology, time management, and cognitive processing. Rather than forcing these users to adapt to traditional alarm systems, we've designed a system that adapts to them.
+Our architecture is built around a fundamental understanding that users have diverse relationships with technology, time management, and cognitive processing. Rather than forcing users to adapt to traditional alarm systems, we've designed a system that adapts to individual preferences and needs.
 
 The architecture embodies three core principles that guide every technical decision we make:
 
-**Reliability as a Foundation**: For users who depend on medication reminders or critical appointments, system failures aren't just inconvenient—they can have serious health consequences. Our architecture prioritizes redundancy, graceful degradation, and multiple fallback mechanisms to ensure that critical alarms always reach users.
+**Reliability as a Foundation**: For users who depend on medication reminders or critical appointments, system failures aren't just inconvenient—they can have serious consequences. Our architecture prioritizes redundancy, graceful degradation, and multiple fallback mechanisms to ensure that critical alarms always reach users.
 
 **Accessibility as a Design Driver**: Rather than retrofitting accessibility features onto a traditional system, we've built accessibility considerations into the fundamental architecture. This means that features like offline functionality, multiple notification channels, and adaptive timing aren't add-ons—they're integral parts of how the system operates.
 
-**Privacy as a Competitive Advantage**: Neurodivergent users often share sensitive information about attention patterns, medication schedules, and daily routines. Our architecture processes this sensitive data locally whenever possible, using advanced techniques like differential privacy for any analysis that requires aggregation across users.
+**Privacy as a Competitive Advantage**: Users often share sensitive information about their schedules, medication times, and daily routines. Our architecture processes this sensitive data locally whenever possible, using advanced techniques like differential privacy for any analysis that requires aggregation across users.
 
 ## 🎯 Architectural Patterns and Decisions
 
-### Multi-Language Service Architecture
+### Unified C# Service Architecture
 
-Our system employs a sophisticated multi-language backend architecture that recognizes a fundamental truth about software development: different programming languages excel at different types of problems. Rather than forcing all components to use the same technology stack, we've optimized each service for its specific responsibilities.
+Our system employs a unified C# backend architecture. All backend services (Alarm Service, AI/Analysis Service, Integration Service) are implemented exclusively in C#/.NET, following Clean Architecture and SOLID principles. Each service is a separate .NET project, preferably serverless (Azure Functions), with strong boundaries for testability, security, and maintainability.
 
-The **Go alarm service** handles high-frequency CRUD operations with the speed and efficiency that Go provides. When users create, modify, or query alarms, these operations flow through Go's excellent concurrency model and minimal runtime overhead. This choice ensures that the most common user interactions feel instantaneous, which is particularly important for users with attention challenges who might abandon slow-loading interfaces.
+The **C# Alarm Service** handles all high-frequency CRUD operations for alarms, leveraging .NET's async/await and optimized runtime for low-latency, high-throughput scenarios.
 
-The **Python AI service** leverages Python's rich ecosystem of machine learning libraries to perform complex behavioral analysis and pattern recognition. This service analyzes user interaction patterns to identify optimal timing for alarms, detect signs of executive function challenges, and provide contextual recommendations. Python's extensive scientific computing libraries make sophisticated analysis possible without requiring extensive custom development.
+The **C# AI/Analysis Service** uses ML.NET for behavioral analysis and recommendations. When absolutely necessary, interoperability with Python is encapsulated via Python.NET, but all business logic and data handling remain in C#.
 
-The **Node.js integration service** orchestrates between the specialized services while managing external integrations with calendar systems, notification providers, and third-party APIs. Node.js excels at handling many concurrent I/O operations, making it ideal for coordinating complex workflows that might involve calling multiple services and external systems simultaneously.
+The **C# Integration Service** manages all external integrations (calendars, notifications, third-party APIs) using mature .NET libraries and robust error handling patterns (Polly, HttpClientFactory, etc).
 
-This multi-language approach creates some complexity in deployment and development, but the benefits far outweigh the costs. Each service can use the most appropriate tools for its domain, leading to better performance, more maintainable code, and easier scaling of individual components based on their specific load characteristics.
+This unified approach simplifies deployment, onboarding, and scaling, while ensuring consistent coding standards, error handling, and security across all backend services.
 
 ### Progressive Web Application (PWA) Architecture
 
-The frontend implements a full PWA architecture that prioritizes offline functionality and cross-platform compatibility. This architectural choice addresses several critical needs for neurodivergent users who might have unreliable internet connections, use various devices, or need consistent experiences across different environments.
+The frontend implements a full PWA architecture that prioritizes offline functionality and cross-platform compatibility. This architectural choice addresses several critical needs for users who might have unreliable internet connections, use various devices, or need consistent experiences across different environments.
 
 The PWA architecture ensures that core functionality remains available even when connectivity is poor or absent. Service Workers cache essential resources and data, allowing users to create, modify, and receive alarms without depending on network availability. This offline-first approach is particularly crucial for medication reminders, where network outages cannot be allowed to interfere with critical health management.
 
-The application shell architecture loads instantly on repeat visits, reducing the cognitive load of waiting for interfaces to become available. This responsiveness is especially important for users with attention challenges who might lose focus or abandon tasks if applications take too long to load.
+The application shell architecture loads instantly on repeat visits, reducing the waiting time for interfaces to become available. This responsiveness is especially important for users who might lose focus or abandon tasks if applications take too long to load.
 
 ### Data Architecture and Privacy Design
 
@@ -60,11 +60,17 @@ Tailwind CSS handles styling with a utility-first approach that makes it easier 
 
 ### Backend Technology Rationale
 
-The choice to implement the alarm service in Go stems from Go's excellent performance characteristics for concurrent operations and its minimal resource usage. When handling thousands of concurrent alarm operations, Go's goroutines provide efficient concurrency without the memory overhead of traditional threading models.
+All backend services are implemented in C# with .NET, providing a consistent, high-performance, and secure foundation. Modern .NET (6+) delivers excellent concurrency, async/await support, and minimal overhead in serverless environments (Azure Functions).
 
-Python for AI processing takes advantage of the language's extensive machine learning ecosystem, including scikit-learn for traditional ML algorithms, TensorFlow for deep learning, and specialized libraries for differential privacy. The rich ecosystem means that sophisticated behavioral analysis can be implemented using well-tested, optimized libraries rather than requiring custom algorithm development.
+ML.NET is used for all AI and behavioral analysis needs. Integration with TensorFlow or PyTorch is possible via .NET libraries if required, but the core logic and data processing always remain in C#.
 
-Node.js for integration orchestration leverages the language's event-driven architecture and extensive ecosystem of API clients and integration libraries. The npm ecosystem provides mature clients for calendar systems, notification services, and other external integrations that neurodivergent users might want to connect to their alarm system.
+All external integrations (calendars, notifications, etc.) are handled via .NET libraries, with OAuth2/OpenID Connect for authentication and Polly for resilience.
+
+This approach ensures:
+- Single language for all backend code
+- Easier onboarding and maintenance
+- Unified security, logging, and monitoring
+- Consistent testability and documentation (Swagger/OpenAPI)
 
 ### Database and Storage Architecture
 
@@ -78,11 +84,7 @@ Time-to-Live (TTL) functionality automatically expires old alarm data in complia
 
 ### Horizontal Scaling Strategy
 
-Each service in our multi-language architecture scales independently based on its specific load characteristics and resource requirements. The Go alarm service typically requires horizontal scaling based on user activity patterns, with higher loads during morning and evening hours when people typically set or modify alarms.
-
-The Python AI service scales based on analysis workloads, which tend to be more sporadic but resource-intensive. Container orchestration allows these services to scale up during periods of heavy analysis and scale down during quiet periods, optimizing resource usage and costs.
-
-The Node.js integration service scales based on external API usage and user-triggered integrations. Its scaling patterns often correlate with external service availability and user behavior around calendar synchronization and notification delivery.
+Each backend service in the C# architecture scales independently based on its specific load and resource requirements. .NET's efficient async/await and Azure Functions' serverless scaling ensure that alarm operations, AI analysis, and integrations can all scale horizontally as needed, without the complexity of managing multiple language runtimes.
 
 ### Performance Optimization Patterns
 

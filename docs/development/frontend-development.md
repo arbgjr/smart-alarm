@@ -713,3 +713,13 @@ Consider the cumulative impact of multiple accessibility features running simult
 Progressive loading strategies help manage resource usage by loading essential functionality first and enhancing the experience as resources become available. Core alarm functionality should load immediately, while advanced features like AI recommendations can load asynchronously without blocking primary user tasks.
 
 The goal is creating interfaces that feel responsive and reliable regardless of the user's device capabilities or cognitive state, ensuring that your alarm system remains accessible and useful for everyone who depends on it.
+
+# Guia de Desenvolvimento Frontend
+
+O frontend do Smart Alarm permanece conforme arquitetura original (ex: React, PWA). Todas as integrações com o backend agora são feitas exclusivamente via APIs RESTful implementadas em C#/.NET, seguindo padrões de autenticação, segurança e validação descritos na documentação de backend.
+
+## Observações Importantes
+
+- O backend é unificado em C#/.NET, sem dependências de Go, Python ou Node.js
+- Todas as integrações devem seguir os contratos definidos no Swagger/OpenAPI do backend
+- Para dúvidas sobre autenticação, consulte a documentação de backend

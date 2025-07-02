@@ -1,8 +1,8 @@
-Add accessibility-first frontend development instructions and component architecture
+Refactor documentation structure and update service APIs to C#/.NET
 
-- Introduced guidelines for building React components with a focus on neurodivergent users.
-- Added detailed examples for Alarm Form, Calendar Display, and Notification Management components.
-- Included accessibility implementation guidelines covering keyboard navigation, screen reader support, and visual design considerations.
-- Established state management patterns with custom hooks for alarm management and offline state handling.
-- Provided best practices for form handling, performance optimization, testing considerations, and integration with backend services.
-- Implemented service-aware error handling and performance optimization strategies for multi-service communication.
+- Updated architecture documentation to reflect the transition to a single-language backend in C#.
+- Revised AI Service and Alarm Service documentation to specify C#/.NET implementation details.
+- Added new ADR for the migration to a unified C# backend, outlining context, decisions, and implications.
+- Created README files for AI Service, Alarm Service, and Integration Service, detailing technologies and patterns used.
+- Removed references to Go, Python, and Node.js from documentation to emphasize the focus on C#/.NET.
+- Organized business and development documentation for clarity and accessibility.

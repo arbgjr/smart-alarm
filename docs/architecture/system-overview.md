@@ -1,12 +1,12 @@
-# Stack Técnico Completo para WebApp de Alarmes Inteligentes Neurodivergentes
+# Stack Técnico Completo para WebApp de Alarmes Inteligentes
 
-Este relatório apresenta recomendações técnicas específicas para implementar um webapp de alarmes inteligentes com foco em usuários neurodivergentes, considerando todos os aspectos arquiteturais, de segurança, IA e compliance solicitados.
+Este relatório apresenta recomendações técnicas específicas para implementar um webapp de alarmes inteligentes acessível para todos os usuários, considerando todos os aspectos arquiteturais, de segurança, IA e compliance solicitados.
 
 ## Stack tecnológico recomendado
 
 **Frontend**: React 18 + TypeScript oferece o melhor equilíbrio entre performance, ecossistema de componentes acessíveis e suporte PWA robusto. **FullCalendar** emerge como a solução superior para interface visual, com 300+ configurações, drag-and-drop nativo e suporte completo à acessibilidade WCAG.
 
-**Backend**: AWS Lambda + DynamoDB fornece a arquitetura serverless ideal, com custo estimado de apenas $0.00174/usuário/mês para 10k usuários. DynamoDB oferece TTL nativo para alarmes expirados e performance consistente em qualquer escala.
+**Backend**: Azure Functions com C# e CosmosDB fornece a arquitetura serverless ideal, com custo estimado competitivo e excelente desempenho. CosmosDB oferece TTL nativo para alarmes expirados e performance consistente em qualquer escala, enquanto o C# como linguagem única simplifica o desenvolvimento e manutenção.
 
 **PWA e Notificações**: Service Workers + FCM como fallback criam a estratégia de redundância necessária para alarmes confiáveis. A implementação de Web Locks API + Wake Lock API pode manter alarmes ativos mesmo com limitações de background processing.
 
@@ -72,11 +72,11 @@ O modelo de pricing escalonado permite Community (gratuito, self-hosted), Enterp
 
 Sistema de **key derivation** usando PBKDF2 com 100,000 iterações cria chaves únicas por usuário, enquanto **HSM FIPS 140-2 Level 3** protege chaves mestras em produção.
 
-## UX especializada para neurodivergentes
+## UX especializada para todos os usuários
 
-Interface deve implementar **prefers-reduced-motion** para TDAH, **high contrast mode** para processamento visual, e **OpenDyslexic** como opção de fonte. **React Aria** fornece hooks especializados para acessibilidade, enquanto **Headless UI** oferece componentes unstyled acessíveis.
+Interface deve implementar **prefers-reduced-motion** para usuários sensíveis a movimento, **high contrast mode** para melhor processamento visual, e **OpenDyslexic** como opção de fonte para melhorar a legibilidade. **React Aria** fornece hooks especializados para acessibilidade, enquanto **Headless UI** oferece componentes unstyled acessíveis.
 
-Configuração por **comandos naturais** ("criar alarme para medicamento às 8h todos os dias") usando **Whisper** para speech-to-text e **spaCy** para natural language understanding reduz friction cognitivo.
+Configuração por **comandos naturais** ("criar alarme para 8h todos os dias") usando **Whisper** para speech-to-text e **spaCy** para natural language understanding reduz a complexidade de uso.
 
 ## Estimativas de custo e escalabilidade
 

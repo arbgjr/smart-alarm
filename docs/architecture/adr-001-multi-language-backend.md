@@ -31,13 +31,13 @@ O suporte nativo do React para server-side rendering e code splitting permite ot
 
 FullCalendar Premium ($480/ano) será considerado quando precisarmos de Timeline views específicas para visualização de padrões temporais complexos ou quando tivermos base de usuários pagantes que justifique o investimento. A migração é relativamente simples devido às APIs similares.
 
-### Backend: Arquitetura Híbrida Multi-Linguagem
+### Backend: Arquitetura Unificada em C#
 
-**Decisão:** Implementaremos uma arquitetura serverless híbrida com três tecnologias especializadas por domínio de responsabilidade: Go para operações CRUD de alarmes, Python para processamento de IA e análise comportamental, e Node.js para integração com APIs de terceiros.
+**Decisão:** Todo o backend será implementado exclusivamente em C# (.NET), utilizando Clean Architecture e princípios SOLID. Serão mantidos serviços especializados (Alarmes, IA/Análise Comportamental, Integração), porém todos escritos em C# e organizados como projetos .NET independentes, preferencialmente serverless (Azure Functions).
 
-**Justificativa:** Esta abordagem otimiza cada componente para sua função específica, maximizando eficiência de custos e performance. Funções Go oferecem cold starts de 50-100ms e menor consumo de memória para operações CRUD frequentes, representando economia significativa considerando que essas operações constituem 70-80% do tráfego. Python aproveita ecossistema superior de machine learning (scikit-learn, pandas, TensorFlow) para análise de padrões neurodivergentes. Node.js capitaliza maturidade do ecossistema NPM para integrações complexas com calendários externos, notificações push, e APIs de terceiros.
+**Justificativa:** A unificação em C#/.NET elimina a complexidade de múltiplas linguagens, facilita o onboarding, padroniza logging, tratamento de erros e segurança, e permite uso de ferramentas de análise estática, testes e monitoramento consistentes. O .NET moderno (6+) oferece performance próxima a linguagens de baixo nível para operações CRUD, além de excelente produtividade e suporte corporativo. ML.NET cobre as necessidades de IA, e integrações externas são feitas com bibliotecas maduras do ecossistema .NET. Toda comunicação entre serviços é feita via eventos assíncronos (Azure Event Grid) ou HTTP, sempre com autenticação, validação e tratamento de erros robustos.
 
-**Orquestração entre serviços:** Comunicação será implementada via eventos assíncronos (OCI Events Service) para operações não-críticas e chamadas HTTP diretas para operações síncronas que requerem resposta imediata. API Gateway central coordenará requests externos e roteará para funções apropriadas baseado no tipo de operação.
+**Padrões adotados:** Clean Architecture, SOLID, testes automatizados, validação de entrada/saída, logging estruturado, autenticação JWT/FIDO2, e documentação via Swagger/OpenAPI. Todos os serviços são projetados para serem testáveis, seguros e facilmente auditáveis.
 
 ### Cloud Provider: Oracle Cloud Infrastructure (OCI)
 
@@ -71,21 +71,17 @@ AES-256-GCM com chaves derivadas via PBKDF2 (100,000 iterações) garante segura
 
 FCM como fallback garante que notificações funcionem mesmo em browsers com throttling agressivo de background processing. Estratégia de redundância é crítica para alarmes relacionados a medicação onde falhas podem ter consequências sérias.
 
-### IA e Análise Comportamental: TensorFlow.js (Local) + Federated Learning (Agregado)
+### IA e Análise Comportamental: ML.NET (Backend C#)
 
-**Decisão:** Processamento de IA principalmente local via TensorFlow.js, com Federated Learning opcional para melhorias coletivas.
+**Decisão:** Toda a análise comportamental e IA será realizada no backend em C# utilizando ML.NET, com possibilidade de integração a bibliotecas Python apenas quando absolutamente necessário, via Python.NET, mantendo a lógica principal e dados sensíveis sempre sob controle do backend C#.
 
-**Justificativa:** Processamento local preserva privacidade máxima de dados sensíveis de neurodiversidade. TensorFlow.js permite análise de padrões temporais (LSTM/GRU) diretamente no browser.
+**Justificativa:** ML.NET cobre a maioria dos cenários de machine learning necessários para análise de padrões, recomendações e personalização. Quando necessário, integrações com TensorFlow ou PyTorch podem ser feitas via bibliotecas .NET. O processamento local no frontend pode ser considerado apenas para funcionalidades offline, mas nunca para dados sensíveis.
 
-Federated Learning permite que modelos melhorem coletivamente sem exposição de dados individuais, respeitando privacidade while beneficiando comunidade neurodivergente com insights agregados de padrões de uso.
+### APIs Externas: Integração via C#
 
-### APIs Externas: Calendarific (Feriados) + APIs de Fuso Horário
+**Decisão:** Todas as integrações com APIs externas (calendários, notificações, feriados, etc.) serão feitas via bibliotecas .NET, com autenticação, logging e tratamento de erros padronizados.
 
-**Decisão:** Calendarific para dados de feriados globais, APIs nativas de browser para detecção de fuso horário.
-
-**Justificativa:** Calendarific oferece cobertura de 230+ países com pricing escalável, essential para feature de desativação automática de alarmes em feriados. Starts at $9/mês para uso comercial.
-
-APIs nativas de browser (Intl.DateTimeFormat) eliminam dependências externas para fuso horário, reduzindo pontos de falha e melhorando performance offline.
+**Justificativa:** O ecossistema .NET oferece bibliotecas maduras para integração com a maioria dos provedores relevantes. Sempre que possível, preferir APIs RESTful e autenticação OAuth2/OpenID Connect.
 
 ### Licenciamento: Business Source License 1.1
 
@@ -120,7 +116,7 @@ Rejected por impacto negativo em acessibilidade para usuários neurodivergentes.
 ## Impactos da Decisão
 
 ### Técnicos
-Arquitetura permite desenvolvimento ágil inicial com Node.js/TypeScript, evolution path clear para components especializados (Python para IA). PWA garante funcionamento cross-platform sem development native apps.
+Arquitetura permite desenvolvimento ágil e seguro, com onboarding facilitado, manutenção simplificada e evolução clara para componentes especializados, todos em C#. PWA garante funcionamento cross-platform sem necessidade de apps nativos.
 
 ### Financeiros
 Stack escolhido mantém custos operacionais under $50/mês para primeiros 10k usuários, allowing extensive validation period antes de major investments.
@@ -133,8 +129,8 @@ Arquitetura atende requisitos OWASP Top 10 e LGPD para dados de saúde mental. P
 
 ## Riscos e Mitigações
 
-### Risco: Complexidade operacional de múltiplas linguagens
-**Mitigação:** Implementar CI/CD padronizado com containers para todas as linguagens, usando Infrastructure as Code (OCI Resource Manager) para deployment consistente. Estabelecer padrões de logging e monitoring uniformes através de ferramentas como OpenTelemetry que funcionam across linguagens.
+### Risco: Limitações de interoperabilidade com bibliotecas Python para ML
+**Mitigação:** Utilizar Python.NET apenas em casos excepcionais, sempre encapsulando a chamada em um serviço C# e nunca expondo dados sensíveis fora do ambiente .NET. Manter CI/CD padronizado, infraestrutura como código (Bicep/Terraform), e monitoramento centralizado (Application Insights).
 
 ### Risco: Latência na comunicação entre funções
 **Mitigação:** Implementar cache Redis/ElastiCache para dados frequentemente acessados, minimizar chamadas síncronas entre funções, e usar event-driven architecture para operações que podem ser assíncronas.
@@ -150,6 +146,9 @@ Arquitetura atende requisitos OWASP Top 10 e LGPD para dados de saúde mental. P
 
 ### Risco: Performance de TensorFlow.js em dispositivos antigos
 **Mitigação:** Fallback para processing server-side via Python functions quando device capabilities são insuficientes.
+
+### Risco: Performance de ML.NET em cenários de IA muito avançados
+**Mitigação:** Avaliar integração com serviços externos de IA (Azure Cognitive Services) caso ML.NET não atenda requisitos de performance ou precisão, sempre mantendo controle e privacidade dos dados.
 
 ## Decisões Futuras Necessárias
 

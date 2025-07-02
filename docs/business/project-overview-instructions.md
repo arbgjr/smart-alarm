@@ -1,20 +1,20 @@
-# Neurodivergent Intelligent Alarms - Project Overview & Setup Instructions
+# Intelligent Alarm System - Project Overview & Setup Instructions
 
 ## Project Vision
 
-You are building a specialized webapp designed specifically for neurodivergent users (ADHD, Autism Spectrum) that combines intelligent alarms with visual calendar interface. The application focuses on accessibility, reliability, and understanding the unique cognitive patterns of neurodivergent individuals.
+You are building an inclusive webapp designed for all users that combines intelligent alarms with a visual calendar interface. The application focuses on accessibility, reliability, and understanding the diverse needs and preferences of all users.
 
 ## Core Principles
 
-**Accessibility First**: Every design decision must consider different types of neurodiversity. This means supporting reduced motion preferences, high contrast modes, clear visual hierarchies, and intuitive navigation patterns that reduce cognitive load.
+**Accessibility First**: Every design decision must consider diverse user needs. This means supporting reduced motion preferences, high contrast modes, clear visual hierarchies, and intuitive navigation patterns that reduce cognitive load for everyone.
 
 **Reliability Above All**: Alarms for medication and critical tasks cannot fail. The system must work offline, survive browser restrictions, and provide multiple notification fallbacks to ensure users never miss important reminders.
 
-**Privacy by Design**: Mental health and neurodiversity data is extremely sensitive. All processing should happen locally when possible, with strong encryption for any data that must be stored or transmitted.
+**Privacy by Design**: Personal data is extremely sensitive. All processing should happen locally when possible, with strong encryption for any data that must be stored or transmitted.
 
 ## Development Philosophy: Hybrid Approach
 
-**Vibe Coding (30% of time)**: Use your human intuition for UX/UI decisions that require empathy and understanding of neurodivergent needs. Architecture decisions, debugging complex interactions, and accessibility customizations should rely on human insight.
+**Vibe Coding (30% of time)**: Use your human intuition for UX/UI decisions that require empathy and understanding of diverse user needs. Architecture decisions, debugging complex interactions, and accessibility customizations should rely on human insight.
 
 **AI-Assisted Development (70% of time)**: Leverage AI for implementing well-defined functionality, boilerplate code, API integrations, testing, and refactoring. This includes TypeScript interfaces, Service Worker implementation, database operations, and utility functions.
 
@@ -95,9 +95,9 @@ Configure ESLint with accessibility rules that catch common issues affecting neu
 }
 ```
 
-### Tailwind Configuration for Neurodivergent UX
+### Tailwind Configuration for Accessible UX
 
-Configure Tailwind with accessibility considerations and neurodivergent-friendly defaults:
+Configure Tailwind with accessibility considerations and user-friendly defaults:
 
 ```javascript
 // tailwind.config.js
@@ -113,12 +113,12 @@ module.exports = {
       },
       colors: {
         // High contrast color palette
-        'neuro-primary': '#0066cc',
-        'neuro-secondary': '#66b3ff',
-        'neuro-accent': '#ff6b35',
-        'neuro-success': '#28a745',
-        'neuro-warning': '#ffc107',
-        'neuro-error': '#dc3545',
+        'app-primary': '#0066cc',
+        'app-secondary': '#66b3ff',
+        'app-accent': '#ff6b35',
+        'app-success': '#28a745',
+        'app-warning': '#ffc107',
+        'app-error': '#dc3545',
       }
     },
   },
@@ -131,7 +131,7 @@ module.exports = {
 
 ## Core Type Definitions
 
-Create foundational TypeScript interfaces that capture the complexity of neurodivergent alarm needs:
+Create foundational TypeScript interfaces that capture the complexity of diverse alarm needs:
 
 ```typescript
 // src/types/alarm.ts
@@ -145,12 +145,12 @@ export interface Alarm {
   priority: AlarmPriority;
   isEnabled: boolean;
   accessibility: AccessibilitySettings;
-  neurodivergentOptions: NeurodivergentOptions;
+  userOptions: UserOptions;
   createdAt: Date;
   updatedAt: Date;
 }
 
-export interface NeurodivergentOptions {
+export interface UserOptions {
   requireConfirmation: boolean;
   snoozeOptions: number[]; // minutes
   visualCues: VisualCueType[];
@@ -189,10 +189,31 @@ Conduct accessibility testing with actual neurodivergent users, performance opti
 
 **Accessibility Compliance**: Full WCAG 2.1 AA compliance, tested with multiple screen readers, keyboard navigation support, and high contrast mode functionality.
 
-**User Experience**: Time to create alarm under 30 seconds, notification reliability above 95%, and positive feedback from neurodivergent beta users on cognitive load reduction.
+**User Experience**: Time to create alarm under 30 seconds, notification reliability above 95%, and positive feedback from diverse beta users on usability and effectiveness.
 
 ## Important Considerations
 
-Remember that neurodivergent users may have different relationships with technology, time management, and cognitive processing. Design patterns that work for neurotypical users may create barriers or additional stress for your target audience. Always prioritize clarity, predictability, and user control over flashy features or complex interactions.
+Remember that users may have different relationships with technology, time management, and cognitive processing. Design patterns that work for some users may create barriers for others. Always prioritize clarity, predictability, and user control over flashy features or complex interactions.
 
-The MVP should focus intensely on doing the core alarm and calendar functionality exceptionally well rather than trying to include every possible feature. Reliability and usability for your specific user base is more valuable than feature breadth at this stage.
+The MVP should focus intensely on doing the core alarm and calendar functionality exceptionally well rather than trying to include every possible feature. Reliability and usability for all users is more valuable than feature breadth at this stage.
+
+# Visão Geral do Projeto - Smart Alarm
+
+O Smart Alarm é uma solução inovadora para gerenciamento de alarmes e rotinas, com foco em acessibilidade, neurodiversidade e integração inteligente. Toda a arquitetura backend é baseada exclusivamente em C#/.NET, utilizando Clean Architecture, Azure Functions e práticas modernas de segurança, testabilidade e integração.
+
+## Stack Tecnológica
+
+- **Backend:** C# (.NET 6+), Clean Architecture, Azure Functions, ML.NET
+- **Frontend:** Mantido conforme arquitetura original (ex: React, PWA)
+- **Cloud:** Azure (Functions, Key Vault, Application Insights, etc.)
+- **Integrações:** APIs externas via HttpClientFactory, OAuth2/OpenID Connect
+
+## Princípios
+
+- Testabilidade, segurança, acessibilidade e manutenção a longo prazo
+- Sem dependências de Go, Python ou Node.js no backend
+- Observabilidade, logging estruturado e monitoramento contínuo
+
+## Observações
+
+- Para detalhes técnicos, consulte os documentos de arquitetura e desenvolvimento backend.
