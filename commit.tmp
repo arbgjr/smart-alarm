@@ -1,1 +1,1 @@
-feat: reestruturando documentação de memory bank do projeto Smart Alarm, incluindo contextos ativo, produto, progresso, padrões de sistema e tecnologias
+feat: implementar entidades, repositórios e exceções do domínio seguindo Clean Architecture
