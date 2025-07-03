@@ -49,7 +49,7 @@ namespace SmartAlarm.Application.Handlers
             return new AlarmResponseDto
             {
                 Id = alarm.Id,
-                Name = alarm.Name,
+                Name = alarm.Name.ToString(),
                 Time = alarm.Time,
                 Enabled = alarm.Enabled,
                 UserId = alarm.UserId

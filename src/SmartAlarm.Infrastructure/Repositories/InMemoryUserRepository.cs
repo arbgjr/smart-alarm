@@ -29,7 +29,7 @@ namespace SmartAlarm.Infrastructure.Repositories
 
         public Task<User> GetByEmailAsync(string email)
         {
-            var user = _users.Values.FirstOrDefault(u => u.Email == email);
+            var user = _users.Values.FirstOrDefault(u => u.Email.Address == email);
             return Task.FromResult(user);
         }
 
