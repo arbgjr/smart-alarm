@@ -1,3 +1,1 @@
-feat(observability): add reusable observability middleware
-
-Implements structured logging (Serilog), distributed tracing (OpenTelemetry), and Prometheus metrics as a reusable middleware. Includes documentation and integration guide for all modules, following Clean Architecture and SOLID principles.
+feat: adicionar configuração do Docker e Prometheus para observabilidade
