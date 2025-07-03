@@ -55,7 +55,7 @@ namespace SmartAlarm.Application.Handlers
             return new AlarmResponseDto
             {
                 Id = updated.Id,
-                Name = updated.Name,
+                Name = updated.Name.ToString(),
                 Time = updated.Time,
                 Enabled = updated.Enabled,
                 UserId = updated.UserId

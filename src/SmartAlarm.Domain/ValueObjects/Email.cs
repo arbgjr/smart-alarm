@@ -1,4 +1,5 @@
 using System;
+using System.Text.RegularExpressions;
 
 namespace SmartAlarm.Domain.ValueObjects
 {
@@ -7,12 +8,20 @@ namespace SmartAlarm.Domain.ValueObjects
     /// </summary>
     public class Email
     {
+        private static readonly Regex EmailRegex = new Regex(
+            @"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
         public string Address { get; }
 
         public Email(string address)
         {
-            if (string.IsNullOrWhiteSpace(address) || !address.Contains("@"))
+            if (string.IsNullOrWhiteSpace(address))
+                throw new ArgumentException("E-mail não pode ser vazio.", nameof(address));
+            
+            if (!EmailRegex.IsMatch(address))
                 throw new ArgumentException("E-mail inválido.", nameof(address));
+            
             Address = address;
         }
 

@@ -33,7 +33,7 @@ namespace SmartAlarm.Application.Handlers
             var result = alarms.Select(a => new AlarmResponseDto
             {
                 Id = a.Id,
-                Name = a.Name,
+                Name = a.Name.ToString(),
                 Time = a.Time,
                 Enabled = a.Enabled,
                 UserId = a.UserId
