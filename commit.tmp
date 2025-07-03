@@ -1,1 +1,1 @@
-feat: implementar comandos e manipuladores para gerenciamento de alarmes, incluindo criação, atualização, exclusão e listagem
+feat: adicionar repositórios em memória para gerenciamento de alarmes, usuários, rotinas e integrações
