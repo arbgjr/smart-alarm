@@ -31,11 +31,13 @@ namespace SmartAlarm.Application.Handlers
             {
                 _logger.LogWarning("Alarme não encontrado para exclusão: {AlarmId}", request.AlarmId);
                 activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Error, "Alarm not found");
+                SmartAlarmMetrics.NotFoundErrorsCounter.Add(1);
                 return false;
             }
             await _alarmRepository.DeleteAsync(request.AlarmId);
             _logger.LogInformation("Alarme excluído: {AlarmId}", request.AlarmId);
             activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Ok);
+            SmartAlarmMetrics.AlarmsDeletedCounter.Add(1);
             return true;
         }
     }
