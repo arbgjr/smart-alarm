@@ -3,6 +3,7 @@ using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using OpenTelemetry.Metrics;
 using SmartAlarm.Api.Middleware;
+using SmartAlarm.KeyVault.Extensions;
 using FluentValidation.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -61,10 +62,16 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<SmartAlarm.Api.Services.ICurrentUserService, SmartAlarm.Api.Services.CurrentUserService>();
 
+// Configure KeyVault services
+builder.Services.AddKeyVault(builder.Configuration);
+
 var app = builder.Build();
 
 // Observabilidade padrão
 app.UseSerilogRequestLogging();
+
+// KeyVault middleware
+app.UseKeyVault();
 
 // Tratamento global de erros
 // app.UseGlobalExceptionHandler(); // Se existir, senão comentar
@@ -101,6 +108,8 @@ app.MapGet("/weatherforecast", () =>
 .WithName("GetWeatherForecast");
 
 app.Run();
+
+public partial class Program { } // For testing purposes
 
 record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
 {

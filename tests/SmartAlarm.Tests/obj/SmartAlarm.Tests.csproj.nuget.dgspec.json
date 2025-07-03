@@ -35,6 +35,9 @@
               "/home/runner/work/smart-alarm/smart-alarm/src/SmartAlarm.Infrastructure/SmartAlarm.Infrastructure.csproj": {
                 "projectPath": "/home/runner/work/smart-alarm/smart-alarm/src/SmartAlarm.Infrastructure/SmartAlarm.Infrastructure.csproj"
               },
+              "/home/runner/work/smart-alarm/smart-alarm/src/SmartAlarm.KeyVault/SmartAlarm.KeyVault.csproj": {
+                "projectPath": "/home/runner/work/smart-alarm/smart-alarm/src/SmartAlarm.KeyVault/SmartAlarm.KeyVault.csproj"
+              },
               "/home/runner/work/smart-alarm/smart-alarm/src/SmartAlarm.Observability/SmartAlarm.Observability.csproj": {
                 "projectPath": "/home/runner/work/smart-alarm/smart-alarm/src/SmartAlarm.Observability/SmartAlarm.Observability.csproj"
               }
@@ -300,6 +303,113 @@
             "Oracle.ManagedDataAccess": {
               "target": "Package",
               "version": "[12.1.21, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/lib/dotnet/sdk/8.0.117/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "/home/runner/work/smart-alarm/smart-alarm/src/SmartAlarm.KeyVault/SmartAlarm.KeyVault.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/home/runner/work/smart-alarm/smart-alarm/src/SmartAlarm.KeyVault/SmartAlarm.KeyVault.csproj",
+        "projectName": "SmartAlarm.KeyVault",
+        "projectPath": "/home/runner/work/smart-alarm/smart-alarm/src/SmartAlarm.KeyVault/SmartAlarm.KeyVault.csproj",
+        "packagesPath": "/home/runner/.nuget/packages/",
+        "outputPath": "/home/runner/work/smart-alarm/smart-alarm/src/SmartAlarm.KeyVault/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/home/runner/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "AWSSDK.SecretsManager": {
+              "target": "Package",
+              "version": "[3.7.300.29, )"
+            },
+            "Azure.Identity": {
+              "target": "Package",
+              "version": "[1.10.4, )"
+            },
+            "Azure.Security.KeyVault.Secrets": {
+              "target": "Package",
+              "version": "[4.5.0, )"
+            },
+            "Google.Cloud.SecretManager.V1": {
+              "target": "Package",
+              "version": "[2.4.0, )"
+            },
+            "Microsoft.AspNetCore.Http.Abstractions": {
+              "target": "Package",
+              "version": "[2.2.0, )"
+            },
+            "Microsoft.Extensions.Configuration.Abstractions": {
+              "target": "Package",
+              "version": "[8.0.0, )"
+            },
+            "Microsoft.Extensions.Configuration.Binder": {
+              "target": "Package",
+              "version": "[8.0.0, )"
+            },
+            "Microsoft.Extensions.DependencyInjection.Abstractions": {
+              "target": "Package",
+              "version": "[8.0.0, )"
+            },
+            "Microsoft.Extensions.Logging.Abstractions": {
+              "target": "Package",
+              "version": "[8.0.0, )"
+            },
+            "Microsoft.Extensions.Options": {
+              "target": "Package",
+              "version": "[8.0.0, )"
+            },
+            "OCI.DotNetSDK.Vault": {
+              "target": "Package",
+              "version": "[69.0.0, )"
+            },
+            "Polly": {
+              "target": "Package",
+              "version": "[8.2.0, )"
+            },
+            "VaultSharp": {
+              "target": "Package",
+              "version": "[1.17.5.1, )"
             }
           },
           "imports": [
