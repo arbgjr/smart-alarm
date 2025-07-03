@@ -1,0 +1,43 @@
+{
+  "Validation": {
+    "Required": {
+      "AlarmName": "Nome do alarme é obrigatório.",
+      "AlarmTime": "Horário do alarme é obrigatório.",
+      "UserId": "Usuário é obrigatório.",
+      "AlarmId": "ID do alarme é obrigatório.",
+      "AlarmData": "Dados do alarme são obrigatórios."
+    },
+    "Length": {
+      "AlarmNameMaxLength": "Nome deve ter até {MaxLength} caracteres.",
+      "AlarmNameMinLength": "Nome deve ter pelo menos {MinLength} caracteres."
+    },
+    "Format": {
+      "InvalidEmail": "Formato de email inválido.",
+      "InvalidGuid": "Formato de ID inválido.",
+      "InvalidDateTime": "Formato de data/hora inválido."
+    },
+    "Range": {
+      "FutureDateTime": "A data/hora deve ser no futuro.",
+      "InvalidTimeRange": "Horário deve estar entre {StartTime} e {EndTime}."
+    }
+  },
+  "Business": {
+    "AlarmNotFound": "Alarme não encontrado.",
+    "UserNotFound": "Usuário não encontrado.",
+    "AlarmAlreadyExists": "Já existe um alarme com este nome para o usuário.",
+    "UnauthorizedAccess": "Acesso não autorizado a este recurso.",
+    "DuplicateAlarm": "Já existe um alarme no mesmo horário."
+  },
+  "System": {
+    "InternalServerError": "Ocorreu um erro interno no servidor.",
+    "DatabaseConnectionError": "Erro de conexão com o banco de dados.",
+    "ExternalServiceError": "Erro ao comunicar com serviço externo.",
+    "ValidationFailed": "Falha na validação dos dados fornecidos."
+  },
+  "Authentication": {
+    "InvalidToken": "Token de autenticação inválido.",
+    "ExpiredToken": "Token de autenticação expirado.",
+    "InsufficientPermissions": "Permissões insuficientes para esta operação.",
+    "AuthenticationRequired": "Autenticação é necessária para acessar este recurso."
+  }
+}
