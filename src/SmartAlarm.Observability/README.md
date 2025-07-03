@@ -90,3 +90,15 @@ Provide reusable components for observability in all Smart Alarm services, follo
 - Always follow Clean Architecture and SOLID standards.
 - The middleware is extensible for custom logs, distributed tracing, and custom metrics.
 - See `systemPatterns.md` to ensure architectural compliance.
+- **📚 Complete documentation**: See `docs/architecture/observability-patterns.md` for detailed implementation patterns and examples.
+
+## Implementation Requirements
+
+All Application Layer handlers **MUST** implement:
+
+1. **Distributed Tracing**: Activity creation with relevant tags and status
+2. **Structured Logging**: Contextual logging with structured parameters
+3. **Metrics Collection**: Success/error counters and performance histograms
+4. **Error Handling**: Proper activity status and error metrics on failures
+
+Refer to the complete observability patterns documentation for implementation examples and code review guidelines.

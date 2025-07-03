@@ -36,6 +36,7 @@ namespace SmartAlarm.Application.Handlers
             {
                 _logger.LogWarning("Falha de validação ao atualizar alarme: {@Errors}", validationResult.Errors);
                 activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Error, "Validation failed");
+                SmartAlarmMetrics.ValidationErrorsCounter.Add(1);
                 throw new ValidationException(validationResult.Errors.ToString());
             }
             var existing = await _alarmRepository.GetByIdAsync(request.AlarmId);
@@ -43,12 +44,14 @@ namespace SmartAlarm.Application.Handlers
             {
                 _logger.LogWarning("Alarme não encontrado: {AlarmId}", request.AlarmId);
                 activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Error, "Alarm not found");
+                SmartAlarmMetrics.NotFoundErrorsCounter.Add(1);
                 throw new SmartAlarm.Domain.Exceptions.NotFoundException("Alarm", request.AlarmId);
             }
             var updated = new Alarm(request.AlarmId, request.Alarm.Name, request.Alarm.Time, existing.Enabled, request.Alarm.UserId);
             await _alarmRepository.UpdateAsync(updated);
             _logger.LogInformation("Alarme atualizado: {AlarmId}", updated.Id);
             activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Ok);
+            SmartAlarmMetrics.AlarmsUpdatedCounter.Add(1);
             return new AlarmResponseDto
             {
                 Id = updated.Id,

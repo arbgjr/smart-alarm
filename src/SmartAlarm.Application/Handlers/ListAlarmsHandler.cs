@@ -41,6 +41,7 @@ namespace SmartAlarm.Application.Handlers
             _logger.LogInformation("{Count} alarmes retornados para o usuário {UserId}", result.Count, request.UserId);
             activity?.SetTag("alarms.count", result.Count);
             activity?.SetStatus(ActivityStatusCode.Ok);
+            SmartAlarmMetrics.AlarmsListedCounter.Add(1);
             return result;
         }
     }

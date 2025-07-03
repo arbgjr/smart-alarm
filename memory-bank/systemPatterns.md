@@ -95,11 +95,67 @@
 - On the frontend, review accessibility, responsiveness, and visual impact of changes.
 
 ### Observabilidade: Tracing e Métricas
-- TODO: Garantir que todos os handlers e pontos críticos da Application Layer implementem tracing distribuído (OpenTelemetry, Application Insights) e coleta de métricas customizadas.
-- TODO: Validar em code review se spans, logs e métricas estão presentes e bem definidos.
-- TODO: Documentar exemplos e padrões de uso para rastreamento e métricas no repositório.
 
-Essas práticas são obrigatórias para todos os novos handlers, comandos e queries, conforme padrão do projeto.
+**✅ IMPLEMENTADO**: Todos os handlers e pontos críticos da Application Layer implementam tracing distribuído (OpenTelemetry, Application Insights) e coleta de métricas customizadas.
+
+**Padrões obrigatórios para novos handlers, comandos e queries:**
+
+#### Distributed Tracing (OBRIGATÓRIO)
+```csharp
+public async Task<TResponse> Handle(TRequest request, CancellationToken cancellationToken)
+{
+    using var activity = SmartAlarmTracing.ActivitySource.StartActivity("HandlerName.Handle");
+    activity?.SetTag("entity.id", request.Id.ToString());
+    activity?.SetTag("operation.type", "create"); // create, read, update, delete, list
+    
+    try
+    {
+        // Business logic
+        var result = await DoWork(request);
+        activity?.SetStatus(ActivityStatusCode.Ok);
+        SmartAlarmMetrics.SuccessCounter.Add(1);
+        return result;
+    }
+    catch (Exception ex)
+    {
+        activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+        SmartAlarmMetrics.ErrorCounter.Add(1);
+        throw;
+    }
+}
+```
+
+#### Structured Logging (OBRIGATÓRIO)
+```csharp
+// Sucesso
+_logger.LogInformation("Entity created: {EntityId} for user {UserId}", entity.Id, userId);
+
+// Avisos
+_logger.LogWarning("Entity not found: {EntityId}", entityId);
+
+// Erros
+_logger.LogError(ex, "Failed to process request for user {UserId}", userId);
+```
+
+#### Métricas Customizadas (OBRIGATÓRIO)
+```csharp
+// Contadores de operações
+SmartAlarmMetrics.EntityCreatedCounter.Add(1);
+SmartAlarmMetrics.ValidationErrorsCounter.Add(1);
+
+// Histogramas de performance (opcional)
+using var timer = SmartAlarmMetrics.HandlerDuration.CreateTimer();
+```
+
+#### Code Review Checklist
+- [ ] Handler cria activity com nome descritivo
+- [ ] Activity inclui tags relevantes (entity.id, user.id, operation.type)
+- [ ] Activity status é definido corretamente (Ok/Error)
+- [ ] Logs estruturados usam parâmetros ao invés de interpolação
+- [ ] Métricas são atualizadas para sucessos e erros
+- [ ] Nenhuma informação sensível em logs/traces
+
+**📚 Documentação completa**: Consulte `docs/architecture/observability-patterns.md` para exemplos detalhados e padrões de implementação.
 
 ### Good Practice Examples
 

@@ -37,6 +37,7 @@ namespace SmartAlarm.Application.Handlers
             {
                 _logger.LogWarning("Falha de validação ao criar alarme: {@Errors}", validationResult.Errors);
                 activity?.SetStatus(ActivityStatusCode.Error, "Validation failed");
+                SmartAlarmMetrics.ValidationErrorsCounter.Add(1);
                 throw new ValidationException(validationResult.Errors.ToString());
             }
             var alarm = new Alarm(Guid.NewGuid(), request.Alarm.Name, request.Alarm.Time, true, request.Alarm.UserId);
