@@ -94,6 +94,13 @@
 - Include context, changes, tests performed, and pending items in the PR description.
 - On the frontend, review accessibility, responsiveness, and visual impact of changes.
 
+### Observabilidade: Tracing e Métricas
+- TODO: Garantir que todos os handlers e pontos críticos da Application Layer implementem tracing distribuído (OpenTelemetry, Application Insights) e coleta de métricas customizadas.
+- TODO: Validar em code review se spans, logs e métricas estão presentes e bem definidos.
+- TODO: Documentar exemplos e padrões de uso para rastreamento e métricas no repositório.
+
+Essas práticas são obrigatórias para todos os novos handlers, comandos e queries, conforme padrão do projeto.
+
 ### Good Practice Examples
 
 #### Asynchronous Function (Backend)

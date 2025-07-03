@@ -1,1 +1,1 @@
-feat: implementar entidades, repositórios e exceções do domínio seguindo Clean Architecture
+feat: implementar comandos e manipuladores para gerenciamento de alarmes, incluindo criação, atualização, exclusão e listagem

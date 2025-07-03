@@ -33,4 +33,13 @@ As etapas para iniciar o desenvolvimento do Smart Alarm, seguindo Clean Architec
 8. **Documentação**
    - Documentar arquitetura inicial, endpoints e decisões no diretório docs.
 
+9. **Infrastructure Layer**
+   - Implements concrete repositories (e.g., AlarmRepository) based on domain interfaces.
+   - Handles integration with external services: databases (Autonomous DB), messaging, storage, logging, tracing, and metrics.
+   - Provides dependency injection configuration for all infrastructure services.
+   - Ensures infrastructure is decoupled from domain and application, allowing easy replacement or mocking for tests.
+   - Follows Clean Architecture: no direct dependencies from Domain/Application to Infrastructure.
+
+> Note: The Infrastructure Layer is a fundamental part of Clean Architecture. It must be explicitly designed and documented, ensuring all external integrations and technical concerns are isolated from business logic.
+
 Essas etapas seguem exatamente o fluxo recomendado nos arquivos de instrução, Memory Bank e padrões do projeto. Se desejar, posso detalhar o plano de execução para cada etapa ou iniciar a implementação de algum item específico. Deseja avançar para o planejamento detalhado ou iniciar a execução de alguma dessas etapas?
