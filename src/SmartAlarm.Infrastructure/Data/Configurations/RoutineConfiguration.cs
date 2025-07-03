@@ -1,0 +1,56 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using SmartAlarm.Domain.Entities;
+
+namespace SmartAlarm.Infrastructure.Data.Configurations
+{
+    /// <summary>
+    /// Entity Framework configuration for Routine entity.
+    /// </summary>
+    public class RoutineConfiguration : IEntityTypeConfiguration<Routine>
+    {
+        public void Configure(EntityTypeBuilder<Routine> builder)
+        {
+            builder.ToTable("Routines");
+
+            builder.HasKey(r => r.Id);
+
+            builder.Property(r => r.Id)
+                .IsRequired()
+                .HasColumnName("Id");
+
+            // Configure Name value object
+            builder.Property(r => r.Name)
+                .HasConversion(
+                    name => name.Value,
+                    value => new Domain.ValueObjects.Name(value))
+                .HasColumnName("Name")
+                .HasMaxLength(255)
+                .IsRequired();
+
+            builder.Property(r => r.AlarmId)
+                .IsRequired()
+                .HasColumnName("AlarmId");
+
+            builder.Property(r => r.IsActive)
+                .IsRequired()
+                .HasColumnName("IsActive");
+
+            builder.Property(r => r.CreatedAt)
+                .IsRequired()
+                .HasColumnName("CreatedAt");
+
+            // Configure Actions as JSON
+            builder.Property(r => r.Actions)
+                .HasConversion(
+                    actions => System.Text.Json.JsonSerializer.Serialize(actions, (System.Text.Json.JsonSerializerOptions)null),
+                    json => System.Text.Json.JsonSerializer.Deserialize<string[]>(json, (System.Text.Json.JsonSerializerOptions)null))
+                .HasColumnName("Actions")
+                .HasColumnType("CLOB");
+
+            // Index for AlarmId
+            builder.HasIndex(r => r.AlarmId)
+                .HasDatabaseName("IX_Routines_AlarmId");
+        }
+    }
+}

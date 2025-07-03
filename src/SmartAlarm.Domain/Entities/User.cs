@@ -15,6 +15,9 @@ namespace SmartAlarm.Domain.Entities
         public DateTime CreatedAt { get; private set; }
         public DateTime? LastLoginAt { get; private set; }
 
+        // Private constructor for EF Core
+        private User() { }
+
         public User(Guid id, Name name, Email email, bool isActive = true)
         {
             if (name == null) throw new ArgumentNullException(nameof(name));

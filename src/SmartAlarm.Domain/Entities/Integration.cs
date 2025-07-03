@@ -14,14 +14,20 @@ namespace SmartAlarm.Domain.Entities
         public string Provider { get; private set; }
         public string Configuration { get; private set; }
         public bool IsActive { get; private set; }
+        public Guid AlarmId { get; private set; }
         public DateTime CreatedAt { get; private set; }
         public DateTime? LastExecutedAt { get; private set; }
 
-        public Integration(Guid id, Name name, string provider, string configuration)
+        // Private constructor for EF Core
+        private Integration() { }
+
+        public Integration(Guid id, Name name, string provider, string configuration, Guid alarmId)
         {
             if (name == null) throw new ArgumentNullException(nameof(name));
             if (string.IsNullOrWhiteSpace(provider))
                 throw new ArgumentException("Provedor da integração é obrigatório.", nameof(provider));
+            if (alarmId == Guid.Empty)
+                throw new ArgumentException("AlarmId é obrigatório.", nameof(alarmId));
             
             ValidateConfiguration(configuration);
             
@@ -29,14 +35,29 @@ namespace SmartAlarm.Domain.Entities
             Name = name;
             Provider = provider;
             Configuration = configuration;
+            AlarmId = alarmId;
             IsActive = true;
             CreatedAt = DateTime.UtcNow;
         }
 
         // Constructor for string parameters for backward compatibility
-        public Integration(Guid id, string name, string provider, string configuration)
-            : this(id, new Name(name), provider, configuration)
+        public Integration(Guid id, string name, string provider, string configuration, Guid alarmId)
+            : this(id, new Name(name), provider, configuration, alarmId)
         {
+        }
+
+        // Legacy constructor - deprecated, will cause compilation errors for old usage
+        [Obsolete("Use constructor with AlarmId parameter", true)]
+        public Integration(Guid id, Name name, string provider, string configuration)
+        {
+            throw new NotSupportedException("Use constructor with AlarmId parameter");
+        }
+
+        // Legacy constructor - deprecated, will cause compilation errors for old usage  
+        [Obsolete("Use constructor with AlarmId parameter", true)]
+        public Integration(Guid id, string name, string provider, string configuration)
+        {
+            throw new NotSupportedException("Use constructor with AlarmId parameter");
         }
 
         public void Activate() => IsActive = true;

@@ -25,6 +25,9 @@ namespace SmartAlarm.Domain.Entities
         public IReadOnlyList<Integration> Integrations => _integrations.AsReadOnly();
         public IReadOnlyList<Schedule> Schedules => _schedules.AsReadOnly();
 
+        // Private constructor for EF Core
+        private Alarm() { }
+
         public Alarm(Guid id, Name name, DateTime time, bool enabled, Guid userId)
         {
             if (name == null) throw new ArgumentNullException(nameof(name));

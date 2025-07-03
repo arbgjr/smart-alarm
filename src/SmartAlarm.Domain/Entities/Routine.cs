@@ -19,6 +19,9 @@ namespace SmartAlarm.Domain.Entities
         public bool IsActive { get; private set; }
         public DateTime CreatedAt { get; private set; }
 
+        // Private constructor for EF Core
+        private Routine() { }
+
         public Routine(Guid id, Name name, Guid alarmId, List<string> actions = null)
         {
             if (name == null) throw new ArgumentNullException(nameof(name));
