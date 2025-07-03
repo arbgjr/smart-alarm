@@ -1,16 +1,16 @@
 # Smart Alarm — Project Brief
 
-## Objetivo
-Desenvolver uma plataforma backend e serviços para gestão inteligente de alarmes, rotinas e integrações, com foco em acessibilidade, segurança, modularidade e escalabilidade.
+## Objective
+Develop a backend platform and services for intelligent management of alarms, routines, and integrations, focusing on accessibility, security, modularity, and scalability.
 
-## Escopo
-- Backend exclusivo em C# (.NET 8.0+), arquitetura Clean Architecture, serverless (OCI Functions)
-- APIs RESTful para alarmes, IA e integrações externas
-- Segurança: JWT/FIDO2, LGPD, logging estruturado, Application Insights
-- Testes automatizados (xUnit, Moq), cobertura mínima de 80% para código crítico
-- Documentação via Swagger/OpenAPI e arquivos Markdown
+## Scope
+- Backend exclusively in C# (.NET 8.0+), Clean Architecture, serverless (OCI Functions)
+- RESTful APIs for alarms, AI, and external integrations
+- Security: JWT/FIDO2, LGPD, structured logging, Application Insights
+- Automated tests (xUnit, Moq), minimum 80% coverage for critical code
+- Documentation via Swagger/OpenAPI and Markdown files
 
-## Restrições
-- Apenas C# para backend
-- Serverless padrão: Oracle Cloud Infrastructure
-- Sem exposição de segredos em código ou logs
+## Constraints
+- Only C# for backend
+- Serverless standard: Oracle Cloud Infrastructure
+- No exposure of secrets in code or logs

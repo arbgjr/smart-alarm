@@ -1,65 +1,65 @@
-# ADR-002: Migração para Backend C# Único
+# ADR-002: Migration to a Single C# Backend
 
-**Status:** Aceito  
-**Data:** 2025-07-02  
-**Autores:** Equipe de Desenvolvimento  
-**Decisores:** Product Owner, Tech Lead
+**Status:** Accepted  
+**Date:** 2025-07-02  
+**Authors:** Development Team  
+**Decision Makers:** Product Owner, Tech Lead
 
-## Contexto e Problema
+## Context and Problem
 
-Originalmente, nossa arquitetura previa múltiplas linguagens para o backend, mas a complexidade operacional, a dificuldade de manutenção e a necessidade de padronização motivaram a migração para uma stack única.
+Originally, our architecture envisioned multiple languages for the backend, but operational complexity, maintenance difficulty, and the need for standardization motivated the migration to a single stack.
 
-## Decisão
+## Decision
 
-**Todo o backend será unificado em C# (.NET)**, eliminando qualquer dependência de Go, Python, Node.js ou outras linguagens para serviços core. Todos os serviços (CRUD de alarmes, IA/análise comportamental, integrações externas) serão implementados como projetos .NET independentes, preferencialmente serverless (Azure Functions), seguindo Clean Architecture e princípios SOLID.
+**The entire backend will be unified in C# (.NET)**, eliminating any dependency on Go, Python, Node.js, or other languages for core services. All services (alarm CRUD, AI/behavioral analysis, external integrations) will be implemented as independent .NET projects, preferably serverless (Azure Functions), following Clean Architecture and SOLID principles.
 
-## Justificativa
+## Justification
 
-- **Padronização e Simplicidade:** Uma única linguagem reduz drasticamente a complexidade operacional, facilita onboarding, manutenção e evolução do sistema.
-- **Performance e Produtividade:** .NET moderno (6+) oferece performance próxima a linguagens de baixo nível para operações CRUD, com excelente produtividade e ferramentas de desenvolvimento.
-- **IA e Análise:** ML.NET cobre a maioria dos cenários de machine learning necessários. Integrações com TensorFlow/PyTorch podem ser feitas via bibliotecas .NET, e Python.NET só será usado em casos excepcionais, sempre encapsulado.
-- **Integrações Externas:** O ecossistema .NET possui bibliotecas maduras para integrações com APIs de terceiros, notificações, calendários, etc.
-- **Serverless e Cloud-Native:** Azure Functions suporta C# nativamente, com cold start competitivo e integração facilitada com serviços Azure.
-- **Segurança e Testabilidade:** Clean Architecture, SOLID, testes automatizados, logging estruturado, autenticação JWT/FIDO2, documentação via Swagger/OpenAPI.
+- **Standardization and Simplicity:** A single language drastically reduces operational complexity, facilitates onboarding, maintenance, and system evolution.
+- **Performance and Productivity:** Modern .NET (6+) offers performance close to low-level languages for CRUD operations, with excellent productivity and development tools.
+- **AI and Analysis:** ML.NET covers most required machine learning scenarios. Integrations with TensorFlow/PyTorch can be done via .NET libraries, and Python.NET will only be used in exceptional cases, always encapsulated.
+- **External Integrations:** The .NET ecosystem has mature libraries for integrations with third-party APIs, notifications, calendars, etc.
+- **Serverless and Cloud-Native:** Azure Functions natively supports C#, with competitive cold start and easy integration with Azure services.
+- **Security and Testability:** Clean Architecture, SOLID, automated tests, structured logging, JWT/FIDO2 authentication, documentation via Swagger/OpenAPI.
 
-## Implicações
+## Implications
 
-### Positivas
+### Positive
 
-- Redução de custos operacionais e overhead de DevOps.
-- Base de código uniforme, fácil de auditar e evoluir.
-- Onboarding mais rápido e curva de aprendizado menor.
-- Ferramentas de análise, profiling e monitoramento padronizadas.
-- Performance adequada para todos os cenários do produto.
+- Reduction of operational costs and DevOps overhead.
+- Uniform codebase, easy to audit and evolve.
+- Faster onboarding and lower learning curve.
+- Standardized analysis, profiling, and monitoring tools.
+- Adequate performance for all product scenarios.
 
-### Negativas
+### Negative
 
-- Custo de migração inicial dos serviços legados.
-- Eventual necessidade de integração com bibliotecas Python para IA muito específica (mitigado por Python.NET encapsulado).
+- Initial migration cost of legacy services.
+- Possible need for integration with Python libraries for very specific AI (mitigated by encapsulated Python.NET).
 
-### Arquitetura Técnica
+### Technical Architecture
 
-- **AlarmService:** CRUD de alarmes, regras de negócio e notificações, tudo em C#.
-- **AnalysisService:** IA/análise comportamental com ML.NET, interoperabilidade Python apenas se necessário.
-- **IntegrationService:** Integrações externas (calendários, notificações, etc.) via bibliotecas .NET.
-- Todos os serviços como projetos .NET independentes, preferencialmente Azure Functions.
+- **AlarmService:** Alarm CRUD, business rules, and notifications, all in C#.
+- **AnalysisService:** AI/behavioral analysis with ML.NET, Python interoperability only if necessary.
+- **IntegrationService:** External integrations (calendars, notifications, etc.) via .NET libraries.
+- All services as independent .NET projects, preferably Azure Functions.
 
-## Plano de Implementação
+## Implementation Plan
 
-1. Setup da infraestrutura C# e implementação do AlarmService.
-2. Implementação do IntegrationService e migração das integrações externas.
-3. Implementação do AnalysisService com ML.NET e interoperabilidade Python apenas se necessário.
-4. Testes de integração, performance e validação completa.
+1. Setup of C# infrastructure and implementation of AlarmService.
+2. Implementation of IntegrationService and migration of external integrations.
+3. Implementation of AnalysisService with ML.NET and Python interoperability only if necessary.
+4. Integration, performance, and full validation tests.
 
-Durante todo o processo, manter os serviços legados apenas até a validação completa dos novos serviços em C#.
+Throughout the process, keep legacy services only until full validation of the new C# services.
 
-## Critérios de Sucesso
+## Success Criteria
 
-- Latência equivalente ou melhor para 95% das operações CRUD.
-- 99.9% de uptime para todos os serviços.
-- Redução de 30% no tempo para implementar novos recursos.
-- Redução de 50% no tempo gasto em manutenção de infraestrutura.
+- Equivalent or better latency for 95% of CRUD operations.
+- 99.9% uptime for all services.
+- 30% reduction in time to implement new features.
+- 50% reduction in time spent on infrastructure maintenance.
 
 ---
 
-*Esta ADR será revisada após a implementação completa ou se novas informações significativas surgirem durante o processo de migração.*
+*This ADR will be reviewed after full implementation or if significant new information arises during the migration process.*

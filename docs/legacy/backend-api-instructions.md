@@ -1,31 +1,26 @@
-# Instruções Legadas de Backend - Atualização para C#/.NET
+# Legacy Backend Instructions - Update to C#/.NET
 
-> Este documento foi atualizado para refletir a nova arquitetura unificada do backend em C#/.NET. Todas as instruções anteriores relacionadas a Go, Python, Node.js ou multi-linguagem foram removidas.
+> This document has been updated to reflect the new unified backend architecture in C#/.NET. All previous instructions related to Go, Python, Node.js, or multi-language have been removed.
 
-## Estrutura do Backend
+## Backend Structure
 
-- Todos os serviços backend são implementados em C# (.NET 6+), organizados em projetos independentes (AlarmService, AnalysisService, IntegrationService).
-- Utilização de Clean Architecture, SOLID, testes automatizados e integração nativa com Azure Functions.
+- All backend services are implemented in C# (.NET 6+), organized as independent projects (AlarmService, AnalysisService, IntegrationService).
+- Use of Clean Architecture, SOLID, automated testing, and native integration with Azure Functions.
 
-## Padrões de API
+## API Standards
 
-- APIs RESTful documentadas via Swagger/OpenAPI.
-- Autenticação JWT/FIDO2, autorização baseada em claims e RBAC.
-- Validação rigorosa de entrada/saída (FluentValidation).
-- Logging estruturado (Serilog) e tracing (Application Insights).
+- RESTful APIs documented via Swagger/OpenAPI.
+- JWT/FIDO2 authentication, claims-based authorization, and RBAC.
+- Strict input/output validation (FluentValidation).
+- Structured logging (Serilog) and tracing (Application Insights).
 
-## Integrações e IA
+## Integrations and AI
 
-- Integrações externas (calendários, notificações, etc.) via HttpClientFactory, Polly e autenticação OAuth2/OpenID Connect.
-- IA e análise comportamental implementadas com ML.NET. Integração com Python apenas via bibliotecas .NET, nunca expondo dados sensíveis fora do ambiente C#.
+- External integrations (calendars, notifications, etc.) via HttpClientFactory, Polly, and OAuth2/OpenID Connect authentication.
+- AI and behavioral analysis implemented with ML.NET. Integration with Python only via .NET libraries, never exposing sensitive data outside the C# environment.
 
-## Testes e Segurança
+## Testing and Security
 
-- Testes unitários e de integração (xUnit, Moq), cobertura mínima de 80% para código crítico.
-- CI/CD automatizado (GitHub Actions/Azure DevOps), infraestrutura como código (Bicep/Terraform).
-- Monitoramento e alertas via Application Insights.
-
-## Observações
-
-- Todo o backend é C#/.NET, sem dependências de Go, Python ou Node.js.
-- Para dúvidas sobre migração de código legado, consulte a equipe de arquitetura.
+- Unit and integration tests (xUnit, Moq), minimum 80% coverage for critical code.
+- Automated CI/CD (GitHub Actions/Azure DevOps), infrastructure as code (Bicep/Terraform).
+- Monitoring and alerts via Application Insights.

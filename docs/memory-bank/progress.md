@@ -1,18 +1,18 @@
 # Smart Alarm — Progress
 
-## Funcionalidades Concluídas
-- Estrutura inicial de pastas e projetos
-- Documentação base criada
-- Padrões de arquitetura definidos
+## Completed Features
+- Initial folder and project structure
+- Base documentation created
+- Architecture standards defined
 
-## Itens Pendentes
-- Implementação dos endpoints principais (AlarmService)
-- Configuração de autenticação JWT/FIDO2
-- Testes automatizados para handlers e repositórios
+## Pending Items
+- Implementation of main endpoints (AlarmService)
+- JWT/FIDO2 authentication setup
+- Automated tests for handlers and repositories
 
-## Status Atual
-- Projeto em fase de estruturação e planejamento detalhado
+## Current Status
+- Project in structuring and detailed planning phase
 
-## Problemas Conhecidos
-- Integração com OCI Functions ainda não testada em produção
-- Definição de contratos de integração externa pendente
+## Known Issues
+- Integration with OCI Functions not yet tested in production
+- Definition of external integration contracts pending

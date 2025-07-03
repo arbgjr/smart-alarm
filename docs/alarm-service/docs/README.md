@@ -1,17 +1,17 @@
 # Alarm Service - Smart Alarm
 
-O Alarm Service é responsável por todas as operações de alarmes, regras de negócio e notificações, sendo implementado exclusivamente em C#/.NET, seguindo Clean Architecture, SOLID e práticas modernas de testabilidade e segurança.
+The Alarm Service is responsible for all alarm operations, business rules, and notifications, being implemented exclusively in C#/.NET, following Clean Architecture, SOLID, and modern practices for testability and security.
 
-## Tecnologias e Padrões
+## Technologies and Standards
 
-- **C# (.NET 6+):** Toda a lógica de alarmes
-- **Entity Framework Core:** Persistência de dados
-- **Azure Functions:** Deploy serverless
-- **FluentValidation:** Validação de entrada/saída
-- **Logging estruturado:** Serilog e Application Insights
-- **Testes automatizados:** xUnit, Moq
+- **C# (.NET 8+):** All alarm logic
+- **Entity Framework Core:** Data persistence
+- **Azure Functions:** Serverless deployment
+- **FluentValidation:** Input/output validation
+- **Structured logging:** Serilog and Application Insights
+- **Automated tests:** xUnit, Moq
 
-## Observações
+## Notes
 
-- Não há dependências de Go, Python ou Node.js
-- Todo o backend é testável, seguro e observável
+- There are no dependencies on Go, Python, or Node.js
+- The entire backend is testable, secure, and observable

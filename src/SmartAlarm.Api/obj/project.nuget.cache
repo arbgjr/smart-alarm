@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "M/KRMghR2kE=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\armando.guimaraes\\source\\repos\\arbgjr\\smart-alarm\\src\\SmartAlarm.Api\\SmartAlarm.Api.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\armando.guimaraes\\.nuget\\packages\\microsoft.aspnetcore.openapi\\9.0.6\\microsoft.aspnetcore.openapi.9.0.6.nupkg.sha512",
+    "C:\\Users\\armando.guimaraes\\.nuget\\packages\\microsoft.openapi\\1.6.17\\microsoft.openapi.1.6.17.nupkg.sha512"
+  ],
+  "logs": []
+}

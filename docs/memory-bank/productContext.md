@@ -1,14 +1,14 @@
 # Smart Alarm — Product Context
 
-## Propósito
-Oferecer uma solução moderna para gerenciamento de alarmes e rotinas, integrando recursos de IA, acessibilidade e automação, visando experiência inclusiva e segura.
+## Purpose
+Provide a modern solution for managing alarms and routines, integrating AI, accessibility, and automation features, aiming for an inclusive and secure experience.
 
-## Problemas a Resolver
-- Dificuldade de integração entre alarmes, rotinas e sistemas externos
-- Falta de acessibilidade e personalização
-- Necessidade de conformidade com LGPD e segurança avançada
+## Problems to Solve
+- Difficulty integrating alarms, routines, and external systems
+- Lack of accessibility and customization
+- Need for LGPD compliance and advanced security
 
-## Experiência Desejada
-- APIs simples e seguras para integração
-- Interface acessível e responsiva (via frontend)
-- Configuração e automação de alarmes e rotinas de forma intuitiva
+## Desired Experience
+- Simple and secure APIs for integration
+- Accessible and responsive interface (via frontend)
+- Intuitive configuration and automation of alarms and routines

@@ -1,5 +1,5 @@
 ---
-tools: ['architecture', 'development', 'memory-system']
+tools: ['architecture', 'development', 'documentation']
 description: 'Documentation specialist for technical writing and onboarding'
 ---
 

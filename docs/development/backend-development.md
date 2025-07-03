@@ -1,14 +1,14 @@
-# Backend Development Guide - Arquitetura Unificada em C#
+# Backend Development Guide - Unified C# Architecture
 
-Este guia cobre o desenvolvimento backend do Smart Alarm utilizando exclusivamente C# (.NET), seguindo Clean Architecture, princípios SOLID, testabilidade, segurança e integração nativa com Azure Functions.
+This guide covers backend development for Smart Alarm using exclusively C# (.NET), following Clean Architecture, SOLID principles, testability, security, and native integration with Azure Functions.
 
-## 🏗️ Filosofia de Arquitetura
+## 🏗️ Architecture Philosophy
 
-A arquitetura backend é baseada em serviços especializados, todos implementados em C#/.NET, organizados como projetos independentes (AlarmService, AnalysisService, IntegrationService), preferencialmente serverless (Azure Functions). Todos os serviços seguem Clean Architecture, com separação clara de camadas (apresentação, aplicação, domínio, infraestrutura), facilitando testes, manutenção e evolução.
+The backend architecture is based on specialized services, all implemented in C#/.NET, organized as independent projects (AlarmService, AnalysisService, IntegrationService), preferably serverless (Azure Functions). All services follow Clean Architecture, with clear separation of layers (presentation, application, domain, infrastructure), facilitating testing, maintenance, and evolution.
 
-## 🚀 AlarmService: Operações CRUD de Alarmes
+## 🚀 AlarmService: Alarm CRUD Operations
 
-O AlarmService é responsável por todas as operações CRUD de alarmes, regras de negócio, notificações e validações específicas para neurodivergentes. Utiliza Entity Framework Core para persistência, FluentValidation para validação e logging estruturado (Serilog).
+AlarmService is responsible for all CRUD operations for alarms, business rules, notifications, and specific validations for neurodivergent users. It uses Entity Framework Core for persistence, FluentValidation for validation, and structured logging (Serilog).
 
 ```csharp
 // Application/Handlers/CreateAlarmHandler.cs
@@ -36,7 +36,7 @@ public class CreateAlarmHandler : IRequestHandler<CreateAlarmCommand, AlarmRespo
 
         var alarm = new Alarm
         {
-            // ...atribuição dos campos do comando...
+            // ...assign fields from command...
         };
 
         await _alarmRepository.AddAsync(alarm);
@@ -46,32 +46,32 @@ public class CreateAlarmHandler : IRequestHandler<CreateAlarmCommand, AlarmRespo
 }
 ```
 
-## 🤖 AnalysisService: IA e Análise Comportamental
+## 🤖 AnalysisService: AI and Behavioral Analysis
 
-Toda a lógica de IA e análise comportamental é implementada em C# usando ML.NET. Quando necessário, integrações com TensorFlow ou PyTorch podem ser feitas via bibliotecas .NET, mantendo sempre a lógica principal e dados sensíveis sob controle do backend C#.
+All AI and behavioral analysis logic is implemented in C# using ML.NET. When necessary, integrations with TensorFlow or PyTorch can be made via .NET libraries, always keeping the main logic and sensitive data under C# backend control.
 
-- Modelos de recomendação, análise de padrões e sugestões contextuais são treinados e servidos via ML.NET.
-- Testes unitários e de integração garantem a robustez dos modelos.
+- Recommendation models, pattern analysis, and contextual suggestions are trained and served via ML.NET.
+- Unit and integration tests ensure model robustness.
 
-## 🔗 IntegrationService: Integrações Externas
+## 🔗 IntegrationService: External Integrations
 
-Todas as integrações com APIs externas (calendários, notificações, feriados, etc.) são feitas via bibliotecas .NET, com autenticação OAuth2/OpenID Connect, logging e tratamento de erros padronizados (Polly, HttpClientFactory).
+All integrations with external APIs (calendars, notifications, holidays, etc.) are done via .NET libraries, with OAuth2/OpenID Connect authentication, standardized logging, and error handling (Polly, HttpClientFactory).
 
-## 🛡️ Segurança, Testabilidade e Observabilidade
+## 🛡️ Security, Testability, and Observability
 
-- Autenticação JWT/FIDO2, autorização baseada em claims e RBAC.
-- Logging estruturado (Serilog), tracing distribuído (Application Insights), monitoramento e alertas.
-- Testes automatizados (xUnit, Moq), cobertura mínima de 80% para código crítico.
-- Documentação via Swagger/OpenAPI.
+- JWT/FIDO2 authentication, claims-based authorization, and RBAC.
+- Structured logging (Serilog), distributed tracing (Application Insights), monitoring, and alerts.
+- Automated tests (xUnit, Moq), minimum 80% coverage for critical code.
+- Documentation via Swagger/OpenAPI.
 
-## 🧩 Padrões e Boas Práticas
+## 🧩 Patterns and Best Practices
 
-- Clean Architecture e SOLID em todos os serviços.
-- Validação rigorosa de entrada/saída.
-- Tratamento de erros centralizado e respostas amigáveis.
-- CI/CD automatizado (GitHub Actions/Azure DevOps), infraestrutura como código (Bicep/Terraform).
+- Clean Architecture and SOLID in all services.
+- Strict input/output validation.
+- Centralized error handling and user-friendly responses.
+- Automated CI/CD (GitHub Actions/Azure DevOps), infrastructure as code (Bicep/Terraform).
 
-## Exemplo de Estrutura de Projeto
+## Example Project Structure
 
 ```
 /AlarmService
@@ -83,8 +83,8 @@ Todas as integrações com APIs externas (calendários, notificações, feriados
 /IntegrationService
 ```
 
-## Observações Finais
+## Final Notes
 
-- Todo o backend é C#/.NET, sem dependências de Go, Python ou Node.js.
-- Qualquer integração com Python para IA é encapsulada e nunca expõe dados sensíveis fora do ambiente .NET.
-- O foco é sempre em testabilidade, segurança, acessibilidade e manutenção a longo prazo.
+- The entire backend is C#/.NET, with no dependencies on Go, Python, or Node.js.
+- Any integration with Python for AI is encapsulated and never exposes sensitive data outside the .NET environment.
+- The focus is always on testability, security, accessibility, and long-term maintainability.

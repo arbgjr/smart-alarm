@@ -1,1 +1,3 @@
-docs: Atualizar e expandir a documentação do projeto Smart Alarm, incluindo contextos ativo, produto, progresso, padrões de sistema e tecnologias
+feat(observability): add reusable observability middleware
+
+Implements structured logging (Serilog), distributed tracing (OpenTelemetry), and Prometheus metrics as a reusable middleware. Includes documentation and integration guide for all modules, following Clean Architecture and SOLID principles.

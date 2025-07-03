@@ -1,16 +1,15 @@
 # Integration Service - Smart Alarm
 
-O Integration Service é responsável por todas as integrações externas do Smart Alarm, sendo implementado exclusivamente em C#/.NET, seguindo Clean Architecture e práticas modernas de segurança e testabilidade.
+The Integration Service is responsible for all external integrations of Smart Alarm, implemented exclusively in C#/.NET, following Clean Architecture and modern security and testability practices.
 
-## Tecnologias e Padrões
+## Technologies and Patterns
 
-- **C# (.NET 6+):** Toda a lógica de integração
-- **HttpClientFactory & Polly:** Consumo resiliente de APIs externas
-- **OAuth2/OpenID Connect:** Autenticação e autorização seguras
-- **Logging estruturado:** Serilog e Application Insights
-- **Testes automatizados:** xUnit, Moq
+- **C# (.NET 8+):** All integration logic
+- **HttpClientFactory & Polly:** Resilient consumption of external APIs
+- **OAuth2/OpenID Connect:** Secure authentication and authorization
+- **Structured logging:** Serilog and Application Insights
+- **Automated testing:** xUnit, Moq
 
-## Observações
+## Notes
 
-- Não há dependências de Go, Python ou Node.js
-- Todas as integrações são auditáveis, seguras e testáveis
+- All integrations are auditable, secure, and testable

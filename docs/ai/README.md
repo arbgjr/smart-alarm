@@ -1,19 +1,19 @@
-# Inteligência Artificial no Smart Alarm
+# Artificial Intelligence in Smart Alarm
 
-Toda a lógica de IA e análise comportamental do Smart Alarm é implementada em C# utilizando ML.NET. O backend não depende de Python, Go ou Node.js para processamento de IA, garantindo segurança, performance e integração nativa com o restante da stack .NET.
+All AI and behavioral analysis logic in Smart Alarm is implemented in C# using ML.NET. The backend does not depend on Python, Go, or Node.js for AI processing, ensuring security, performance, and native integration with the rest of the .NET stack.
 
-## Tecnologias Utilizadas
+## Technologies Used
 
-- **ML.NET:** Treinamento, validação e inferência de modelos de machine learning em C#
-- **Azure Functions:** Deploy serverless dos serviços de IA
-- **Application Insights:** Monitoramento e logging dos modelos em produção
+- **ML.NET:** Training, validation, and inference of machine learning models in C#
+- **Azure Functions:** Serverless deployment of AI services
+- **Application Insights:** Monitoring and logging of models in production
 
-## Princípios
+## Principles
 
-- Testabilidade e reprodutibilidade dos modelos
-- Segurança e privacidade dos dados
-- Observabilidade e monitoramento contínuo
+- Testability and reproducibility of models
+- Data security and privacy
+- Observability and continuous monitoring
 
-## Observações
+## Notes
 
-- Integrações com Python para IA só são permitidas via bibliotecas .NET, nunca expondo dados sensíveis fora do ambiente C#.
+- Integrations with Python for AI are only allowed via .NET libraries, never exposing sensitive data outside the C# environment.

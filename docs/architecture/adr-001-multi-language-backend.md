@@ -1,169 +1,98 @@
-# ADR-001: Arquitetura Webapp de Alarmes Inteligentes para Usuários Neurodivergentes
+# ADR-001: Intelligent Alarm Webapp Architecture for Neurodivergent Users
 
-**Status:** Aceito  
-**Data:** 2025-01-02  
-**Autores:** Equipe de Desenvolvimento  
-**Decisores:** Product Owner, Tech Lead  
+**Status:** Accepted  
+**Date:** 2025-01-02  
+**Authors:** Development Team  
+**Decision Makers:** Product Owner, Tech Lead  
 
-## Contexto e Problema
+## Context and Problem
 
-Estamos desenvolvendo um webapp de alarmes inteligentes especificamente projetado para usuários neurodivergentes (ADHD, TEA). O sistema deve combinar funcionalidade de alarmes com interface visual de calendário, incorporando IA para análise comportamental e sugestões contextuais.
+We are developing an intelligent alarm webapp specifically designed for neurodivergent users (ADHD, ASD). The system must combine alarm functionality with a calendar visual interface, incorporating AI for behavioral analysis and contextual suggestions.
 
-Os principais desafios arquiteturais identificados incluem a necessidade de alta confiabilidade para alarmes críticos (medicação), interface acessível para diferentes tipos de neurodiversidade, funcionamento offline robusto, segurança OWASP-compliant para dados sensíveis de saúde mental, e compliance com LGPD para informações de neurodiversidade.
+The main architectural challenges identified include the need for high reliability for critical alarms (medication), an accessible interface for different types of neurodiversity, robust offline operation, OWASP-compliant security for sensitive mental health data, and LGPD compliance for neurodiversity information.
 
-O modelo de negócio exige arquitetura open source com opção managed service, implementação de Bring Your Own Key (BYOK) para IA, e custos operacionais mínimos durante a fase de validação de mercado.
+The business model requires open source architecture with a managed service option, Bring Your Own Key (BYOK) implementation for AI, and minimal operational costs during the market validation phase.
 
-## Decisões Arquiteturais
+## Architectural Decisions
 
 ### Frontend: React 18 + TypeScript + PWA
 
-**Decisão:** Utilizaremos React 18 com TypeScript como base do frontend, implementando Progressive Web App (PWA) para funcionalidade offline e notificações.
+**Decision:** We will use React 18 with TypeScript as the frontend base, implementing a Progressive Web App (PWA) for offline functionality and notifications.
 
-**Justificativa:** React oferece o maior ecossistema de componentes acessíveis disponível, facilitando implementação de features específicas para neurodiversidade. TypeScript reduz significativamente bugs relacionados a tipos de dados, crítico quando lidamos com informações de saúde mental. PWA permite funcionalidade offline essencial para alarmes e notificações confiáveis across platforms.
+**Justification:** React offers the largest ecosystem of accessible components available, facilitating the implementation of features specific to neurodiversity. TypeScript significantly reduces bugs related to data types, which is critical when dealing with mental health information. PWA enables essential offline functionality for reliable alarms and notifications across platforms.
 
-O suporte nativo do React para server-side rendering e code splitting permite otimizações de performance importantes para usuários com limitações de conectividade ou dispositivos menos potentes, comum na população neurodivergente que pode ter restrições financeiras.
+React's native support for server-side rendering and code splitting allows important performance optimizations for users with connectivity limitations or less powerful devices, common among the neurodivergent population who may have financial constraints.
 
-### Biblioteca de Calendário: React Big Calendar (MVP) → FullCalendar Premium (Escala)
+### Calendar Library: React Big Calendar (MVP) → FullCalendar Premium (Scale)
 
-**Decisão:** Começaremos com React Big Calendar para MVP, migrando para FullCalendar Premium quando revenue justificar o investimento.
+**Decision:** We will start with React Big Calendar for the MVP, migrating to FullCalendar Premium when revenue justifies the investment.
 
-**Justificativa:** React Big Calendar oferece 80% das funcionalidades necessárias gratuitamente, incluindo drag-and-drop nativo e múltiplas views (mês, semana, dia). Esta decisão alinha com nossa estratégia de custos mínimos durante validação.
+**Justification:** React Big Calendar offers 80% of the necessary features for free, including native drag-and-drop and multiple views (month, week, day). This decision aligns with our strategy of minimal costs during validation.
 
-FullCalendar Premium ($480/ano) será considerado quando precisarmos de Timeline views específicas para visualização de padrões temporais complexos ou quando tivermos base de usuários pagantes que justifique o investimento. A migração é relativamente simples devido às APIs similares.
+FullCalendar Premium ($480/year) will be considered when we need specific Timeline views for complex temporal pattern visualization or when we have a paying user base that justifies the investment. Migration is relatively simple due to similar APIs.
 
-### Backend: Arquitetura Unificada em C#
+### Backend: Unified Architecture in C#
 
-**Decisão:** Todo o backend será implementado exclusivamente em C# (.NET), utilizando Clean Architecture e princípios SOLID. Serão mantidos serviços especializados (Alarmes, IA/Análise Comportamental, Integração), porém todos escritos em C# e organizados como projetos .NET independentes, preferencialmente serverless (Azure Functions).
+**Decision:** The entire backend will be implemented exclusively in C# (.NET), using Clean Architecture and SOLID principles. Specialized services (Alarms, AI/Behavioral Analysis, Integration) will be maintained, but all written in C# and organized as independent .NET projects, preferably serverless (Azure Functions).
 
-**Justificativa:** A unificação em C#/.NET elimina a complexidade de múltiplas linguagens, facilita o onboarding, padroniza logging, tratamento de erros e segurança, e permite uso de ferramentas de análise estática, testes e monitoramento consistentes. O .NET moderno (6+) oferece performance próxima a linguagens de baixo nível para operações CRUD, além de excelente produtividade e suporte corporativo. ML.NET cobre as necessidades de IA, e integrações externas são feitas com bibliotecas maduras do ecossistema .NET. Toda comunicação entre serviços é feita via eventos assíncronos (Azure Event Grid) ou HTTP, sempre com autenticação, validação e tratamento de erros robustos.
+**Justification:** Unification in C#/.NET eliminates the complexity of multiple languages, facilitates onboarding, standardizes logging, error handling, and security, and allows the use of consistent static analysis, testing, and monitoring tools. Modern .NET (6+) offers performance close to low-level languages for CRUD operations, as well as excellent productivity and corporate support. ML.NET covers AI needs, and external integrations are done with mature libraries from the .NET ecosystem. All communication between services is done via asynchronous events (Azure Event Grid) or HTTP, always with authentication, validation, and robust error handling.
 
-**Padrões adotados:** Clean Architecture, SOLID, testes automatizados, validação de entrada/saída, logging estruturado, autenticação JWT/FIDO2, e documentação via Swagger/OpenAPI. Todos os serviços são projetados para serem testáveis, seguros e facilmente auditáveis.
+**Adopted Patterns:** Clean Architecture, SOLID, automated testing, input/output validation, structured logging, JWT/FIDO2 authentication, and documentation via Swagger/OpenAPI. All services are designed to be testable, secure, and easily auditable.
 
 ### Cloud Provider: Oracle Cloud Infrastructure (OCI)
 
-**Decisão:** OCI será nosso provider principal para todas as funcionalidades serverless e database.
+**Decision:** OCI will be our main provider for all serverless and database functionalities.
 
-**Justificativa:** Análise de custos demonstrou economia de 70% comparado a AWS para cargas similares. OCI oferece 10TB data egress gratuitos mensalmente versus $0.09/GB após limites mínimos em outros providers. Para aplicação global, isto representa economia significativa.
+**Justification:** Cost analysis showed a 70% saving compared to AWS for similar workloads. OCI offers 10TB of free data egress per month versus $0.09/GB after minimal limits on other providers. For a global application, this represents significant savings.
 
-O Always Free Tier da OCI (2 milhões invocações permanentemente gratuitas) permite desenvolvimento e testing extensivo sem custos operacionais. Embora o ecossistema seja menor que AWS, funcionalidades necessárias (Functions, Autonomous Database, Object Storage) estão maduras e bem documentadas.
+OCI's Always Free Tier (2 million permanently free invocations) allows extensive development and testing without operational costs. Although the ecosystem is smaller than AWS, the necessary functionalities (Functions, Autonomous Database, Object Storage) are mature and well documented.
 
 ### Database: Oracle Autonomous Database (JSON Document Store)
 
-**Decisão:** Utilizaremos Oracle Autonomous Database configurado como JSON Document Store para dados principais.
+**Decision:** We will use Oracle Autonomous Database configured as a JSON Document Store for main data.
 
-**Justificativa:** Esta solução oferece flexibilidade NoSQL para dados não-estruturados (configurações personalizadas de neurodiversidade) com capacidade SQL quando necessário para analytics e relatórios.
+**Justification:** This solution offers NoSQL flexibility for unstructured data (custom neurodiversity configurations) with SQL capability when needed for analytics and reporting.
 
-O modelo converged database elimina necessidade de múltiplos sistemas de dados, reduzindo complexidade operacional e custos. Time-to-Live (TTL) nativo permite expiração automática de alarmes antigos, importante para compliance LGPD.
+The converged database model eliminates the need for multiple data systems, reducing operational complexity and costs. Native Time-to-Live (TTL) allows automatic expiration of old alarms, important for LGPD compliance.
 
-### Autenticação e Segurança: FIDO2/WebAuthn + AES-256-GCM
+### Authentication and Security: FIDO2/WebAuthn + AES-256-GCM
 
-**Decisão:** Implementaremos autenticação passwordless via FIDO2/WebAuthn com criptografia AES-256-GCM para dados em repouso.
+**Decision:** We will implement passwordless authentication via FIDO2/WebAuthn with AES-256-GCM encryption for data at rest.
 
-**Justificativa:** Usuários neurodivergentes frequentemente enfrentam dificuldades com gerenciamento de senhas complexas. WebAuthn oferece autenticação mais acessível via biometrics ou hardware keys.
+**Justification:** Neurodivergent users often face difficulties managing complex passwords. WebAuthn offers more accessible authentication via biometrics or hardware keys.
 
-AES-256-GCM com chaves derivadas via PBKDF2 (100,000 iterações) garante segurança OWASP-compliant. Para dados de neurodiversidade, implementaremos técnicas de k-anonimato e privacidade diferencial para analytics que preservem privacidade individual.
+AES-256-GCM with keys derived via PBKDF2 (100,000 iterations) ensures OWASP-compliant security. For neurodiversity data, we will implement k-anonymity and differential privacy techniques for analytics that preserve individual privacy.
 
-### PWA e Notificações: Service Workers + Firebase Cloud Messaging (Fallback)
+### PWA and Notifications: Service Workers + Firebase Cloud Messaging (Fallback)
 
-**Decisão:** Service Workers como mecanismo primário de notificações, com FCM como fallback para browsers limitados.
+**Decision:** Service Workers as the primary notification mechanism, with FCM as a fallback for limited browsers.
 
-**Justificativa:** Service Workers oferecem controle total sobre notificações e funcionamento offline. iOS Safari tem limitações significativas, mas PWA instalada na home screen contorna a maioria das restrições.
+**Justification:** Service Workers offer full control over notifications and offline operation. iOS Safari has significant limitations, but a PWA installed on the home screen circumvents most restrictions.
 
-FCM como fallback garante que notificações funcionem mesmo em browsers com throttling agressivo de background processing. Estratégia de redundância é crítica para alarmes relacionados a medicação onde falhas podem ter consequências sérias.
+FCM as a fallback ensures notifications work even in browsers with aggressive background processing throttling. Redundancy strategy is critical for medication-related alarms where failures can have serious consequences.
 
-### IA e Análise Comportamental: ML.NET (Backend C#)
+### AI and Behavioral Analysis: ML.NET (C# Backend)
 
-**Decisão:** Toda a análise comportamental e IA será realizada no backend em C# utilizando ML.NET, com possibilidade de integração a bibliotecas Python apenas quando absolutamente necessário, via Python.NET, mantendo a lógica principal e dados sensíveis sempre sob controle do backend C#.
+**Decision:** All behavioral analysis and AI will be performed in the backend in C# using ML.NET, with the possibility of integrating Python libraries only when absolutely necessary, via Python.NET, always keeping the main logic and sensitive data under C# backend control.
 
-**Justificativa:** ML.NET cobre a maioria dos cenários de machine learning necessários para análise de padrões, recomendações e personalização. Quando necessário, integrações com TensorFlow ou PyTorch podem ser feitas via bibliotecas .NET. O processamento local no frontend pode ser considerado apenas para funcionalidades offline, mas nunca para dados sensíveis.
+**Justification:** ML.NET covers most machine learning scenarios needed for pattern analysis, recommendations, and personalization. When necessary, integrations with TensorFlow or PyTorch can be done via .NET libraries. Local processing on the frontend may be considered only for offline features, but never for sensitive data.
 
-### APIs Externas: Integração via C#
+### External APIs: Integration via C#
 
-**Decisão:** Todas as integrações com APIs externas (calendários, notificações, feriados, etc.) serão feitas via bibliotecas .NET, com autenticação, logging e tratamento de erros padronizados.
+**Decision:** All integrations with external APIs (calendars, notifications, holidays, etc.) will be done via .NET libraries, with standardized authentication, logging, and error handling.
 
-**Justificativa:** O ecossistema .NET oferece bibliotecas maduras para integração com a maioria dos provedores relevantes. Sempre que possível, preferir APIs RESTful e autenticação OAuth2/OpenID Connect.
+**Justification:** The .NET ecosystem offers mature libraries for integration with most relevant providers. Whenever possible, prefer RESTful APIs and OAuth2/OpenID Connect authentication.
 
-### Licenciamento: Business Source License 1.1
+### Licensing: Business Source License 1.1
 
-**Decisão:** Core será lançado sob Business Source License 1.1, transitioning para GPL após 4 anos.
+**Decision:** The core will be released under Business Source License 1.1, transitioning to GPL after 4 years.
 
-**Justificativa:** BSL permite código aberto para desenvolvimento e teste, mas protege contra competitors comerciais diretos por 4 anos. Após este período, transição automática para GPL garante contribuição para comunidade open source.
+**Justification:** BSL allows open source for development and testing but protects against direct commercial competitors for 4 years. After this period, automatic transition to GPL ensures contribution to the open source community.
 
-Arquitetura híbrida mantém core open source mientras enterprise features (BYOK, advanced analytics) permanecem proprietárias, permitindo sustentabilidade financeira.
+The hybrid architecture keeps the core open source while enterprise features (BYOK, advanced analytics) remain proprietary, allowing financial sustainability.
 
-### Sincronização Offline: Dexie.js + CRDT (Conflict-free Replicated Data Types)
+### Offline Sync: Dexie.js + CRDT (Conflict-free Replicated Data Types)
 
-**Decisão:** Dexie.js para storage local com CRDT para conflict resolution automático.
+**Decision:** Dexie.js for local storage with CRDT for automatic conflict resolution.
 
-**Justificativa:** Dexie.js oferece interface moderna sobre IndexedDB com support para versioning e migrations. Storage Persistence API garante que dados não sejam removidos por browser cleanup automático.
-
-CRDT com Last-Write-Wins pattern oferece conflict resolution automático quando multiple devices modificam mesmos alarmes offline. Para alarmes, priority rules (habilitado > desabilitado, horário anterior > posterior) resolvem conflicts deterministicamente.
-
-## Alternativas Consideradas
-
-### AWS Lambda + DynamoDB
-Rejeitado devido a custos 70% superiores para carga similar e lock-in vendor mais agressivo. DynamoDB exige modelagem de dados mais rígida, complicando desenvolvimento inicial.
-
-### Azure Cosmos DB + Functions
-Pricing baseado em Request Units mostrou-se mais caro para padrões de uso esperados. Vantagem de SQL queries não justifica custo adicional para MVP.
-
-### FullCalendar Premium desde início
-$480/ano representaria 10-15% do budget inicial estimado. React Big Calendar oferece funcionalidades suficientes para validação de produto.
-
-### Autenticação tradicional com senhas
-Rejected por impacto negativo em acessibilidade para usuários neurodivergentes. WebAuthn oferece melhor experiência de usuário e segurança superior.
-
-## Impactos da Decisão
-
-### Técnicos
-Arquitetura permite desenvolvimento ágil e seguro, com onboarding facilitado, manutenção simplificada e evolução clara para componentes especializados, todos em C#. PWA garante funcionamento cross-platform sem necessidade de apps nativos.
-
-### Financeiros
-Stack escolhido mantém custos operacionais under $50/mês para primeiros 10k usuários, allowing extensive validation period antes de major investments.
-
-### Experiência do Usuário
-Interface de calendário torna alarmes mais intuitivos para usuários neurodivergentes comparado a listas tradicionais. Funcionamento offline elimina ansiedade relacionada a connectivity issues.
-
-### Compliance e Segurança
-Arquitetura atende requisitos OWASP Top 10 e LGPD para dados de saúde mental. Processamento local de IA minimiza exposure de dados sensíveis.
-
-## Riscos e Mitigações
-
-### Risco: Limitações de interoperabilidade com bibliotecas Python para ML
-**Mitigação:** Utilizar Python.NET apenas em casos excepcionais, sempre encapsulando a chamada em um serviço C# e nunca expondo dados sensíveis fora do ambiente .NET. Manter CI/CD padronizado, infraestrutura como código (Bicep/Terraform), e monitoramento centralizado (Application Insights).
-
-### Risco: Latência na comunicação entre funções
-**Mitigação:** Implementar cache Redis/ElastiCache para dados frequentemente acessados, minimizar chamadas síncronas entre funções, e usar event-driven architecture para operações que podem ser assíncronas.
-
-### Risco: Oracle descontinuando ou alterando pricing de OCI
-**Mitigação:** Arquitectura baseada em containers e APIs padrão facilita migração futura. Manter abstraction layer para cloud services.
-
-### Risco: Limitações de PWA em iOS Safari
-**Mitigação:** Capacitor como fallback para wrapper nativo mantendo codebase web. Extensive testing em dispositivos iOS reais.
-
-### Risco: Complexidade de CRDT para conflict resolution
-**Mitigação:** Implementação incremental starting com Last-Write-Wins simples, evolving para CRDT apenas se conflitos se tornarem problemáticos.
-
-### Risco: Performance de TensorFlow.js em dispositivos antigos
-**Mitigação:** Fallback para processing server-side via Python functions quando device capabilities são insuficientes.
-
-### Risco: Performance de ML.NET em cenários de IA muito avançados
-**Mitigação:** Avaliar integração com serviços externos de IA (Azure Cognitive Services) caso ML.NET não atenda requisitos de performance ou precisão, sempre mantendo controle e privacidade dos dados.
-
-## Decisões Futuras Necessárias
-
-Implementação específica de BYOK (Bring Your Own Key) architecture para serviços de IA externos requer research adicional sobre envelope encryption e key management.
-
-Estratégia de monetização entre planos gratuitos/pagos needs validation com early users antes de finalizar features premium vs core.
-
-Integration com healthcare systems (FHIR compatibility) pode ser considerada depois de market validation para enterprise adoption.
-
-## Critérios de Sucesso
-
-Lighthouse Score > 90 em todas categorias para performance web. Notification reliability > 95% cross-platform para alarmes críticos. WCAG 2.1 AA compliance para acessibilidade. Time to create alarm < 30 segundos para UX optimization.
-
-Budget operacional maintenance under $100/mês para primeiros 6 meses allowing sustainable development cycle com feedback loop de usuários reais.
-
----
-
-*Esta ADR será revisada após primeiros 3 meses de development ou quando major assumptions forem invalidadas por dados de uso real.*
+*This ADR will be reviewed after the first 3 months of development or when major assumptions are invalidated by real usage data.*

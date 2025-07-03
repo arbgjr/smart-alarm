@@ -1,49 +1,49 @@
 # Deployment & Security - Backend C#/.NET
 
-Este documento descreve as práticas recomendadas de deployment e segurança para o backend do Smart Alarm, agora totalmente baseado em C#/.NET e Azure Functions.
+This document describes the recommended deployment and security practices for the Smart Alarm backend, now fully based on C#/.NET and Azure Functions.
 
-## 🔒 Princípios de Segurança
+## 🔒 Security Principles
 
-- **Autenticação e Autorização:**
-  - JWT/FIDO2 para autenticação.
-  - RBAC e claims para autorização.
-  - Integração nativa com Azure AD e OAuth2/OpenID Connect.
-- **Proteção de Dados:**
-  - Criptografia em trânsito (TLS 1.2+) e em repouso (Azure Key Vault).
-  - Segregação de ambientes (dev, staging, prod) e secrets via Azure Key Vault.
-- **Validação e Sanitização:**
-  - Validação rigorosa de entrada/saída (FluentValidation).
-  - Sanitização de dados para evitar XSS, SQL Injection e outros ataques.
-- **Observabilidade e Auditoria:**
-  - Logging estruturado (Serilog), tracing distribuído (Application Insights), alertas e auditoria de eventos críticos.
-- **Política de Erros:**
-  - Tratamento centralizado de exceções, respostas amigáveis e sem vazamento de detalhes sensíveis.
+- **Authentication and Authorization:**
+  - JWT/FIDO2 for authentication.
+  - RBAC and claims for authorization.
+  - Native integration with Azure AD and OAuth2/OpenID Connect.
+- **Data Protection:**
+  - Encryption in transit (TLS 1.2+) and at rest (Azure Key Vault).
+  - Environment segregation (dev, staging, prod) and secrets managed via Azure Key Vault.
+- **Validation and Sanitization:**
+  - Strict input/output validation (FluentValidation).
+  - Data sanitization to prevent XSS, SQL Injection, and other attacks.
+- **Observability and Auditing:**
+  - Structured logging (Serilog), distributed tracing (Application Insights), alerts, and auditing of critical events.
+- **Error Policy:**
+  - Centralized exception handling, user-friendly responses, and no leakage of sensitive details.
 
-## 🚀 Deployment Automatizado
+## 🚀 Automated Deployment
 
 - **CI/CD:**
-  - Pipelines automatizados (GitHub Actions/Azure DevOps) para build, testes, análise estática e deploy.
-  - Deploy serverless via Azure Functions, com slots para blue/green deployment.
-  - Infraestrutura como código (Bicep/Terraform) para provisionamento seguro e reprodutível.
-- **Testes:**
-  - Testes automatizados (unitários, integração, segurança) obrigatórios no pipeline.
-  - Cobertura mínima de 80% para código crítico.
-- **Monitoramento:**
-  - Application Insights para métricas, logs e alertas.
-  - Dashboards customizados para acompanhamento de saúde e segurança.
+  - Automated pipelines (GitHub Actions/Azure DevOps) for build, tests, static analysis, and deployment.
+  - Serverless deployment via Azure Functions, with slots for blue/green deployment.
+  - Infrastructure as code (Bicep/Terraform) for secure and reproducible provisioning.
+- **Testing:**
+  - Automated tests (unit, integration, security) required in the pipeline.
+  - Minimum 80% coverage for critical code.
+- **Monitoring:**
+  - Application Insights for metrics, logs, and alerts.
+  - Custom dashboards for health and security monitoring.
 
-## 🛡️ Checklist de Segurança
+## 🛡️ Security Checklist
 
-- [x] Autenticação JWT/FIDO2 implementada
-- [x] Secrets e chaves protegidos no Azure Key Vault
-- [x] Logging e tracing ativados
-- [x] Validação e sanitização de dados em todos os endpoints
-- [x] CI/CD com análise estática e testes automatizados
-- [x] Deploy serverless (Azure Functions) com slots
-- [x] Monitoramento e alertas ativos
+- [x] JWT/FIDO2 authentication implemented
+- [x] Secrets and keys protected in Azure Key Vault
+- [x] Logging and tracing enabled
+- [x] Data validation and sanitization on all endpoints
+- [x] CI/CD with static analysis and automated tests
+- [x] Serverless deployment (Azure Functions) with slots
+- [x] Monitoring and alerts active
 
-## Observações Finais
+## Final Notes
 
-- Todo o backend é C#/.NET, sem dependências de Go, Python ou Node.js.
-- Práticas de segurança e deployment seguem recomendações da Microsoft e OWASP.
-- Revisões periódicas de segurança e compliance são mandatórias.
+- The entire backend is C#/.NET, with no dependencies on Go, Python, or Node.js.
+- Security and deployment practices follow Microsoft and OWASP recommendations.
+- Periodic security and compliance reviews are mandatory.

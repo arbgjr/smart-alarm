@@ -1,113 +1,125 @@
-# Roadmap MVP - Sistema de Alarmes Inteligentes
-*Planejamento para desenvolvimento híbrido: Vibe Coding + IA-Assisted*
+# MVP Roadmap - Intelligent Alarm System
+*Planning for hybrid development: Vibe Coding + AI-Assisted*
 
-## 🎯 Definição do MVP (Produto Mínimo Viável)
+## 🎯 MVP Definition (Minimum Viable Product)
 
-### Core Features Essenciais
-**Criação e gestão básica de alarmes** com interface simples e acessível, permitindo criar, editar e deletar alarmes com horários específicos, análise de IA comportamental, integração com calendários externos. **Notificações browser nativas** utilizando Service Workers para alertas confiáveis. **Armazenamento local** com persistência usando localStorage/IndexedDB para funcionar offline. **Interface responsiva** otimizada para dispositivos móveis e desktop com foco em acessibilidade.
+### Essential Core Features
+**Basic alarm creation and management** with a simple and accessible interface, user authentication, allowing creation, editing, and deletion of alarms with specific times, behavioral AI analysis, integration with external calendars. **Native browser notifications** using Service Workers for reliable alerts. **Local storage** with persistence using localStorage/IndexedDB to work offline. **Responsive interface** optimized for mobile and desktop devices with a focus on accessibility.
 
-### Funcionalidades Excluídas do MVP
-Sincronização em nuvem, backup automático e autenticação de usuários ficarão para versões futuras.
+### Features Excluded from MVP
+Cloud sync, and automatic backup will be left for future versions.
 
-## 📊 Stack Técnico Zero-Cost
+## 📊 Zero-Cost Technical Stack
 
-### Frontend (Vibe Coding + IA-Assisted)
-**React 18 + TypeScript** como base principal, utilizando **Create React App** ou **Vite** para setup rápido. **React Big Calendar** (gratuito, MIT license) substituindo FullCalendar Premium para views de calendário. **Tailwind CSS** para estilização rápida e responsiva. **React Hook Form** para formulários otimizados. **Lucide React** para ícones vetoriais gratuitos.
+### Frontend (Vibe Coding + AI-Assisted)
+**React 18 + TypeScript** as the main base, using **Create React App** or **Vite** for quick setup. **React Big Calendar** (free, MIT license) replacing FullCalendar Premium for calendar views. **Tailwind CSS** for fast and responsive styling. **React Hook Form** for optimized forms. **Lucide React** for free vector icons.
 
-### Backend e Storage
-**Frontend-only architecture** eliminando custos de servidor, usando **IndexedDB** via **Dexie.js** para armazenamento local robusto. **Web Storage API** para configurações simples. **Service Workers** para notificações e cache offline.
+### Backend and Storage
+The backend is built entirely with C# (.NET 8+), following Clean Architecture and SOLID principles to ensure maintainability, testability, and scalability. All services are designed as independent serverless functions, deployed on Oracle Cloud Infrastructure (OCI Functions) for cost efficiency and scalability. The architecture includes:
 
-### Deployment Gratuito
-**Vercel** oferece hosting gratuito ilimitado para projetos pessoais, com SSL automático e CDN global. **Netlify** como alternativa com mesmas vantagens. **GitHub Pages** para projetos open source simples.
+- **RESTful APIs** for alarm management, AI routines, and integrations
+- **Modular separation**: Domain, Application, Infrastructure, and API layers
+- **Validation**: All input/output is validated using FluentValidation
+- **Security**: JWT/FIDO2 authentication, RBAC, LGPD compliance, and structured logging (Serilog)
+- **Observability**: Integrated with OCI Application Performance Monitoring and Application Insights
+- **Data Storage**: Oracle Autonomous Database for persistent data, Object Storage for files and logs
+- **Integrations**: External APIs via HttpClientFactory, Polly, and OAuth2/OpenID Connect
+- **Documentation**: Swagger/OpenAPI for all endpoints
+- **Testing**: Automated with xUnit and Moq, targeting at least 80% coverage for critical code
 
-## 🗓️ Cronograma de Desenvolvimento (8 semanas)
+No secrets are exposed in code or logs. All infrastructure is managed as code (Terraform), and the system is designed for future extensibility and cloud portability.
 
-### Semana 1-2: Setup e Fundações
-**Configuração do ambiente de desenvolvimento** usando Vite + React + TypeScript + Tailwind. **Setup do projeto no GitHub** com estrutura de pastas organizada. **Implementação da arquitetura base** com hooks customizados para gerenciamento de estado. **Design system básico** com componentes acessíveis fundamentais.
+### Free Deployment
+**Vercel** offers unlimited free hosting for personal projects, with automatic SSL and global CDN. **Netlify** as an alternative with the same advantages. **GitHub Pages** for simple open source projects.
 
-Durante esta fase, você utilizará prompts de IA para gerar a estrutura inicial do projeto, configurações de ESLint/Prettier, e componentes base. O desenvolvimento será principalmente vibe coding para sentir a arquitetura certa.
+## 🗓️ Development Timeline (8 weeks)
 
-### Semana 3-4: Core Functionality
-**Sistema de alarmes básico** com CRUD completo (Create, Read, Update, Delete). **Integração com Dexie.js** para persistência local robusta. **Componentes de formulário** para criação/edição de alarmes. **Lista e visualização** de alarmes criados.
+### Weeks 1-2: Setup and Foundations
+**Development environment setup** using Vite + React + TypeScript + Tailwind. **Project setup on GitHub** with organized folder structure. **Implementation of the base architecture** with custom hooks for state management. **Basic design system** with fundamental accessible components.
 
-Aqui o desenvolvimento assistido por IA será intenso para implementar a lógica de negócio, validações de formulário e manipulação de dados. Use prompts específicos para gerar funções de validação, hooks customizados e utils.
+During this phase, you will use AI prompts to generate the initial project structure, ESLint/Prettier configurations, and base components. Development will be mainly vibe coding to feel out the right architecture.
 
-### Semana 5-6: Interface de Calendário
-**Integração do React Big Calendar** com dados locais de alarmes. **Customização visual** para melhor UX neurodivergente. **Navigation e views** (mês, semana, dia). **Drag and drop básico** para reposicionamento de alarmes.
+### Weeks 3-4: Core Functionality
+**Basic alarm system** with full CRUD (Create, Read, Update, Delete). **Integration with Dexie.js** for robust local persistence. **Form components** for creating/editing alarms. **List and view** of created alarms.
 
-O vibe coding será crucial aqui para ajustar a UX específica para neurodivergentes, enquanto IA pode ajudar com a integração técnica do calendário.
+Here, AI-assisted development will be intense to implement business logic, form validations, and data handling. Use specific prompts to generate validation functions, custom hooks, and utils.
 
-### Semana 7: Notificações e PWA
-**Service Workers implementation** para notificações browser. **Web Push API** integration básica. **PWA manifest** para instalação como app. **Offline functionality** com cache strategies.
+### Weeks 5-6: Calendar Interface
+**Integration of React Big Calendar** with local alarm data. **Visual customization** for better neurodivergent UX. **Navigation and views** (month, week, day). **Basic drag and drop** for repositioning alarms.
 
-Desenvolvimento assistido por IA será valioso para implementar Service Workers corretamente, pois é código complexo e propenso a erros.
+Vibe coding will be crucial here to adjust the UX specifically for neurodivergents, while AI can help with the technical integration of the calendar.
 
-### Semana 8: Polish e Launch
-**Testes de usabilidade** com foco em acessibilidade. **Performance optimization** e code splitting. **Bug fixes** e refinamentos finais. **Documentation** e deploy production.
+### Week 7: Notifications and PWA
+**Service Workers implementation** for browser notifications. **Basic Web Push API** integration. **PWA manifest** for app installation. **Offline functionality** with cache strategies.
 
-## 🛠️ Estratégia de Desenvolvimento Híbrido
+AI-assisted development will be valuable for correctly implementing Service Workers, as it is complex and error-prone code.
 
-### Vibe Coding (30% do tempo)
-Usado para **decisões de UX/UI** onde intuição e experiência humana são cruciais. **Arquitetura e estrutura** do projeto, definindo como componentes se relacionam. **Debugging complexo** onde contexto e entendimento profundo são necessários. **Customizações específicas** para neurodivergência que requerem empatia e compreensão humana.
+### Week 8: Polish and Launch
+**Usability testing** with a focus on accessibility. **Performance optimization** and code splitting. **Bug fixes** and final refinements. **Documentation** and production deploy.
 
-### IA-Assisted Development (70% do tempo)
-**Implementação de funcionalidades** onde lógica é clara e estruturada. **Configurações e boilerplate** como setup de ferramentas, types TypeScript, interfaces. **Implementação de APIs** do browser (Service Workers, IndexedDB, Notifications). **Testing** com geração de test cases e mocks. **Refactoring** e optimization de código existente.
+## 🛠️ Hybrid Development Strategy
 
-### Prompts Estratégicos para IA
-"Implemente um hook customizado para gerenciar alarmes com TypeScript, incluindo CRUD operations e validações". "Crie um Service Worker que gerencie notificações de alarmes com fallback para browsers que não suportam". "Gere uma interface TypeScript para objeto Alarm com todas as propriedades necessárias e validações Zod".
+### Vibe Coding (30% of the time)
+Used for **UX/UI decisions** where intuition and human experience are crucial. **Project architecture and structure**, defining how components relate. **Complex debugging** where context and deep understanding are needed. **Specific customizations** for neurodivergence that require empathy and human understanding.
 
-## 💰 Breakdown de Custos MVP
+### AI-Assisted Development (70% of the time)
+**Feature implementation** where logic is clear and structured. **Configurations and boilerplate** such as tool setup, TypeScript types, interfaces. **Implementation of browser APIs** (Service Workers, IndexedDB, Notifications). **Testing** with generation of test cases and mocks. **Refactoring** and optimization of existing code.
 
-### Custos Zero Garantidos
-**Desenvolvimento**: Apenas tempo pessoal + ferramentas gratuitas. **Hosting**: Vercel/Netlify free tier (ilimitado para projetos pessoais). **Domain**: Usar subdomain gratuito (.vercel.app ou .netlify.app). **Storage**: Browser local storage (sem custos de servidor). **APIs**: Apenas APIs browser nativas (gratuitas).
+### Strategic Prompts for AI
+"Implement a custom hook to manage alarms with TypeScript, including CRUD operations and validations." "Create a Service Worker that manages alarm notifications with fallback for browsers that do not support it." "Generate a TypeScript interface for the Alarm object with all necessary properties and Zod validations."
 
-### Investimentos Opcionais Futuros
-**Domain personalizado**: $10-15/ano para .com. **Analytics**: Google Analytics (gratuito) ou Plausible ($9/mês). **Error tracking**: Sentry free tier (5k errors/mês). **Performance monitoring**: Web Vitals gratuito via Google.
+## 💰 MVP Cost Breakdown
 
-## 📈 Roadmap Pós-MVP (Versões Futuras)
+### Guaranteed Zero Costs
+**Development**: Only personal time + free tools. **Hosting**: Vercel/Netlify free tier (unlimited for personal projects). **Domain**: Use free subdomain (.vercel.app or .netlify.app). **Storage**: Browser local storage (no server costs). **APIs**: Only native browser APIs (free).
 
-### V1.1: Melhorias de UX (Semanas 9-12)
-**Temas visuais** para diferentes tipos de neurodivergência. **Configurações avançadas** de acessibilidade. **Import/Export** de dados para backup manual. **Múltiplos tipos de alarme** (medicação, trabalho, exercício).
+### Optional Future Investments
+**Custom domain**: $10-15/year for .com. **Analytics**: Google Analytics (free) or Plausible ($9/month). **Error tracking**: Sentry free tier (5k errors/month). **Performance monitoring**: Web Vitals free via Google.
 
-### V1.2: Inteligência Básica (Semanas 13-20)
-**Sugestões automáticas** baseadas em padrões de uso local. **Templates de alarmes** para situações comuns. **Análise local** de efetividade usando TensorFlow.js. **Insights simples** sobre hábitos pessoais.
+## 📈 Post-MVP Roadmap (Future Versions)
 
-### V2.0: Sincronização e Backend (Semanas 21-32)
-**Sistema de contas** com autenticação segura. **Sync cross-device** usando arquitetura serverless. **Backup em nuvem** com criptografia end-to-end. **Integração com calendários** externos.
+### V1.1: UX Improvements (Weeks 9-12)
+**Visual themes** for different types of neurodivergence. **Advanced accessibility settings**. **Import/Export** of data for manual backup. **Multiple alarm types** (medication, work, exercise).
 
-## 🔧 Ferramentas e Recursos Recomendados
+### V1.2: Basic Intelligence (Weeks 13-20)
+**Automatic suggestions** based on local usage patterns. **Alarm templates** for common situations. **Local effectiveness analysis** using TensorFlow.js. **Simple insights** about personal habits.
 
-### Desenvolvimento
-**VS Code** com extensões React/TypeScript. **GitHub Copilot** ou **Codeium** para AI-assisted coding. **React Developer Tools** para debugging. **Lighthouse** para performance auditing.
+### V2.0: Sync and Backend (Weeks 21-32)
+**Account system** with secure authentication. **Cross-device sync** using serverless architecture. **Cloud backup** with end-to-end encryption. **Integration with external calendars**.
 
-### Design e UX
-**Figma** (gratuito) para wireframes e protótipos. **Accessibility Insights** para testes de acessibilidade. **WebAIM** para validação WCAG. **Contrast ratio checkers** online gratuitos.
+## 🔧 Recommended Tools and Resources
 
-### Testing e Quality
-**Vitest** para unit testing (mais rápido que Jest). **Testing Library** para component testing. **ESLint + Prettier** para code quality. **Husky** para git hooks e quality gates.
+### Development
+**VS Code** with React/TypeScript extensions. **GitHub Copilot** or **Codeium** for AI-assisted coding. **React Developer Tools** for debugging. **Lighthouse** for performance auditing.
 
-## 🎯 Métricas de Sucesso MVP
+### Design and UX
+**Figma** (free) for wireframes and prototypes. **Accessibility Insights** for accessibility testing. **WebAIM** for WCAG validation. **Free online contrast ratio checkers**.
 
-### Técnicas
-**Lighthouse Score** > 90 em todas as categorias. **Bundle size** < 500KB gzipped. **First Load** < 3 segundos. **Offline functionality** 100% operacional.
+### Testing and Quality
+**Vitest** for unit testing (faster than Jest). **Testing Library** for component testing. **ESLint + Prettier** for code quality. **Husky** for git hooks and quality gates.
 
-### Usuário
-**Time to create alarm** < 30 segundos. **Notification reliability** > 95%. **Accessibility compliance** WCAG 2.1 AA. **Mobile usability** sem problemas críticos.
+## 🎯 MVP Success Metrics
 
-### Negócio
-**Daily active usage** de early adopters. **Retention rate** após 7 dias de uso. **User feedback** qualitativo sobre UX neurodivergente. **Feature adoption** dos core functionalities.
+### Technical
+**Lighthouse Score** > 90 in all categories. **Bundle size** < 500KB gzipped. **First Load** < 3 seconds. **Offline functionality** 100% operational.
+
+### User
+**Time to create alarm** < 30 seconds. **Notification reliability** > 95%. **Accessibility compliance** WCAG 2.1 AA. **Mobile usability** with no critical issues.
+
+### Business
+**Daily active usage** from early adopters. **Retention rate** after 7 days of use. **Qualitative user feedback** on neurodivergent UX. **Feature adoption** of core functionalities.
 
 ## 🚀 Go-to-Market Strategy
 
-### Validação Inicial
-**Landing page simples** explicando o conceito. **Early access** para comunidades neurodivergentes online. **User interviews** com potential users para feedback. **Product Hunt** launch para visibilidade inicial.
+### Initial Validation
+**Simple landing page** explaining the concept. **Early access** for online neurodivergent communities. **User interviews** with potential users for feedback. **Product Hunt** launch for initial visibility.
 
 ### Community Building
-**Open source approach** para atrair contribuidores. **Documentation completa** para adoção técnica. **Blog posts** sobre desenvolvimento e neurodivergência. **Social media** targeting comunidades ADHD/autism.
+**Open source approach** to attract contributors. **Complete documentation** for technical adoption. **Blog posts** about development and neurodivergence. **Social media** targeting ADHD/autism communities.
 
 ### Growth Loops
-**Word of mouth** através de UX excepcional. **GitHub stars** para credibilidade técnica. **User-generated content** e testimonials. **Partnerships** com organizações de neurodivergência.
+**Word of mouth** through exceptional UX. **GitHub stars** for technical credibility. **User-generated content** and testimonials. **Partnerships** with neurodivergence organizations.
 
 ---
 
-*Este roadmap prioriza aprendizado rápido, custos mínimos e validação de mercado, estabelecendo fundações sólidas para crescimento futuro sustentável.*
+*This roadmap prioritizes fast learning, minimal costs, and market validation, establishing solid foundations for sustainable future growth.*
