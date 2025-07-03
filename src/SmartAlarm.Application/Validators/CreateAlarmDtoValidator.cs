@@ -11,12 +11,15 @@ namespace SmartAlarm.Application.Validators
         public CreateAlarmDtoValidator()
         {
             RuleFor(x => x.Name)
-                .NotEmpty().WithMessage("Nome do alarme é obrigatório.")
-                .MaximumLength(100).WithMessage("Nome deve ter até 100 caracteres.");
+                .NotEmpty().WithMessage("Validation.Required.AlarmName")
+                .Length(1, 100).WithMessage("Validation.Length.AlarmNameMaxLength");
+
             RuleFor(x => x.Time)
-                .NotEmpty().WithMessage("Horário do alarme é obrigatório.");
+                .NotEmpty().WithMessage("Validation.Required.AlarmTime")
+                .GreaterThan(DateTime.Now).WithMessage("Validation.Range.FutureDateTime");
+
             RuleFor(x => x.UserId)
-                .NotEmpty().WithMessage("Usuário é obrigatório.");
+                .NotEmpty().WithMessage("Validation.Required.UserId");
         }
     }
 }

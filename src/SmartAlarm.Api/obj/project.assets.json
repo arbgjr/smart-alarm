@@ -5068,6 +5068,7 @@
   "projectFileDependencyGroups": {
     "net8.0": [
       "FluentValidation.AspNetCore >= 11.3.1",
+      "FluentValidation.DependencyInjectionExtensions >= 11.11.0",
       "MediatR.Extensions.Microsoft.DependencyInjection >= 11.1.0",
       "Microsoft.AspNetCore.Authentication.JwtBearer >= 8.0.0",
       "Microsoft.AspNetCore.OpenApi >= 8.0.4",
@@ -5144,6 +5145,10 @@
           "FluentValidation.AspNetCore": {
             "target": "Package",
             "version": "[11.3.1, )"
+          },
+          "FluentValidation.DependencyInjectionExtensions": {
+            "target": "Package",
+            "version": "[11.11.0, )"
           },
           "MediatR.Extensions.Microsoft.DependencyInjection": {
             "target": "Package",

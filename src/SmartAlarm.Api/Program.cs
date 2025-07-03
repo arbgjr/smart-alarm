@@ -3,8 +3,8 @@ using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using OpenTelemetry.Metrics;
 using SmartAlarm.Api.Middleware;
+using SmartAlarm.Api.Configuration;
 using SmartAlarm.KeyVault.Extensions;
-using FluentValidation.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,7 +38,10 @@ builder.Services.AddSwaggerGen(options =>
     options.EnableAnnotations();
     // Remover IncludeXmlComments se não houver arquivo XML
 });
-builder.Services.AddFluentValidationAutoValidation();
+
+// Configurar validação com FluentValidation
+builder.Services.AddFluentValidationConfig();
+
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = "Bearer";
@@ -74,7 +77,7 @@ app.UseSerilogRequestLogging();
 app.UseKeyVault();
 
 // Tratamento global de erros
-// app.UseGlobalExceptionHandler(); // Se existir, senão comentar
+app.UseGlobalExceptionHandler();
 
 app.UseSwagger();
 app.UseSwaggerUI(options =>
