@@ -35,7 +35,7 @@ namespace SmartAlarm.Infrastructure.Repositories
 
         public Task<IEnumerable<Integration>> GetByAlarmIdAsync(Guid alarmId)
         {
-            var result = _integrations.Values.Where(i => i.Id == alarmId);
+            var result = _integrations.Values.Where(i => i.AlarmId == alarmId);
             return Task.FromResult(result);
         }
 
