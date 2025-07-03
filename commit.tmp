@@ -1,9 +1,1 @@
-docs: Add comprehensive instructions and guidelines for various services and code practices
-
-- Introduced detailed instructions for AI, Alarm, Integration, and other services.
-- Established code review standards for C#/.NET and frontend projects.
-- Created guidelines for commit messages, testing standards, and error handling.
-- Developed a Memory Bank system for maintaining project context and updates.
-- Implemented prompts for API development, code review, and unit test generation.
-- Documented system patterns and best practices for architecture and code organization.
-- Enhanced GitHub Copilot integration with custom instruction files for improved code quality.
+docs: Atualizar e expandir a documentação do projeto Smart Alarm, incluindo contextos ativo, produto, progresso, padrões de sistema e tecnologias
