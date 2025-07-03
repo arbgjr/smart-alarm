@@ -1,1 +1,13 @@
-feat: adicionar repositórios em memória para gerenciamento de alarmes, usuários, rotinas e integrações
+feat: Implement JWT authentication and user context service
+
+- Added JwtConfig for JWT authentication setup.
+- Introduced ValidationConfig for FluentValidation integration.
+- Created AlarmController with CRUD operations for alarms.
+- Implemented global exception handling middleware.
+- Added CurrentUserService to manage user context from JWT claims.
+- Developed ICurrentUserService interface for user context abstraction.
+- Documented API endpoints and authentication in markdown files.
+- Created GetAlarmByIdHandler and corresponding query for fetching alarms.
+- Implemented AlarmRepository for Oracle DB with Dapper.
+- Added unit tests for AlarmController and authentication scenarios.
+- Included a PowerShell script for running tests with detailed logging.

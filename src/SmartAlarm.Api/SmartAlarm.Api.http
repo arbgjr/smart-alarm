@@ -3,4 +3,43 @@
 GET {{SmartAlarm.Api_HostAddress}}/weatherforecast/
 Accept: application/json
 
+### Alarm API HTTP Examples (.rest)
+
+# Create Alarm
+POST http://localhost:5000/api/v1/alarms
+Content-Type: application/json
+Authorization: Bearer {{jwt_token}}
+
+{
+  "name": "Wake Up",
+  "time": "2025-07-03T07:00:00Z",
+  "enabled": true
+}
+
 ###
+# List Alarms (for authenticated user)
+GET http://localhost:5000/api/v1/alarms
+Authorization: Bearer {{jwt_token}}
+
+###
+# Get Alarm by Id
+GET http://localhost:5000/api/v1/alarms/{{alarm_id}}
+Authorization: Bearer {{jwt_token}}
+
+###
+# Update Alarm
+PUT http://localhost:5000/api/v1/alarms/{{alarm_id}}
+Content-Type: application/json
+Authorization: Bearer {{jwt_token}}
+
+{
+  "id": "{{alarm_id}}",
+  "name": "Wake Up Updated",
+  "time": "2025-07-03T07:30:00Z",
+  "enabled": false
+}
+
+###
+# Delete Alarm
+DELETE http://localhost:5000/api/v1/alarms/{{alarm_id}}
+Authorization: Bearer {{jwt_token}}

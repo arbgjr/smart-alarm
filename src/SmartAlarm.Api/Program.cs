@@ -2,6 +2,8 @@ using Serilog;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using OpenTelemetry.Metrics;
+using SmartAlarm.Api.Middleware;
+using FluentValidation.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,7 +21,6 @@ builder.Services.AddOpenTelemetry()
     .WithTracing(tracing => tracing
         .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("SmartAlarm.Api"))
         .AddAspNetCoreInstrumentation()
-        .AddHttpClientInstrumentation()
         .AddOtlpExporter())
     .WithMetrics(metrics => metrics
         .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("SmartAlarm.Api"))
@@ -28,21 +29,57 @@ builder.Services.AddOpenTelemetry()
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new() { Title = "SmartAlarm API", Version = "v1" });
+    options.EnableAnnotations();
+    // Remover IncludeXmlComments se não houver arquivo XML
+});
+builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = "Bearer";
+    options.DefaultChallengeScheme = "Bearer";
+})
+.AddJwtBearer("Bearer", options =>
+{
+    var jwtSettings = builder.Configuration.GetSection("Jwt");
+    options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtSettings["Issuer"],
+        ValidAudience = jwtSettings["Audience"],
+        IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(jwtSettings["Secret"])),
+        ClockSkew = TimeSpan.FromMinutes(2)
+    };
+});
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<SmartAlarm.Api.Services.ICurrentUserService, SmartAlarm.Api.Services.CurrentUserService>();
 
 var app = builder.Build();
 
-// Observabilidade: logging, tracing e métricas
-app.UseObservability();
+// Observabilidade padrão
+app.UseSerilogRequestLogging();
 
-// Endpoint de métricas Prometheus
-app.UseOpenTelemetryPrometheusScrapingEndpoint();
+// Tratamento global de erros
+// app.UseGlobalExceptionHandler(); // Se existir, senão comentar
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+app.UseSwagger();
+app.UseSwaggerUI(options =>
 {
-    app.MapOpenApi();
-}
+    options.SwaggerEndpoint("/swagger/v1/swagger.json", "SmartAlarm API v1");
+    options.RoutePrefix = string.Empty;
+});
+
+app.UseHttpsRedirection();
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapControllers();
 
 var summaries = new[]
 {

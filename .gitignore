@@ -409,3 +409,99 @@ config/development/
 # Temporary uploads
 uploads/temp/
 temp-files/
+
+# ===== .NET / C# =====
+# Build artifacts
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio Code
+.vscode/
+
+# Rider
+.idea/
+*.sln.iml
+
+# NuGet
+*.nupkg
+packages/
+TestResults/
+*.trx
+
+# Resharper
+_ReSharper*/
+*.[Rr]e[Ss]harper
+
+# DotCover
+*.dotCover
+
+# NCrunch
+*.ncrunch*
+.*crunch*.local.xml
+
+# TeamCity
+_TeamCity*
+
+# DotTrace
+*.dotTrace
+
+# Windows image file caches
+Thumbs.db
+
+# Folder config file
+Desktop.ini
+
+# OS generated files
+.DS_Store
+
+# Rider logs
+.idea/.idea.log
+
+# Local history for VSCode
+.history/
+
+# ASP.NET Scaffolding
+ScaffoldingReadMe.txt
+
+# Logs
+*.log
+
+# Azure Pipelines
+*.azure-pipelines.yml
+
+# Local secrets
+secrets.json
+appsettings.Development.json
+appsettings.Local.json
+
+# Docker
+**/docker-compose.*.yml
+**/Dockerfile*
+
+# Terraform
+*.tfstate
+*.tfstate.backup
+.terraform/
+
+# Ignore test coverage
+coverage/
+coverage*.json
+
+# Ignore generated swagger
+swagger/
+
+# Ignore publish output
+publish/
+
+# Ignore local tools
+.localtoolstarget
+
+# ===== FIM .NET / C# =====
