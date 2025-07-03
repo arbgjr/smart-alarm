@@ -5,7 +5,7 @@ description: "Implementar revisão de código seguindo princípios SOLID, segura
 
 # Prompt: Code Review
 
-Your goal is to review the proposed code for the file <ask the file path> or all Smart Alarm project.
+Your goal is to review the proposed code for the file <ask the file path> or all Smart Alarm #codebase project.
 
 ## Requirements:
 - According to the file type follow the rules defined in 
