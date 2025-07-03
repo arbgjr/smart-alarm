@@ -15,6 +15,9 @@ namespace SmartAlarm.Domain.Entities
         public bool IsActive { get; private set; }
         public Guid AlarmId { get; private set; }
 
+        // Private constructor for EF Core
+        private Schedule() { }
+
         public Schedule(Guid id, TimeOnly time, ScheduleRecurrence recurrence, DaysOfWeek daysOfWeek, Guid alarmId)
         {
             if (alarmId == Guid.Empty)

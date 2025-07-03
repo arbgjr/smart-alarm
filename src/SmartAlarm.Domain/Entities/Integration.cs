@@ -18,6 +18,9 @@ namespace SmartAlarm.Domain.Entities
         public DateTime CreatedAt { get; private set; }
         public DateTime? LastExecutedAt { get; private set; }
 
+        // Private constructor for EF Core
+        private Integration() { }
+
         public Integration(Guid id, Name name, string provider, string configuration, Guid alarmId)
         {
             if (name == null) throw new ArgumentNullException(nameof(name));
