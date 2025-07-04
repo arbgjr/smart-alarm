@@ -7,8 +7,9 @@ The domain layer represents the core business logic of the Smart Alarm system, f
 ## Entities
 
 ### Alarm
+
 - **Purpose**: Represents a user-configured alarm
-- **Key Properties**: 
+- **Key Properties**:
   - Id, Name (Value Object), Time, Enabled status, UserId
   - Collections of Routines, Integrations, and Schedules
   - Audit fields (CreatedAt, LastTriggeredAt)
@@ -19,8 +20,9 @@ The domain layer represents the core business logic of the Smart Alarm system, f
   - Tracks trigger history
 
 ### User
+
 - **Purpose**: Represents a system user
-- **Key Properties**: 
+- **Key Properties**:
   - Id, Name (Value Object), Email (Value Object), IsActive status
   - Audit fields (CreatedAt, LastLoginAt)
 - **Business Rules**:
@@ -29,8 +31,9 @@ The domain layer represents the core business logic of the Smart Alarm system, f
   - Can be activated/deactivated
 
 ### Schedule
+
 - **Purpose**: Defines when an alarm should trigger
-- **Key Properties**: 
+- **Key Properties**:
   - Time (TimeOnly), Recurrence pattern, Days of week, Active status
 - **Business Rules**:
   - Supports multiple recurrence patterns (Once, Daily, Weekly, Weekdays, Weekends)
@@ -38,8 +41,9 @@ The domain layer represents the core business logic of the Smart Alarm system, f
   - Contains business logic for determining trigger eligibility
 
 ### Routine
+
 - **Purpose**: Defines actions to execute when alarm triggers
-- **Key Properties**: 
+- **Key Properties**:
   - Name (Value Object), Actions collection, Active status
 - **Business Rules**:
   - Prevents duplicate actions
@@ -47,8 +51,9 @@ The domain layer represents the core business logic of the Smart Alarm system, f
   - Can be activated/deactivated
 
 ### Integration
+
 - **Purpose**: External service integration for alarm actions
-- **Key Properties**: 
+- **Key Properties**:
   - Name (Value Object), Provider, JSON Configuration
 - **Business Rules**:
   - Validates JSON configuration format
@@ -58,16 +63,19 @@ The domain layer represents the core business logic of the Smart Alarm system, f
 ## Value Objects
 
 ### Name
+
 - **Purpose**: Represents and validates entity names
 - **Validation**: Non-empty, non-whitespace strings
 - **Behavior**: Immutable, implements equality comparison
 
 ### Email
+
 - **Purpose**: Represents and validates email addresses
 - **Validation**: Uses regex pattern for proper email format validation
 - **Behavior**: Immutable, implements equality comparison
 
 ### TimeConfiguration
+
 - **Purpose**: Timezone-aware time handling
 - **Features**: Time zone validation, UTC conversion, today date calculation
 - **Behavior**: Immutable, handles timezone conversions
@@ -75,6 +83,7 @@ The domain layer represents the core business logic of the Smart Alarm system, f
 ## Domain Services
 
 ### IAlarmDomainService
+
 - **Purpose**: Complex business logic for alarm operations
 - **Responsibilities**:
   - User alarm creation validation
@@ -83,6 +92,7 @@ The domain layer represents the core business logic of the Smart Alarm system, f
   - Next trigger time calculation
 
 ### IUserDomainService
+
 - **Purpose**: Complex business logic for user operations
 - **Responsibilities**:
   - Email uniqueness validation
@@ -92,6 +102,7 @@ The domain layer represents the core business logic of the Smart Alarm system, f
 ## Repository Interfaces
 
 All entities have corresponding repository interfaces following the Repository pattern:
+
 - `IAlarmRepository`
 - `IUserRepository`
 - `IScheduleRepository`
@@ -120,3 +131,68 @@ All entities have corresponding repository interfaces following the Repository p
 - **100% Coverage** of business rules and validation logic
 - **AAA Pattern** (Arrange, Act, Assert) consistently applied
 - **FluentAssertions** for readable test assertions
+
+## View
+
+```mermaid
+classDiagram
+    class Alarm {
+        +Guid Id
+        +Name Name
+        +Time TimeOnly
+        +bool Enabled
+        +Guid UserId
+        +List~Routine~ Routines
+        +List~Integration~ Integrations
+        +List~Schedule~ Schedules
+        +DateTime CreatedAt
+        +DateTime LastTriggeredAt
+    }
+    class User {
+        +Guid Id
+        +Name Name
+        +Email Email
+        +bool IsActive
+        +DateTime CreatedAt
+        +DateTime LastLoginAt
+    }
+    class Schedule {
+        +TimeOnly Time
+        +string RecurrencePattern
+        +List~DayOfWeek~ DaysOfWeek
+        +bool Active
+    }
+    class Routine {
+        +Name Name
+        +List~Action~ Actions
+        +bool Active
+    }
+    class Integration {
+        +Name Name
+        +string Provider
+        +string JsonConfiguration
+    }
+    class Name {
+        +string Value
+    }
+    class Email {
+        +string Value
+    }
+    class TimeConfiguration {
+        +TimeOnly Time
+        +string TimeZone
+    }
+
+    Alarm "1" -- "1" User : belongs to
+    Alarm "1" -- "*" Schedule : has
+    Alarm "1" -- "*" Routine : has
+    Alarm "1" -- "*" Integration : has
+    User "1" -- "*" Alarm : owns
+    Routine "1" -- "*" Action : has
+    Alarm "1" -- "*" TimeConfiguration : uses
+    User "1" -- "1" Name : has
+    User "1" -- "1" Email : has
+    Alarm "1" -- "1" Name : has
+    Routine "1" -- "1" Name : has
+    Integration "1" -- "1" Name : has
+```

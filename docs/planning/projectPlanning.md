@@ -1,45 +1,47 @@
-As etapas para iniciar o desenvolvimento do Smart Alarm, seguindo Clean Architecture, SOLID e os padrões definidos no projeto são:
+# Planning
 
-1. **Definição do Domínio (Domain Layer)**
-   - Modelar entidades principais: Alarm, Routine, User, Integration.
-   - Definir interfaces de repositório (ex: IAlarmRepository, IUserRepository).
-   - Criar Value Objects e regras de negócio essenciais.
+## The steps to start the development of Smart Alarm, following Clean Architecture, SOLID, and the patterns defined in the project are
 
-2. **Camada de Aplicação (Application Layer)**
-   - Implementar os primeiros Use Cases (ex: CreateAlarm, ListAlarms).
-   - Definir DTOs para entrada/saída.
-   - Criar Handlers e comandos/queries (ex: CreateAlarmCommand, ListAlarmsQuery).
+1. **Domain Definition (Domain Layer)**
+   - Model main entities: Alarm, Routine, User, Integration. ✅
+   - Define repository interfaces (e.g., IAlarmRepository, IUserRepository). ✅
+   - Create Value Objects and essential business rules. ✅
 
-3. **Validação e Tratamento de Erros**
-   - Configurar FluentValidation para comandos principais.
-   - Implementar tratamento de exceções e logging estruturado (Serilog).
+2. **Application Layer**
+   - Implement the first Use Cases (e.g., CreateAlarm, ListAlarms). ⚠️ (Initial handlers defined, but full implementation of use cases still pending)
+   - Define DTOs for input/output. ✅
+   - Create Handlers and commands/queries (e.g., CreateAlarmCommand, ListAlarmsQuery). ⚠️ (Structure created, but coverage of all commands/queries not yet complete)
 
-4. **Infraestrutura Inicial**
-   - Implementar repositórios fake/in-memory para testes.
-   - Estruturar integração com banco de dados (Autonomous DB) via interfaces.
+3. **Validation and Error Handling**
+   - Configure FluentValidation for main commands. ⚠️ (Initial configuration done, but full coverage of all commands still pending)
+   - Implement exception handling and structured logging (Serilog). ✅
+
+4. **Initial Infrastructure**
+   - Implement fake/in-memory repositories for testing. ✅
+   - Structure database integration (Autonomous DB) via interfaces. ⚠️ (Initial integration done, but production tests and validation still pending)
 
 5. **API (Presentation Layer)**
-   - Criar controllers básicos para Alarm (ex: POST /alarms, GET /alarms).
-   - Configurar Swagger/OpenAPI para documentação automática.
+   - Create basic controllers for Alarm (e.g., POST /alarms, GET /alarms). ⚠️ (Controllers structured, but main endpoints not yet implemented)
+   - Configure Swagger/OpenAPI for automatic documentation. ⚠️ (Initial configuration done, but full endpoint documentation still pending)
 
-6. **Testes Automatizados**
-   - Escrever testes unitários para os principais casos de uso (xUnit, Moq).
-   - Cobrir cenários de sucesso, erro e borda.
+6. **Automated Tests**
+   - Write unit tests for the main use cases (xUnit, Moq). ⚠️ (Automation script created, but minimum 80% coverage not yet reached)
+   - Cover success, error, and edge scenarios. ⚠️ (Partial coverage, error and edge case scenarios still pending)
 
-7. **Segurança Básica**
-   - Estruturar autenticação JWT (sem integração externa inicialmente).
-   - Garantir que endpoints estejam protegidos.
+7. **Basic Security**
+   - Structure JWT authentication (without external integration initially). ⚠️ (Structure planned, implementation pending)
+   - Ensure endpoints are protected. ⚠️ (Endpoint protection depends on JWT implementation)
 
-8. **Documentação**
-   - Documentar arquitetura inicial, endpoints e decisões no diretório docs.
+8. **Documentation**
+   - Document initial architecture, endpoints, and decisions in the docs directory. ⚠️ (Initial documentation created, detailed documentation of endpoints and decisions still pending)
 
 9. **Infrastructure Layer**
-   - Implements concrete repositories (e.g., AlarmRepository) based on domain interfaces.
-   - Handles integration with external services: databases (Autonomous DB), messaging, storage, logging, tracing, and metrics.
-   - Provides dependency injection configuration for all infrastructure services.
-   - Ensures infrastructure is decoupled from domain and application, allowing easy replacement or mocking for tests.
-   - Follows Clean Architecture: no direct dependencies from Domain/Application to Infrastructure.
+   - Implements concrete repositories (e.g., AlarmRepository) based on domain interfaces. ✅
+   - Handles integration with external services: databases (Autonomous DB), messaging, storage, logging, tracing, and metrics. ⚠️ (Autonomous DB integration done, other integrations and production tests still pending)
+   - Provides dependency injection configuration for all infrastructure services. ✅
+   - Ensures infrastructure is decoupled from domain and application, allowing easy replacement or mocking for tests. ✅
+   - Follows Clean Architecture: no direct dependencies from Domain/Application to Infrastructure. ✅
 
 > Note: The Infrastructure Layer is a fundamental part of Clean Architecture. It must be explicitly designed and documented, ensuring all external integrations and technical concerns are isolated from business logic.
 
-Essas etapas seguem exatamente o fluxo recomendado nos arquivos de instrução, Memory Bank e padrões do projeto. Se desejar, posso detalhar o plano de execução para cada etapa ou iniciar a implementação de algum item específico. Deseja avançar para o planejamento detalhado ou iniciar a execução de alguma dessas etapas?
+These steps follow exactly the flow recommended in the instruction files, Memory Bank, and project standards. If you wish, I can detail the execution plan for each step or start implementing a specific item. Would you like to proceed to detailed planning or start executing any of these steps?
