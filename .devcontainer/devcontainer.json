@@ -1,0 +1,34 @@
+// Devcontainer para Smart Alarm
+// Baseado em .NET 8, OCI CLI, Node.js (para frontend/PWA), e utilitários essenciais
+{
+    "name": "Smart Alarm DevContainer",
+    "image": "mcr.microsoft.com/devcontainers/dotnet:8.0",
+    "features": {
+        "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+        "ghcr.io/devcontainers/features/azure-cli:1": {},
+        "ghcr.io/devcontainers/features/node:1": {
+            "version": "lts"
+        },
+        "ghcr.io/devcontainers/features/powershell:1": {}
+    },
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "terminal.integrated.defaultProfile.linux": "bash",
+                "dotnet.defaultSolution": "SmartAlarm.sln"
+            },
+            "extensions": [
+                "ms-dotnettools.csharp",
+                "ms-azuretools.vscode-docker",
+                "ms-vscode.powershell",
+                "esbenp.prettier-vscode",
+                "dbaeumer.vscode-eslint"
+            ]
+        }
+    },
+    "postCreateCommand": "dotnet restore || true",
+    "remoteUser": "vscode",
+    "mounts": [
+        "source=${localWorkspaceFolder}/memory-bank,target=/workspace/memory-bank,type=bind,consistency=cached"
+    ]
+}

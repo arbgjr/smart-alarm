@@ -60,7 +60,7 @@ Reliability, scalability, and compliance enable everything else. The backend is 
 - Automated compliance checks
 
 ## Tech Stack Focus
-- C#/.NET 6+, OCI Functions, ML.NET
+- C#/.NET 8+, OCI Functions, ML.NET
 - PostgreSQL, Oracle Autonomous DB, Redis
 - Docker, Kubernetes, Terraform
 - Prometheus, Grafana, ELK stack

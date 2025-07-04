@@ -1,0 +1,31 @@
+{
+    "version": "0.2.0",
+    "tasks": [
+        {
+            "label": "build",
+            "type": "shell",
+            "command": "dotnet build || true",
+            "group": "build",
+            "problemMatcher": [
+                "$msCompile"
+            ]
+        },
+        {
+            "label": "test",
+            "type": "shell",
+            "command": "dotnet test --logger \"console;verbosity=detailed\" || true",
+            "group": "test",
+            "problemMatcher": [
+                "$msCompile"
+            ]
+        },
+        {
+            "label": "restore",
+            "type": "shell",
+            "command": "dotnet restore || true",
+            "problemMatcher": [
+                "$msCompile"
+            ]
+        }
+    ]
+}

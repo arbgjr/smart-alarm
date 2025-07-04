@@ -4,11 +4,15 @@ This report presents specific technical recommendations to implement an intellig
 
 ## Recommended technology stack
 
-**Frontend**: React 18 + TypeScript offers the best balance between performance, accessible component ecosystem, and robust PWA support. **FullCalendar** emerges as the superior solution for the visual interface, with 300+ settings, native drag-and-drop, and full WCAG accessibility support.
+**Frontend**: React 18 + TypeScript, Atomic Design, robust PWA support. **FullCalendar** recomendado para interface visual, acessibilidade WCAG e drag-and-drop nativo.
 
-**Backend**: Azure Functions with C# and CosmosDB provides the ideal serverless architecture, with competitive estimated cost and excellent performance. CosmosDB offers native TTL for expired alarms and consistent performance at any scale, while C# as a single language simplifies development and maintenance.
+**Backend**: C# (.NET 8+), Clean Architecture, Oracle Cloud Infrastructure (OCI) Functions como padrão serverless, ML.NET para IA contextual. Persistência principal em **Oracle Autonomous DB** e **PostgreSQL**; **Redis** para cache e operações rápidas.
 
-**PWA and Notifications**: Service Workers + FCM as fallback create the necessary redundancy strategy for reliable alarms. Implementing Web Locks API + Wake Lock API can keep alarms active even with background processing limitations.
+**PWA e Notificações**: Service Workers + FCM como fallback, Web Locks API + Wake Lock API para alarmes críticos, garantindo confiabilidade mesmo com restrições de background.
+
+**Infraestrutura**: Docker, Kubernetes, Terraform para IaC, **HashiCorp Vault** para gestão de segredos.
+
+**Observabilidade**: Prometheus, Grafana e Loki para métricas, dashboards e logs estruturados.
 
 ## OWASP and LGPD security architecture
 
@@ -58,13 +62,13 @@ The tiered pricing model allows Community (free, self-hosted), Enterprise ($50k-
 
 ## Recommended libraries and frameworks
 
-**Interface**: FullCalendar + dnd-kit for accessible drag-and-drop calendar, react-i18next for internationalization, React Aria for WCAG-compliant accessible components.
+**Interface**: FullCalendar + dnd-kit para calendário acessível, react-i18next para internacionalização, React Aria para acessibilidade WCAG.
 
-**PWA**: Workbox for optimized Service Workers, Dexie.js for offline storage, FCM for reliable push notifications.
+**PWA**: Workbox para Service Workers, Dexie.js para armazenamento offline, FCM para push notifications.
 
-**Backend**: AWS CDK for infrastructure-as-code, DynamoDB with TTL for alarms, Lambda for serverless processing.
+**Backend**: Oracle Cloud Infrastructure SDK, Oracle.ManagedDataAccess, Npgsql (PostgreSQL), StackExchange.Redis, Polly, HttpClientFactory, JWT/FIDO2, FluentValidation.
 
-**AI**: TensorFlow.js for local processing, OpenAI API with BYOK for advanced contextual analysis, differential privacy libraries for secure analytics.
+**AI**: ML.NET para IA contextual no backend, TensorFlow.js para processamento local, OpenAI API com BYOK para análises avançadas, bibliotecas de privacidade diferencial para analytics seguro.
 
 ## End-to-end encryption and backup
 
@@ -89,16 +93,19 @@ The business model allows break-even with ~500 enterprise clients or ~50k freemi
 ### FullCalendar vs Alternatives
 
 **FullCalendar (Paid)**:
+
 - **Premium**: $480/year for 1-10 developers
 - **Free core**: MIT license for non-premium features
 - **Premium features**: Timeline views, advanced drag-and-drop, commercial support
 
 **Free Alternatives**:
+
 - **React Big Calendar**: Completely free, MIT license, native drag-and-drop
 - **Simple React Calendar**: Free, lightweight, basic monthly view
 - **Schedule-X**: Free, material design, multiple views
 
 **Paid Alternatives**:
+
 - **DHTMLX Scheduler**: From $599, 30+ UI components
 - **Syncfusion Calendar**: $2,495-$4,995 for all components
 - **Bryntum Scheduler**: Pricing per product, free trial
@@ -107,29 +114,14 @@ The business model allows break-even with ~500 enterprise clients or ~50k freemi
 
 ### AWS vs Azure vs GCP vs OCI - Serverless + Database
 
-**AWS Lambda + DynamoDB**:
-- **Lambda**: $0.0000166667 per GB-second + $0.20 per 1M requests
-- **DynamoDB**: $1.25 per million WRUs, $0.25 per million RRUs (on-demand)
-- **Estimated cost for 10k users**: ~$15-50/month
-- **Free tier**: 1M requests Lambda + 25GB DynamoDB monthly
+**Oracle Cloud Functions + Autonomous Database/PostgreSQL/Redis**:
 
-**Azure Functions + Cosmos DB**:
-- **Functions**: Similar to Lambda, competitive pricing
-- **Cosmos DB**: Pricing based on Request Units (RUs), more expensive than DynamoDB
-- **Estimated cost for 10k users**: ~$30-80/month (more expensive)
-- **Advantage**: SQL-like queries, multiple data models
-
-**Google Cloud Functions + Firestore**:
-- **Cloud Functions**: $0.40 per million invocations, 2M free/month
-- **Firestore**: 20k writes + 50k reads free/day on Spark plan
-- **Estimated cost for 10k users**: ~$20-60/month
-- **Advantage**: Native real-time updates, easy scaling
-
-**Oracle Cloud Functions + Database**:
-- **Functions**: Competitive pricing, Provisioned Concurrency with discount
-- **Autonomous Database**: Up to 72% cheaper than AWS for similar workloads
+- **Functions**: Serverless padrão, escalabilidade automática, baixo custo.
+- **Autonomous Database**: Banco de dados gerenciado, alta disponibilidade, compliance e performance.
+- **PostgreSQL**: Alternativa open source para persistência relacional.
+- **Redis**: Cache e operações rápidas.
 - **Estimated cost for 10k users**: ~$10-35/month (cheaper)
-- **Advantage**: 10TB data egress free/month vs other providers
+- **Advantage**: 10TB data egress free/month, integração nativa com OCI Vault, Observability (Prometheus, Grafana, Loki).
 
 ### Final Cost Comparison (10k users/month)
 
@@ -141,16 +133,19 @@ The business model allows break-even with ~500 enterprise clients or ~50k freemi
 ### Recommended Stack by Budget
 
 **MVP/Bootstrap (< $50/month)**:
+
 - **Frontend**: React + React Big Calendar (free)
 - **Backend**: Oracle Cloud Functions + Autonomous Database
 - **OR**: AWS Lambda + DynamoDB (extensive free tier)
 
 **Startup/Growth ($50-200/month)**:
+
 - **Frontend**: React + FullCalendar Premium ($40/month)
 - **Backend**: AWS Lambda + DynamoDB (proven scale)
 - **OR**: Google Cloud Functions + Firestore (real-time features)
 
 **Enterprise (> $200/month)**:
+
 - **Frontend**: React + FullCalendar Premium + DHTMLX components
 - **Backend**: Azure Cosmos DB (SQL queries + multi-model)
 - **OR**: AWS with reserved capacity (up to 50% discount)
