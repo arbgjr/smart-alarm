@@ -1,5 +1,7 @@
 # Planejamento para resolver débitos técnicos existentes
 
+Verificar mais detalhes em [activeContext.md](/memory-bank/activeContext.md)
+
 ## 1. Integrações Reais com SDKs (OCI, Azure, AWS)
 
 **Pendências:**
