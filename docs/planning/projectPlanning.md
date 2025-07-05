@@ -1,5 +1,32 @@
 # Planning
 
+## Critérios de Pronto Globais (Global Definition of Done)
+
+Para cada etapa, considere como "concluído" apenas quando:
+
+- Código implementado, revisado e testado (unitário e integração)
+- Documentação atualizada (Swagger, Markdown, diagramas se aplicável)
+- Cobertura mínima de 80% para código crítico
+- Checklist de segurança e observabilidade atendido
+- Solution compilando
+- Testes unitários passando
+
+---
+
+## Fluxos de Negócio Prioritários (MVP)
+
+Priorize a implementação dos seguintes fluxos:
+
+- Cadastro de usuário
+- Login/autenticação (JWT/FIDO2)
+- Criação, edição, exclusão e consulta de alarmes
+- Ativação/desativação de alarme
+- Associação de rotinas a alarmes
+- Execução de rotina agendada
+- Notificações (e-mail/push)
+
+---
+
 Siga este plano completo, prático e detalhado para transformar o backend do Smart Alarm de um estágio de fundação para um sistema funcional, cobrindo todos os gaps e pontos fracos identificados:
 
 ---
@@ -40,6 +67,11 @@ public class Alarm
 }
 ```
 
+**Critério de pronto:**
+
+- Todas as entidades e VOs com propriedades, métodos, validações e testes unitários
+- Documentação de cada entidade/VO (resumo, exemplos de uso)
+
 ---
 
 ## 2. Serviços de Domínio
@@ -75,6 +107,11 @@ public class AlarmDomainService : IAlarmDomainService
     }
 }
 ```
+
+**Critério de pronto:**
+
+- Interfaces com métodos para todos os casos de uso do MVP
+- Implementações concretas com regras de negócio e testes unitários
 
 ---
 
@@ -113,6 +150,11 @@ public class CreateAlarmCommandValidator : AbstractValidator<CreateAlarmCommand>
 }
 ```
 
+**Critério de pronto:**
+
+- Commands, Queries, Handlers e Validators para todos os fluxos MVP
+- Testes unitários cobrindo sucesso, erro e edge cases
+
 ---
 
 ## 4. Infraestrutura
@@ -147,6 +189,37 @@ services.AddOpenTelemetryMetrics(builder =>
            .AddPrometheusExporter());
 ```
 
+**Detalhamento de Integrações:**
+
+- Mensageria: OCI Streaming (produção), RabbitMQ (dev/homologação)
+- Storage: OCI Object Storage (produção), MinIO (dev/homologação)
+- KeyVault: OCI Vault (produção), Azure Key Vault/AWS Secrets Manager (opcional)
+
+**Exemplo – Integração Mensageria (OCI Streaming):**
+
+```csharp
+// Exemplo de publicação de evento
+await ociStreamingClient.PublishAsync("alarms-topic", new AlarmEvent(...));
+```
+
+**Exemplo – Integração Storage (OCI Object Storage):**
+
+```csharp
+await ociStorageService.UploadAsync("bucket", "file.txt", stream);
+```
+
+**Exemplo – KeyVault Provider:**
+
+```csharp
+var secret = await ociVaultProvider.GetSecretAsync("DbPassword");
+```
+
+**Critério de pronto:**
+
+- Repositórios, mensageria, storage e keyvault com integração real e testes de integração
+- Métricas expostas em /metrics (Prometheus)
+- Tracing distribuído ativo (OpenTelemetry)
+
 ---
 
 ## 5. API Layer
@@ -173,6 +246,16 @@ public class AlarmsController : ControllerBase
 }
 ```
 
+**Detalhamento:**
+
+- Todos os endpoints RESTful documentados no Swagger
+- Tratamento global de erros (middleware)
+- Versionamento de API se necessário
+
+**Critério de pronto:**
+
+- Todos os endpoints MVP implementados, testados e documentados
+
 ---
 
 ## 6. Serverless & Deploy
@@ -192,6 +275,23 @@ public class AlarmFunction
     }
 }
 ```
+
+**Exemplo – Script de Deploy OCI Functions:**
+
+```bash
+fn deploy --app smart-alarm-backend --local --no-bump
+```
+
+**Detalhamento:**
+
+- Handlers para cada fluxo MVP expostos como functions
+- Pipeline CI/CD automatizado (ex: GitHub Actions)
+- Parametrização via KeyVault e variáveis de ambiente
+
+**Critério de pronto:**
+
+- Deploy automatizado funcionando (dev/homologação/produção)
+- Handlers serverless testados ponta a ponta
 
 ---
 
@@ -225,30 +325,160 @@ public async Task Should_Create_Alarm_And_Persist()
 }
 ```
 
+**Detalhamento:**
+
+- Testes unitários: xUnit, Moq, AAA, cobertura mínima 80%
+- Testes de integração: banco real/in-memory, mensageria, storage, autenticação
+- Testes de contrato de API (ex: Swagger/OpenAPI validation)
+
+**Critério de pronto:**
+
+- Todos os fluxos MVP cobertos por testes unitários e integração
+
+---
+
+Aqui está o conteúdo detalhado para substituir a seção **8. Observabilidade e Segurança** no seu arquivo projectPlanning.md. Basta copiar e colar no lugar da seção atual (incluindo exemplos e critérios):
+
 ---
 
 ## 8. Observabilidade e Segurança
 
-- **Métricas**: Expor métricas customizadas e de infraestrutura via Prometheus.
-- **Tracing**: Implementar tracing distribuído real com OpenTelemetry.
-- **Segurança**: Garantir autenticação JWT/FIDO2, RBAC e LGPD em todos os endpoints.
+**Métricas:**
 
-**Exemplo – Middleware de Tracing:**
+- Expor métricas customizadas e de infraestrutura via Prometheus, incluindo contadores, histogramas e métricas de negócio (ex: alarmes criados, falhas de autenticação).
+
+**Tracing:**
+
+- Implementar tracing distribuído real com OpenTelemetry, propagando contextos entre serviços e funções serverless.
+
+**Segurança:**
+
+- Garantir autenticação JWT/FIDO2, RBAC e LGPD em todos os endpoints, com validação centralizada e logs de acesso.
+
+**Exemplo – Middleware de Tracing e Logging:**
 
 ```csharp
 public class ObservabilityMiddleware
 {
-    // Implementação de tracing e logging estruturado
+    private readonly RequestDelegate _next;
+    private readonly ILogger<ObservabilityMiddleware> _logger;
+    public ObservabilityMiddleware(RequestDelegate next, ILogger<ObservabilityMiddleware> logger)
+    {
+        _next = next;
+        _logger = logger;
+    }
+    public async Task Invoke(HttpContext context)
+    {
+        var stopwatch = Stopwatch.StartNew();
+        try
+        {
+            await _next(context);
+            _logger.LogInformation("Request {Path} completed in {Elapsed}ms", context.Request.Path, stopwatch.ElapsedMilliseconds);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled exception on {Path}", context.Request.Path);
+            throw;
+        }
+    }
 }
 ```
+
+**Exemplo – Configuração OpenTelemetry:**
+
+```csharp
+services.AddOpenTelemetryTracing(builder =>
+    builder.AddAspNetCoreInstrumentation()
+           .AddHttpClientInstrumentation()
+           .AddOtlpExporter()
+);
+```
+
+**Checklist de Observabilidade:**
+
+- [ ] Métricas customizadas expostas em /metrics
+- [ ] Tracing distribuído ativo e integrado (OpenTelemetry)
+- [ ] Logs estruturados (Serilog) com correlação de requisições
+- [ ] Dashboards e alertas configurados (Prometheus, Grafana, Application Insights)
+
+**Checklist de Segurança:**
+
+- [ ] Autenticação JWT/FIDO2 implementada
+- [ ] RBAC aplicado em todos os endpoints
+- [ ] LGPD: consentimento granular, anonimização e logs de acesso
+- [ ] Testes de segurança automatizados (ex: OWASP ZAP, Snyk)
+- [ ] Sem segredos hardcoded (uso de KeyVault)
+
+**Critério de pronto:**
+
+- Todas as métricas e traces relevantes expostos e validados
+- Logs estruturados e rastreáveis
+- Autenticação, RBAC e LGPD implementados e testados
+- Checklists de observabilidade e segurança concluídos
 
 ---
 
 ## 9. Integrações Externas
 
-- **Mensageria**: Substituir mocks por integrações reais.
-- **Storage**: Testar upload/download real.
-- **KeyVault**: Validar leitura/escrita de segredos em todos os providers suportados.
+**Mensageria:**
+
+- Substituir todos os mocks por integrações reais com OCI Streaming (produção) e RabbitMQ (dev/homologação), cobrindo publicação e consumo de eventos.
+
+**Storage:**
+
+- Testar upload, download e deleção de arquivos em OCI Object Storage (produção) e MinIO (dev/homologação), validando permissões e integridade.
+
+**KeyVault:**
+
+- Validar leitura e escrita de segredos em todos os providers suportados (OCI Vault, Azure Key Vault, AWS Secrets Manager), incluindo rotação e acesso seguro.
+
+**Exemplo – Teste de Integração Mensageria:**
+
+```csharp
+[Fact]
+public async Task Deve_Publicar_E_Consumir_Evento()
+{
+    // Arrange: configurar broker real (RabbitMQ/OCI Streaming)
+    // Act: publicar evento e consumir
+    // Assert: validar recebimento e conteúdo
+}
+```
+
+**Exemplo – Teste de Integração Storage:**
+
+```csharp
+[Fact]
+public async Task Deve_Upload_Download_Arquivo()
+{
+    // Arrange: configurar storage real
+    // Act: upload e download
+    // Assert: validar integridade do arquivo
+}
+```
+
+**Exemplo – Teste de Integração KeyVault:**
+
+```csharp
+[Fact]
+public async Task Deve_Ler_Escrver_Segredo_KeyVault()
+{
+    // Arrange: configurar provider real
+    // Act: escrever e ler segredo
+    // Assert: validar valor retornado
+}
+```
+
+**Checklist de Integrações Externas:**
+
+- [ ] Mensageria real implementada e testada (OCI Streaming/RabbitMQ)
+- [ ] Storage real implementado e testado (OCI Object Storage/MinIO)
+- [ ] KeyVault real implementado e testado (OCI Vault/Azure/AWS)
+- [ ] Testes de integração cobrindo todos os fluxos críticos
+
+**Critério de pronto:**
+
+- Todas as integrações externas implementadas, testadas e validadas em ambiente real/homologação
+- Testes de integração cobrindo cenários de sucesso, erro e edge cases
 
 ---
 
@@ -275,3 +505,52 @@ public class ObservabilityMiddleware
 - Faça entregas incrementais, validando cada integração antes de avançar.
 - Atualize a documentação e o Memory Bank a cada etapa concluída.
 - Siga as instructions do projeto
+
+---
+
+## 11. Governança e Documentação
+
+**Governança:**
+
+- Definir responsáveis técnicos (owners) para cada serviço e domínio.
+- Estabelecer rotinas de revisão de código (code review) e atualização do Memory Bank.
+- Garantir que todas as decisões técnicas relevantes sejam registradas em ADRs (docs/architecture/adr-*.md).
+- Manter checklist de conformidade (segurança, LGPD, acessibilidade, cobertura de testes) em cada PR.
+
+**Documentação:**
+
+- Documentar endpoints e contratos de API via Swagger/OpenAPI, mantendo exemplos reais e versionamento.
+- Manter documentação de arquitetura, fluxos de negócio e integrações atualizada em Markdown (docs/architecture, docs/business, docs/integration).
+- Incluir diagramas de arquitetura e fluxos críticos (ex: PlantUML, Mermaid).
+- Garantir que cada entidade, serviço e fluxo crítico tenha exemplos de uso e critérios de pronto documentados.
+
+**Exemplo – Checklist de PR:**
+
+```markdown
+- [ ] Código compila sem erros
+- [ ] Atende requisitos da tarefa
+- [ ] Padrões de código seguidos
+- [ ] Sem código inútil/comentários de debug
+- [ ] Commits seguem padrão convencional
+- [ ] Testes unitários adicionados
+- [ ] Todos os testes passando
+- [ ] Documentação atualizada
+- [ ] Validação de dados implementada
+- [ ] Sem segredos hardcoded
+```
+
+**Checklist de Governança e Documentação:**
+
+- [ ] Owners definidos para cada serviço/domínio
+- [ ] ADRs atualizados para decisões técnicas
+- [ ] Memory Bank atualizado a cada entrega
+- [ ] Documentação de endpoints e arquitetura atualizada
+- [ ] Checklist de PR seguido em todas as entregas
+
+**Critério de pronto:**
+
+- Todos os fluxos críticos documentados (arquitetura, endpoints, integrações)
+- ADRs e Memory Bank atualizados
+- Checklist de PR seguido e validado
+
+---
