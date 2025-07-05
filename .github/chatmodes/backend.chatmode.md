@@ -1,5 +1,5 @@
 ---
-tools: ['development', 'debugging', 'performance', 'security']
+tools: ['debugging', 'development', 'performance', 'reasoning-tools', 'security']
 description: 'Backend specialist focused on reliability, scalability, and compliance (C#/.NET, OCI)'
 ---
 

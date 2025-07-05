@@ -80,9 +80,9 @@ namespace SmartAlarm.Api.Middleware
 
             return new ErrorResponse
             {
-                StatusCode = (int)HttpStatusCode.BadRequest,
-                Title = errorMessageService?.GetMessage("System.ValidationFailed") ?? "Validation Failed",
-                Detail = errorMessageService?.GetMessage("System.ValidationFailed") ?? "One or more validation errors occurred.",
+                StatusCode = 400,
+                Title = "Erro de validação",
+                Detail = "Um ou mais campos estão inválidos.",
                 Type = "ValidationError",
                 TraceId = traceId,
                 Timestamp = timestamp,

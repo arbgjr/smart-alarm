@@ -39,6 +39,38 @@ builder.Services.AddOpenTelemetry()
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddControllers();
+
+// Sobrescreve a resposta padrão de erro de modelo inválido
+builder.Services.Configure<Microsoft.AspNetCore.Mvc.ApiBehaviorOptions>(options =>
+{
+    options.InvalidModelStateResponseFactory = context =>
+    {
+        var traceId = context.HttpContext.TraceIdentifier;
+        var timestamp = DateTime.UtcNow;
+        var errors = context.ModelState
+            .Where(e => e.Value != null && e.Value.Errors != null && e.Value.Errors.Count > 0)
+            .Select(e => new SmartAlarm.Api.Models.ValidationError
+            {
+                Field = e.Key,
+                Message = e.Value?.Errors?.FirstOrDefault()?.ErrorMessage ?? "Campo inválido.",
+                Code = "NotEmptyValidator", // Pode ser aprimorado para mapear o código correto
+                AttemptedValue = e.Value?.AttemptedValue
+            })
+            .ToList();
+
+        var errorResponse = new SmartAlarm.Api.Models.ErrorResponse
+        {
+            StatusCode = 400,
+            Title = "Erro de validação",
+            Detail = "Um ou mais campos estão inválidos.",
+            Type = "ValidationError",
+            TraceId = traceId,
+            Timestamp = timestamp,
+            ValidationErrors = errors
+        };
+        return new Microsoft.AspNetCore.Mvc.BadRequestObjectResult(errorResponse);
+    };
+});
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {

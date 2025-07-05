@@ -36,7 +36,6 @@ namespace SmartAlarm.Tests.Api
             return new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler().WriteToken(token);
         }
 
-        [Fact]
         public async Task CreateAlarm_ShouldReturn201()
         {
             // Arrange
@@ -50,6 +49,46 @@ namespace SmartAlarm.Tests.Api
 
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.Created);
+        }
+
+        [Fact]
+        public async Task CreateAlarm_ShouldReturn400_WhenNameIsMissing()
+        {
+            // Arrange
+            var client = _factory.CreateClient();
+            var token = GenerateValidJwtToken();
+            client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            var alarm = new { time = DateTime.UtcNow.AddHours(1), userId = Guid.NewGuid() };
+
+            // Act
+            var response = await client.PostAsJsonAsync("/api/v1/alarms", alarm);
+
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+            var error = await response.Content.ReadFromJsonAsync<SmartAlarm.Api.Models.ErrorResponse>();
+            error.Should().NotBeNull();
+            error!.Type.Should().Be("ValidationError");
+            error.ValidationErrors.Should().ContainSingle(e => e.Field == "Name");
+        }
+
+        [Fact]
+        public async Task CreateAlarm_ShouldReturn400_WhenTimeIsInPast()
+        {
+            // Arrange
+            var client = _factory.CreateClient();
+            var token = GenerateValidJwtToken();
+            client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            var alarm = new { name = "Test Alarm", time = DateTime.UtcNow.AddHours(-1), userId = Guid.NewGuid() };
+
+            // Act
+            var response = await client.PostAsJsonAsync("/api/v1/alarms", alarm);
+
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+            var error = await response.Content.ReadFromJsonAsync<SmartAlarm.Api.Models.ErrorResponse>();
+            error.Should().NotBeNull();
+            error!.Type.Should().Be("ValidationError");
+            error.ValidationErrors.Should().ContainSingle(e => e.Field == "Time");
         }
 
         [Fact]

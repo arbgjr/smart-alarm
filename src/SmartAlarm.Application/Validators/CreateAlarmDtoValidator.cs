@@ -16,10 +16,15 @@ namespace SmartAlarm.Application.Validators
 
             RuleFor(x => x.Time)
                 .NotEmpty().WithMessage("Validation.Required.AlarmTime")
-                .GreaterThan(DateTime.Now).WithMessage("Validation.Range.FutureDateTime");
+                .Must(BeInTheFuture).WithMessage("Validation.Range.FutureDateTime");
 
             RuleFor(x => x.UserId)
                 .NotEmpty().WithMessage("Validation.Required.UserId");
+        }
+
+        private bool BeInTheFuture(DateTime time)
+        {
+            return time > DateTime.UtcNow;
         }
     }
 }
