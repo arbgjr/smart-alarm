@@ -40,7 +40,7 @@
    - Transaction rollback test temporarily disabled due to SQLite in-memory limitations. Registered as tech debt; will be re-enabled with real integration tests.
 
 8. **Documentation**
-   - Document initial architecture, endpoints, and decisions in the docs directory. ⚠️ (Initial documentation created, detailed documentation of endpoints and decisions still pending)
+   - Document initial architecture, endpoints, and decisions in the docs directory. ✅
 
 9. **Initial Infrastructure**
 
