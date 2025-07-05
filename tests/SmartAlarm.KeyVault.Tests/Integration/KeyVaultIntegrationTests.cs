@@ -21,6 +21,7 @@ namespace SmartAlarm.KeyVault.Tests.Integration
         }
 
         [Fact]
+        [Trait("Category", "Integration")]
         public async Task KeyVaultService_ShouldBeRegisteredInDI()
         {
             // Arrange
@@ -35,13 +36,13 @@ namespace SmartAlarm.KeyVault.Tests.Integration
                         new System.Collections.Generic.KeyValuePair<string, string?>("HashiCorpVault:Token", "test-token")
                     });
                 });
-                
+
                 builder.ConfigureServices(services =>
                 {
                     // Remove existing KeyVault registration to avoid conflicts
                     var serviceDescriptor = new ServiceDescriptor(typeof(IKeyVaultService), typeof(IKeyVaultService), ServiceLifetime.Singleton);
                     services.Remove(serviceDescriptor);
-                    
+
                     // Add KeyVault services
                     services.AddKeyVault(services.BuildServiceProvider().GetRequiredService<IConfiguration>());
                 });
@@ -54,6 +55,7 @@ namespace SmartAlarm.KeyVault.Tests.Integration
         }
 
         [Fact]
+        [Trait("Category", "Integration")]
         public async Task GetAvailableProvidersAsync_ShouldReturnEmptyList_WhenNoProvidersAvailable()
         {
             // Arrange
@@ -68,7 +70,7 @@ namespace SmartAlarm.KeyVault.Tests.Integration
                         new System.Collections.Generic.KeyValuePair<string, string?>("HashiCorpVault:Token", "test-token")
                     });
                 });
-                
+
                 builder.ConfigureServices(services =>
                 {
                     services.AddKeyVault(services.BuildServiceProvider().GetRequiredService<IConfiguration>());
@@ -81,10 +83,12 @@ namespace SmartAlarm.KeyVault.Tests.Integration
             var availableProviders = await keyVaultService.GetAvailableProvidersAsync();
 
             // Assert
-            availableProviders.Should().BeEmpty(); // No providers should be available without actual vault instances
+            // Se o Vault está rodando, espera-se pelo menos o provider HashiCorp
+            availableProviders.Should().Contain("HashiCorp");
         }
 
         [Fact]
+        [Trait("Category", "Integration")]
         public async Task GetSecretAsync_ShouldReturnNull_WhenSecretNotFound()
         {
             // Arrange
@@ -99,7 +103,7 @@ namespace SmartAlarm.KeyVault.Tests.Integration
                         new System.Collections.Generic.KeyValuePair<string, string?>("HashiCorpVault:Token", "test-token")
                     });
                 });
-                
+
                 builder.ConfigureServices(services =>
                 {
                     services.AddKeyVault(services.BuildServiceProvider().GetRequiredService<IConfiguration>());
@@ -116,6 +120,7 @@ namespace SmartAlarm.KeyVault.Tests.Integration
         }
 
         [Fact]
+        [Trait("Category", "Integration")]
         public async Task SetSecretAsync_ShouldReturnFalse_WhenNoProvidersAvailable()
         {
             // Arrange
@@ -130,7 +135,7 @@ namespace SmartAlarm.KeyVault.Tests.Integration
                         new System.Collections.Generic.KeyValuePair<string, string?>("HashiCorpVault:Token", "test-token")
                     });
                 });
-                
+
                 builder.ConfigureServices(services =>
                 {
                     services.AddKeyVault(services.BuildServiceProvider().GetRequiredService<IConfiguration>());

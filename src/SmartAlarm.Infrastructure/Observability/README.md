@@ -1,6 +1,6 @@
 # Observability Layer (Tracing & Metrics)
 
-Esta pasta contém as abstrações e mocks para tracing (rastreamento distribuído) e métricas customizadas do Smart Alarm.
+Esta pasta contém as abstrações, mocks e orientações para tracing (rastreamento distribuído) e métricas customizadas do Smart Alarm.
 
 ## Serviços Disponíveis
 
@@ -26,4 +26,10 @@ public class MinhaClasse
 
 ## Extensão
 
-Para produção, implemente integrações reais (ex: OpenTelemetry, Application Insights) e registre na DI.
+Para produção, implemente integrações reais (ex: OpenTelemetry, Application Insights) e registre na DI do projeto Api.
+
+## Observabilidade no Smart Alarm
+
+- Métricas e tracing reais são expostos via OpenTelemetry e Prometheus no projeto Api.
+- Use as interfaces para instrumentar código de infraestrutura e domínio.
+- Consulte docs/architecture/observability-patterns.md para padrões e exemplos.

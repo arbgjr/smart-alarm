@@ -17,8 +17,8 @@ services:
 
   api:
     build:
-      context: ./src/SmartAlarm.Api
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: src/SmartAlarm.Api/Dockerfile
     ports:
       - "8080:80"
     environment:
@@ -29,6 +29,9 @@ services:
       - HashiCorpVault__MountPath=secret
       - HashiCorpVault__KvVersion=2
       - HashiCorpVault__SkipTlsVerification=true
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_USER=guest
+      - RABBITMQ_PASS=guest
     depends_on:
       vault:
         condition: service_healthy
@@ -65,7 +68,7 @@ services:
   grafana:
     image: grafana/grafana:10.4.2
     ports:
-      - "3000:3000"
+      - "3001:3000"
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     volumes:
@@ -74,5 +77,38 @@ services:
       - prometheus
       - loki
 
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  minio:
+    image: minio/minio:latest
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=minio
+      - MINIO_ROOT_PASSWORD=minio123
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    volumes:
+      - minio-data:/data
+
 volumes:
   grafana-data:
+
+  minio-data:

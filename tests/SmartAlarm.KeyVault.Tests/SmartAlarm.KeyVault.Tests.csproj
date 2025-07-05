@@ -27,6 +27,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\SmartAlarm.KeyVault\SmartAlarm.KeyVault.csproj" />
     <ProjectReference Include="..\..\src\SmartAlarm.Api\SmartAlarm.Api.csproj" />
+    <ProjectReference Include="..\..\src\SmartAlarm.Infrastructure\SmartAlarm.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

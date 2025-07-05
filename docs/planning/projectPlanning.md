@@ -229,7 +229,7 @@ var secret = await ociVaultProvider.GetSecretAsync("DbPassword");
 
 - **Controllers**: Implementar controllers RESTful completos para todos os recursos, seguindo boas práticas (DTOs, status codes, tratamento de erros).
 - **Documentação**: Garantir documentação Swagger/OpenAPI atualizada e precisa.
-- **Middlewares**: Implementar middlewares para logging, tracing, autenticação e validação.
+- **Middlewares**: Implementar todos middlewares completos e funcionais para logging, tracing, autenticação e validação.
 
 **Exemplo – Controller:**
 

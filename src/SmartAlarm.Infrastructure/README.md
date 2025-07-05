@@ -1,29 +1,33 @@
 # SmartAlarm.Infrastructure
 
-This layer implements all technical concerns and external integrations for the Smart Alarm system, following Clean Architecture principles.
+Esta camada implementa todas as preocupações técnicas e integrações externas do Smart Alarm, seguindo Clean Architecture.
 
-## Responsibilities
-- Implements concrete repositories for domain interfaces (in-memory and, in the future, database-backed).
-- Handles integration with external services: databases, messaging, storage, logging, tracing, and metrics.
-- Provides dependency injection configuration for all infrastructure services.
-- Ensures infrastructure is decoupled from domain and application, allowing easy replacement or mocking for tests.
+## Responsabilidades
 
-## Example: Registering Infrastructure in Startup
+- Implementa repositórios concretos para interfaces de domínio (InMemory, EF, Dapper).
+- Integração com serviços externos: bancos, mensageria, storage, logging, tracing, métricas, keyvault.
+- Configuração de DI para todos os serviços de infraestrutura.
+- Infraestrutura desacoplada do domínio e aplicação, facilitando testes e substituição.
+
+## Serviços de Infraestrutura
+
+- **Repositórios:** InMemory, Entity Framework, Dapper.
+- **Mensageria:** Mock, RabbitMQ (dev), OCI Streaming (stub prod).
+- **Storage:** Mock, MinIO (dev), OCI Object Storage (stub prod).
+- **KeyVault:** Mock, HashiCorp Vault (dev), OCI Vault/Azure/AWS (stub prod).
+- **Observabilidade:** Mock, real via OpenTelemetry no projeto Api.
+
+## Como usar
+
+Registrar infraestrutura no Startup:
 
 ```csharp
-services.AddSmartAlarmInfrastructure();
+services.AddSmartAlarmInfrastructure(configuration);
 ```
 
-## In-Memory Repositories
-- `InMemoryAlarmRepository`: Implements `IAlarmRepository` for development/testing.
-- `InMemoryUserRepository`: Implements `IUserRepository`.
-- `InMemoryRoutineRepository`: Implements `IRoutineRepository`.
-- `InMemoryIntegrationRepository`: Implements `IIntegrationRepository`.
+## Extensão
 
-> For production, replace in-memory implementations with database-backed repositories.
-
-## Extending Infrastructure
-- Add new services (e.g., logging, tracing, metrics) in `DependencyInjection.cs`.
-- Keep all technical concerns isolated from business logic.
+- Adicione novos serviços em `DependencyInjection.cs`.
+- Consulte os READMEs de cada subpasta para detalhes de uso e extensão.
 
 ---

@@ -1,10 +1,12 @@
 # Storage Layer
 
-Esta pasta contém a abstração e mock para armazenamento de arquivos do Smart Alarm.
+Esta pasta contém a abstração, mock e integrações reais para armazenamento de arquivos do Smart Alarm.
 
 ## Serviços Disponíveis
 
 - `IStorageService` / `MockStorageService`: Interface e mock para upload, download e delete de arquivos.
+- `MinioStorageService`: Integração real com MinIO (dev/homologação).
+- `OciObjectStorageService`: Stub para integração futura com OCI Object Storage (produção).
 
 ## Como usar
 
@@ -25,4 +27,6 @@ public class MinhaClasse
 
 ## Extensão
 
-Para produção, implemente integrações reais (ex: OCI Object Storage, Azure Blob, S3) e registre na DI.
+Para produção, utilize `OciObjectStorageService`.
+Para dev/homologação, utilize `MinioStorageService`.
+Para testes, utilize `MockStorageService`.

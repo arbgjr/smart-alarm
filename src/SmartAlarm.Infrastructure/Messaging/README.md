@@ -1,10 +1,12 @@
 # Messaging Layer
 
-Esta pasta contém a abstração e mock para mensageria/eventos do Smart Alarm.
+Esta pasta contém a abstração, mock e integrações reais para mensageria/eventos do Smart Alarm.
 
 ## Serviços Disponíveis
 
 - `IMessagingService` / `MockMessagingService`: Interface e mock para publicação e subscrição de eventos.
+- `RabbitMqMessagingService`: Integração real com RabbitMQ (dev/homologação).
+- `OciStreamingMessagingService`: Stub para integração futura com OCI Streaming (produção).
 
 ## Como usar
 
@@ -25,4 +27,6 @@ public class MinhaClasse
 
 ## Extensão
 
-Para produção, implemente integrações reais (ex: Kafka, RabbitMQ, OCI Events) e registre na DI.
+Para produção, utilize `OciStreamingMessagingService`.
+Para dev/homologação, utilize `RabbitMqMessagingService`.
+Para testes, utilize `MockMessagingService`.
