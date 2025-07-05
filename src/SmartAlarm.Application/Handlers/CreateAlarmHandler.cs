@@ -30,7 +30,8 @@ namespace SmartAlarm.Application.Handlers
             activity?.SetTag("user.id", request.Alarm.UserId.ToString());
             activity?.SetTag("alarm.name", request.Alarm.Name);
 
-            var alarm = new Alarm(Guid.NewGuid(), request.Alarm.Name, request.Alarm.Time, true, request.Alarm.UserId);
+            // Após validação, Name e Time não podem ser nulos
+            var alarm = new Alarm(Guid.NewGuid(), request.Alarm.Name!, request.Alarm.Time!.Value, true, request.Alarm.UserId);
             await _alarmRepository.AddAsync(alarm);
             _logger.LogInformation("Alarme criado: {AlarmId}", alarm.Id);
             activity?.SetTag("alarm.id", alarm.Id.ToString());

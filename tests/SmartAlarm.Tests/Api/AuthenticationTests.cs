@@ -69,10 +69,11 @@ namespace SmartAlarm.Tests.Api
         {
             var securityKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes("REPLACE_WITH_A_STRONG_SECRET_KEY_32CHARS"));
             var credentials = new Microsoft.IdentityModel.Tokens.SigningCredentials(securityKey, Microsoft.IdentityModel.Tokens.SecurityAlgorithms.HmacSha256);
+            var userId = Guid.NewGuid().ToString();
             var claims = new[]
             {
-                new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, "1234567890"),
-                new System.Security.Claims.Claim("role", "User")
+                new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, userId),
+                new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role, "User")
             };
             var token = new System.IdentityModel.Tokens.Jwt.JwtSecurityToken(
                 issuer: "SmartAlarmIssuer",

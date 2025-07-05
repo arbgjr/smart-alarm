@@ -94,25 +94,6 @@ namespace SmartAlarm.Tests.Validators
         }
 
         [Fact]
-        public void Should_BeInvalid_When_UserIdIsEmpty()
-        {
-            // Arrange
-            var dto = new CreateAlarmDto
-            {
-                Name = "Test Alarm",
-                Time = DateTime.Now.AddDays(1),
-                UserId = Guid.Empty
-            };
-
-            // Act
-            var result = _validator.Validate(dto);
-
-            // Assert
-            Assert.False(result.IsValid);
-            Assert.Contains(result.Errors, e => e.PropertyName == nameof(CreateAlarmDto.UserId));
-        }
-
-        [Fact]
         public void Should_ContainCorrectErrorMessages()
         {
             // Arrange
@@ -128,20 +109,17 @@ namespace SmartAlarm.Tests.Validators
 
             // Assert
             Assert.False(result.IsValid);
-            Assert.True(result.Errors.Count >= 3); // At least name, time, and userId errors
+            Assert.True(result.Errors.Count >= 2); // Pelo menos name e time
 
             var nameError = result.Errors.FirstOrDefault(e => e.PropertyName == nameof(CreateAlarmDto.Name));
             var timeError = result.Errors.FirstOrDefault(e => e.PropertyName == nameof(CreateAlarmDto.Time));
-            var userIdError = result.Errors.FirstOrDefault(e => e.PropertyName == nameof(CreateAlarmDto.UserId));
 
             Assert.NotNull(nameError);
             Assert.NotNull(timeError);
-            Assert.NotNull(userIdError);
 
-            // Verify error messages are using centralized keys
+            // Verifica mensagens de erro centralizadas
             Assert.Equal("Validation.Required.AlarmName", nameError.ErrorMessage);
             Assert.Equal("Validation.Range.FutureDateTime", timeError.ErrorMessage);
-            Assert.Equal("Validation.Required.UserId", userIdError.ErrorMessage);
         }
     }
 }

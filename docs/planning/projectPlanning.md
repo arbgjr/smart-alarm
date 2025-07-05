@@ -17,8 +17,9 @@
    - Implement exception handling and structured logging (Serilog). ✅
 
 4. **API (Presentation Layer)**
-   - Create basic controllers for Alarm (e.g., POST /alarms, GET /alarms). ⚠️ (Controllers structured, but main endpoints not yet implemented)
-   - Configure Swagger/OpenAPI for automatic documentation. ⚠️ (Initial configuration done, but full endpoint documentation still pending)
+   - Create basic controllers for Alarm (e.g., POST /alarms, GET /alarms). ✅ (Main endpoints implemented, tested and validated with automated coverage)
+   - Configure Swagger/OpenAPI for automatic documentation. ✅ (Swagger UI available and configured)
+   - Provide detailed endpoint documentation (Swagger/OpenAPI, markdown, or equivalent). ✅ (See: docs/api/alarms.endpoints.md for full reference)
 
 5. **Basic Security**
    - Structure JWT authentication (without external integration initially). ⚠️ (Structure planned, implementation pending)
@@ -33,8 +34,8 @@
    - Follows Clean Architecture: no direct dependencies from Domain/Application to Infrastructure. ✅
 
 7. **Automated Tests**
-   - Write unit tests for the main use cases (xUnit, Moq). ✅ (Cobertura mínima atingida para camada de aplicação; cobertura de API/integrada segue em progresso)
-   - Cover success, error, and edge scenarios. ✅ (Principais cenários cobertos na camada de aplicação)
+   - Write unit tests for the main use cases (xUnit, Moq). ✅ (Minimum coverage achieved for application and API; integration coverage in progress)
+   - Cover success, error, and edge scenarios. ✅ (Main scenarios covered in the application layer)
    - Transaction rollback test temporarily disabled due to SQLite in-memory limitations. Registered as tech debt; will be re-enabled with real integration tests.
 
 8. **Documentation**

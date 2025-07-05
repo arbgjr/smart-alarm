@@ -11,20 +11,19 @@ namespace SmartAlarm.Application.Validators
         public CreateAlarmDtoValidator()
         {
             RuleFor(x => x.Name)
+                .NotNull().WithMessage("Validation.Required.AlarmName")
                 .NotEmpty().WithMessage("Validation.Required.AlarmName")
                 .Length(1, 100).WithMessage("Validation.Length.AlarmNameMaxLength");
 
             RuleFor(x => x.Time)
-                .NotEmpty().WithMessage("Validation.Required.AlarmTime")
-                .Must(BeInTheFuture).WithMessage("Validation.Range.FutureDateTime");
+                .NotNull().WithMessage("Validation.Required.AlarmTime")
+                .Must(time => BeInTheFuture(time)).WithMessage("Validation.Range.FutureDateTime");
 
-            RuleFor(x => x.UserId)
-                .NotEmpty().WithMessage("Validation.Required.UserId");
         }
 
-        private bool BeInTheFuture(DateTime time)
+        private bool BeInTheFuture(DateTime? time)
         {
-            return time > DateTime.UtcNow;
+            return time.HasValue && time.Value > DateTime.UtcNow;
         }
     }
 }

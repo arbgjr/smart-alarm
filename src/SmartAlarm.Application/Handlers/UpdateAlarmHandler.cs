@@ -47,7 +47,7 @@ namespace SmartAlarm.Application.Handlers
                 SmartAlarmMetrics.NotFoundErrorsCounter.Add(1);
                 throw new SmartAlarm.Domain.Exceptions.NotFoundException("Alarm", request.AlarmId);
             }
-            var updated = new Alarm(request.AlarmId, request.Alarm.Name, request.Alarm.Time, existing.Enabled, request.Alarm.UserId);
+            var updated = new Alarm(request.AlarmId, request.Alarm.Name!, request.Alarm.Time!.Value, existing.Enabled, request.Alarm.UserId);
             await _alarmRepository.UpdateAsync(updated);
             _logger.LogInformation("Alarme atualizado: {AlarmId}", updated.Id);
             activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Ok);

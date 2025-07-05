@@ -16,7 +16,8 @@ builder.Host.UseSerilog((context, services, configuration) =>
     configuration
         .ReadFrom.Configuration(context.Configuration)
         .ReadFrom.Services(services)
-        .Enrich.FromLogContext();
+        .Enrich.FromLogContext()
+        .WriteTo.File("logs/smartalarm-api.log", rollingInterval: RollingInterval.Day, outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz}] [{Level:u3}] {Message:lj}{NewLine}{Exception}");
 });
 
 // Registrar MediatR apontando para a Application Layer

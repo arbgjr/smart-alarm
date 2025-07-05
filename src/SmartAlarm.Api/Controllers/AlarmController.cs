@@ -40,10 +40,41 @@ namespace SmartAlarm.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Create([FromBody] CreateAlarmDto dto, CancellationToken cancellationToken)
         {
-            var command = new CreateAlarmCommand(dto);
-            var result = await _mediator.Send(command, cancellationToken);
-            _logger.LogInformation("Alarm created: {AlarmId}", result.Id);
-            return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+            // Preenche o UserId a partir do usuário autenticado
+            _logger.LogInformation("[Create] Payload recebido: Name={Name}, Time={Time}, UserId={UserId}", dto.Name, dto.Time, dto.UserId);
+            if (!_currentUserService.IsAuthenticated || string.IsNullOrEmpty(_currentUserService.UserId) || !Guid.TryParse(_currentUserService.UserId, out var userId))
+                return Unauthorized();
+            dto.UserId = userId;
+            _logger.LogInformation("[Create] Após preencher UserId: Name={Name}, Time={Time}, UserId={UserId}", dto.Name, dto.Time, dto.UserId);
+            try
+            {
+                var command = new CreateAlarmCommand(dto);
+                var result = await _mediator.Send(command, cancellationToken);
+                _logger.LogInformation("Alarm created: {AlarmId}", result.Id);
+                return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+            }
+            catch (FluentValidation.ValidationException ex)
+            {
+                _logger.LogWarning("[Create] ValidationException: {Errors}", string.Join("; ", ex.Errors.Select(e => $"{e.PropertyName}: {e.ErrorMessage}")));
+                // Monta resposta de erro de validação no padrão da API
+                var errorResponse = new SmartAlarm.Api.Models.ErrorResponse
+                {
+                    StatusCode = StatusCodes.Status400BadRequest,
+                    Title = "Erro de validação",
+                    Detail = "Um ou mais campos estão inválidos.",
+                    Type = "ValidationError",
+                    TraceId = HttpContext.TraceIdentifier,
+                    Timestamp = DateTime.UtcNow,
+                    ValidationErrors = ex.Errors.Select(e => new SmartAlarm.Api.Models.ValidationError
+                    {
+                        Field = e.PropertyName,
+                        Message = e.ErrorMessage,
+                        Code = e.ErrorCode,
+                        AttemptedValue = e.AttemptedValue
+                    }).ToList()
+                };
+                return BadRequest(errorResponse);
+            }
         }
 
         /// <summary>
