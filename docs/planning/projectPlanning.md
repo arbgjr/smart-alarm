@@ -115,7 +115,7 @@ public class AlarmDomainService : IAlarmDomainService
 
 ---
 
-## 3. Application Layer
+## 3. Application Layer ✅
 
 - **Commands/Queries**: Definir e implementar todos os Commands e Queries necessários para os casos de uso do sistema.
 - **Handlers**: Implementar Handlers com lógica de orquestração, validação (usando FluentValidation) e tratamento de erros.
@@ -164,6 +164,7 @@ public class CreateAlarmCommandValidator : AbstractValidator<CreateAlarmCommand>
 - **Storage**: Integrar com um serviço real de storage (OCI Object Storage, S3, etc.), implementando upload, download e delete.
 - **Métricas e Tracing**: Integrar com Prometheus (via OpenTelemetry) e Application Insights, expondo métricas reais e spans de tracing.
 - **KeyVault Providers**: Implementar providers reais para OCI Vault, Azure Key Vault, AWS Secrets Manager, etc., com testes de integração.
+- **Docker compose**: Atualizar o docker compose de forma que eles esteja funcional para os testes de integração.
 
 **Exemplo – Repositório EF:**
 

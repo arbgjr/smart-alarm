@@ -199,11 +199,11 @@ The MVP should focus intensely on doing the core alarm and calendar functionalit
 
 # Visão Geral do Projeto - Smart Alarm
 
-O Smart Alarm é uma solução inovadora para gerenciamento de alarmes e rotinas, com foco em acessibilidade, neurodiversidade e integração inteligente. Toda a arquitetura backend é baseada exclusivamente em C#/.NET, utilizando Clean Architecture, Azure Functions e práticas modernas de segurança, testabilidade e integração.
+O Smart Alarm é uma solução inovadora para gerenciamento de alarmes e rotinas, com foco em acessibilidade e integração inteligente. Toda a arquitetura backend é baseada exclusivamente em C#/.NET, utilizando Clean Architecture, Azure Functions e práticas modernas de segurança, testabilidade e integração.
 
 ## Stack Tecnológica
 
-- **Backend:** C# (.NET 6+), Clean Architecture, Azure Functions, ML.NET
+- **Backend:** C# (.NET 8+), Clean Architecture, Azure Functions, ML.NET
 - **Frontend:** Mantido conforme arquitetura original (ex: React, PWA)
 - **Cloud:** Azure (Functions, Key Vault, Application Insights, etc.)
 - **Integrações:** APIs externas via HttpClientFactory, OAuth2/OpenID Connect
