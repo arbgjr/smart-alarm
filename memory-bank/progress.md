@@ -14,6 +14,7 @@
 - AlarmRepository (Oracle DB) implemented na Infrastructure Layer
 - NuGet restore e build padronizados para .NET 8.0
 - Test automation script (run-tests.ps1) criado
+- Etapa 5 (API Layer) concluída: controllers RESTful completos para todos os fluxos MVP, middlewares globais de logging, tracing, autenticação, validação e tratamento de erros, documentação Swagger/OpenAPI atualizada, testes xUnit cobrindo sucesso, erro e edge cases (mínimo 80% de cobertura), checklists de governança e documentação seguidos, ADR-005 registrado
 
 ## Pending Items / Next Steps
 

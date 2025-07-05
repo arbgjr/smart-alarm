@@ -1,17 +1,22 @@
-# Endpoint Documentation – Swagger/OpenAPI
+# Acesso à Documentação Swagger/OpenAPI
 
-All Smart Alarm REST endpoints are documented and available via Swagger/OpenAPI.
+A documentação interativa dos endpoints da API está disponível via Swagger UI.
 
-- Access `/swagger` on the running API to view and test all endpoints.
-- The documentation includes request/response examples, error codes, and authentication details.
-- For markdown details, see `docs/api/alarms.endpoints.md`.
+- **URL:** `/swagger` (raiz do serviço)
+- **Formato:** OpenAPI 3.0
+- **Exemplos reais de payloads e respostas**
+- **Autenticação:** Suporte a JWT Bearer Token para testar endpoints protegidos
 
-## How to Access
+## Como acessar
 
-1. Run the API locally or in a staging environment.
-2. Go to `http://localhost:<port>/swagger` in your browser.
-3. Explore, test, and view all input/output contracts.
+1. Execute a aplicação (`dotnet run` ou via Docker Compose)
+2. Acesse `https://localhost:5001/swagger` no navegador
+3. Explore e teste todos os endpoints disponíveis
 
----
+## Observações
 
-**Status:** 100% of endpoints are available via Swagger and markdown documentation.
+- O contrato OpenAPI é gerado automaticamente a partir dos controllers e anotações
+- Todos os endpoints MVP estão documentados
+- Utilize o botão "Authorize" para autenticar com JWT
+
+Consulte também os arquivos `alarms.endpoints.md` e `error-handling.md` para detalhes de contratos e padrões de erro.

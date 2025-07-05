@@ -226,7 +226,7 @@ var secret = await ociVaultProvider.GetSecretAsync("DbPassword");
 
 ---
 
-## 5. API Layer
+## 5. API Layer ✅
 
 - **Controllers**: Implementar controllers RESTful completos para todos os recursos, seguindo boas práticas (DTOs, status codes, tratamento de erros).
 - **Documentação**: Garantir documentação Swagger/OpenAPI atualizada e precisa.

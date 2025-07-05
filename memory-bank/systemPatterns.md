@@ -3,24 +3,28 @@
 ## General Patterns of the Smart Alarm Project
 
 ### Architecture
+
 - Follow Clean Architecture and SOLID principles (backend) and Atomic Design (frontend).
 - Clearly separate domain, application, infrastructure, and presentation layers (backend) and components, pages, hooks, and contexts (frontend).
 - Use dependency injection to facilitate testing and maintenance (backend) and component composition (frontend).
 - Do not introduce types or values into the global scope.
 
 ### Code Organization
+
 - Group files by business domain and responsibility (backend) and by feature/component (frontend).
 - Keep tests close to the implemented code.
 - On the frontend, organize components in folders by atomicity (atoms, molecules, organisms, pages).
 - Document architectural decisions in `docs/architecture/`.
 
 ### Naming
+
 - camelCase for variables, functions, and methods.
 - PascalCase for classes, types, React components, and files.
 - UPPER_SNAKE_CASE for global constants.
 - Descriptive and clear names, no abbreviations.
 
 ### JavaScript/TypeScript (Frontend)
+
 - Use double quotes for user-visible strings and single quotes for internal strings.
 - Always use a semicolon at the end of statements.
 - Prefer const for immutable variables and let for mutable ones. Avoid var.
@@ -31,6 +35,7 @@
 - On the frontend, use React.FC for functional components and prefer hooks for reusable logic.
 
 ### Tests
+
 - Write unit tests for all business logic (Vitest or Jest).
 - Include success, failure, and edge cases.
 - Use mocks for external dependencies.
@@ -39,6 +44,7 @@
 - On the frontend, use Testing Library for React components, cover interactions, accessibility, and visual states.
 
 ### Error Handling
+
 - Use try/catch to capture exceptions.
 - Prefer throwing specific errors.
 - Always log errors with relevant context.
@@ -46,6 +52,7 @@
 - On the frontend, handle API errors and display user-friendly messages.
 
 ### Security
+
 - Never expose credentials or secrets in code.
 - Use environment variables for sensitive data.
 - Validate and sanitize user inputs.
@@ -55,6 +62,7 @@
 - Follow accessibility (WCAG) and privacy (LGPD) practices in the interface.
 
 ### Backend (APIs and Services)
+
 - Follow Clean Architecture and SOLID principles for all backend logic.
 - Separate controllers, services, repositories, and entities.
 - Use DTOs for data input and output.
@@ -67,6 +75,7 @@
 - Never expose secrets or sensitive variables in code or logs.
 
 ### Frontend (React/PWA)
+
 - Follow Atomic Design for component organization.
 - Use React, TypeScript, and hooks for UI logic.
 - Separate components by atomicity (atoms, molecules, organisms, pages).
@@ -77,11 +86,13 @@
 - Document props and component contracts with TypeScript.
 
 ### Integrations and APIs
+
 - Use tools and best practices for OCI, OpenAI, GitHub, and other integrations.
 - Always consult the specific instructions for each service (e.g., OCI Functions, SWA, etc).
 - On the frontend, consume APIs via HttpClient/Fetch, handle errors and loading states.
 
 ### Development Flow
+
 - Install dependencies with `npm install`.
 - Compile with `npm run compile` (or `npm run build` on the frontend).
 - Run tests with `npm run test:unit` and `npm run test:integration`.
@@ -89,6 +100,7 @@
 - On the frontend, use linters (ESLint), formatters (Prettier), and check accessibility (axe, Lighthouse).
 
 ### Review and Pull Requests
+
 - Follow the conventional commit format.
 - Clearly describe what changed and why.
 - Include context, changes, tests performed, and pending items in the PR description.
@@ -101,6 +113,7 @@
 **Padrões obrigatórios para novos handlers, comandos e queries:**
 
 #### Distributed Tracing (OBRIGATÓRIO)
+
 ```csharp
 public async Task<TResponse> Handle(TRequest request, CancellationToken cancellationToken)
 {
@@ -126,6 +139,7 @@ public async Task<TResponse> Handle(TRequest request, CancellationToken cancella
 ```
 
 #### Structured Logging (OBRIGATÓRIO)
+
 ```csharp
 // Sucesso
 _logger.LogInformation("Entity created: {EntityId} for user {UserId}", entity.Id, userId);
@@ -138,6 +152,7 @@ _logger.LogError(ex, "Failed to process request for user {UserId}", userId);
 ```
 
 #### Métricas Customizadas (OBRIGATÓRIO)
+
 ```csharp
 // Contadores de operações
 SmartAlarmMetrics.EntityCreatedCounter.Add(1);
@@ -148,6 +163,7 @@ using var timer = SmartAlarmMetrics.HandlerDuration.CreateTimer();
 ```
 
 #### Code Review Checklist
+
 - [ ] Handler cria activity com nome descritivo
 - [ ] Activity inclui tags relevantes (entity.id, user.id, operation.type)
 - [ ] Activity status é definido corretamente (Ok/Error)
@@ -157,9 +173,21 @@ using var timer = SmartAlarmMetrics.HandlerDuration.CreateTimer();
 
 **📚 Documentação completa**: Consulte `docs/architecture/observability-patterns.md` para exemplos detalhados e padrões de implementação.
 
+## API Layer - Padrões e Critérios
+
+- Controllers RESTful para todos os recursos MVP
+- Middlewares globais: logging (Serilog), tracing (OpenTelemetry), autenticação (JWT), validação (FluentValidation), tratamento de erros (ExceptionHandlingMiddleware)
+- Documentação automática via Swagger/OpenAPI
+- Resposta de erro padronizada (ErrorResponse)
+- Testes xUnit cobrindo sucesso, erro e edge cases (mínimo 80% de cobertura)
+- Governança: checklist de PR, ADR atualizado, Memory Bank atualizado
+
+Consulte ADR-005 para detalhes e justificativas.
+
 ### Good Practice Examples
 
 #### Asynchronous Function (Backend)
+
 ```csharp
 public async Task<User> GetUserByIdAsync(Guid id)
 {
@@ -173,6 +201,7 @@ public async Task<User> GetUserByIdAsync(Guid id)
 ```
 
 #### Unit Test (Backend)
+
 ```csharp
 [Fact]
 public async Task Should_ThrowArgumentException_When_IdIsEmpty()
@@ -183,6 +212,7 @@ public async Task Should_ThrowArgumentException_When_IdIsEmpty()
 ```
 
 #### React Component (Frontend)
+
 ```tsx
 import React from "react";
 
@@ -199,6 +229,7 @@ export const Button: React.FC<ButtonProps> = ({ label, onClick }) => (
 ```
 
 #### Component Test (Frontend)
+
 ```typescript
 import { render, screen, fireEvent } from "@testing-library/react";
 import { Button } from "./Button";

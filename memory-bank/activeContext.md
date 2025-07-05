@@ -2,11 +2,10 @@
 
 ## Current Focus
 
-- Etapa 4 (Infraestrutura) concluída: multi-provider (PostgreSQL dev/testes, Oracle produção), mensageria real (RabbitMQ), storage real (MinIO), KeyVault real (Vault), observabilidade (tracing/métricas OpenTelemetry), docker-compose validado
-- Todos os testes de integração e unidade passando em ambiente dockerizado
-- Serviços de domínio implementados e testados (AlarmDomainService, UserDomainService)
-- Documentação, ADRs e checklists atualizados
-- Estrutura de testes AAA e cobertura mínima de 80% para regras críticas
+- Etapa 5 (API Layer) concluída: controllers RESTful completos para todos os fluxos MVP, middlewares globais de logging, tracing, autenticação, validação e tratamento de erros, documentação Swagger/OpenAPI atualizada, testes xUnit cobrindo sucesso, erro e edge cases (mínimo 80% de cobertura), checklists de governança e documentação seguidos, ADR-005 registrado
+- Detalhar endpoints e fluxos de autenticação/autorização
+- Implementar handlers e validação com FluentValidation
+- Iniciar testes de integração e cobertura de Application Layer
 
 ## Recent Changes
 
@@ -18,9 +17,7 @@
 
 ## Next Steps
 
-- Detalhar endpoints e fluxos de autenticação/autorização
-- Implementar handlers e validação com FluentValidation
-- Iniciar testes de integração e cobertura de Application Layer
+- Iniciar etapa 6 (Serverless & Deploy)
 
 ## Active Decisions
 

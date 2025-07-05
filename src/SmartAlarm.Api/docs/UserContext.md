@@ -1,3 +1,5 @@
+> **Status:** Etapa 5 (API Layer) concluída e validada em 05/07/2025. Serviço de contexto do usuário implementado, testado e documentado conforme padrões.
+
 # User Context Extraction – SmartAlarm API
 
 ## Overview

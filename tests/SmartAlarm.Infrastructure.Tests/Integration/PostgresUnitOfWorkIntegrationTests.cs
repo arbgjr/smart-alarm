@@ -30,6 +30,12 @@ namespace SmartAlarm.Infrastructure.Tests.Integration
                 .Options;
             _context = new SmartAlarmDbContext(options);
             _context.Database.EnsureCreated();
+            // Limpeza das tabelas para evitar conflitos de chave única
+            using (var cmd = _connection.CreateCommand())
+            {
+                cmd.CommandText = "DELETE FROM \"Alarms\"; DELETE FROM \"Users\";";
+                cmd.ExecuteNonQuery();
+            }
             _unitOfWork = new EfUnitOfWork(_context);
         }
 
