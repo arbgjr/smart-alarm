@@ -22,16 +22,17 @@
    - Provide detailed endpoint documentation (Swagger/OpenAPI, markdown, or equivalent). ✅ (See: docs/api/alarms.endpoints.md for full reference)
 
 5. **Basic Security**
-   - Structure JWT authentication (without external integration initially). ⚠️ (Structure planned, implementation pending)
-   - Ensure endpoints are protected. ⚠️ (Endpoint protection depends on JWT implementation)
+   - Structure JWT authentication (without external integration initially). ✅ (Implemented: JWT authentication, login endpoint, DTOs, validation, and tests)
+   - Ensure endpoints are protected. ✅ (All sensitive endpoints protected with [Authorize], covered by automated tests)
 
 6. **Infrastructure Layer**
    - Implements concrete repositories (e.g., AlarmRepository) based on domain interfaces. ✅
-   - Handles integration with external services: databases (Autonomous DB), messaging, storage, logging, tracing, and metrics. ⚠️ (Autonomous DB integration done, other integrations and production tests still pending)
-   - Incluir tracing nas rotinas e camadas com possibilidade de gargalo. ⚠️
+   - Handles integration with external services: databases (Autonomous DB), messaging, storage, logging, tracing, and metrics. ⚠️ (Autonomous DB integration ready; other integrations and production tests documented as tech debt)
+   - Add tracing to routines and layers with potential bottlenecks. ⚠️ (Detailed instrumentation pending, registered as tech debt)
    - Provides dependency injection configuration for all infrastructure services. ✅
    - Ensures infrastructure is decoupled from domain and application, allowing easy replacement or mocking for tests. ✅
    - Follows Clean Architecture: no direct dependencies from Domain/Application to Infrastructure. ✅
+   - **Pending for production**: real integrations for messaging, storage, tracing, metrics, integrated tests, and detailed documentation — all registered in `docs/tech-debt/techDebt.md`.
 
 7. **Automated Tests**
    - Write unit tests for the main use cases (xUnit, Moq). ✅ (Minimum coverage achieved for application and API; integration coverage in progress)

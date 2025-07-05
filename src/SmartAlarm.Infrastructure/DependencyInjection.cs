@@ -50,6 +50,12 @@ namespace SmartAlarm.Infrastructure
             services.AddScoped<IEmailService, LoggingEmailService>();
             services.AddScoped<INotificationService, LoggingNotificationService>();
 
+            // Register messaging, storage, tracing, metrics (mock for now)
+            services.AddSingleton<Messaging.IMessagingService, Messaging.MockMessagingService>();
+            services.AddSingleton<Storage.IStorageService, Storage.MockStorageService>();
+            services.AddSingleton<Observability.ITracingService, Observability.MockTracingService>();
+            services.AddSingleton<Observability.IMetricsService, Observability.MockMetricsService>();
+
             return services;
         }
 
@@ -68,6 +74,12 @@ namespace SmartAlarm.Infrastructure
             // Register infrastructure services
             services.AddScoped<IEmailService, LoggingEmailService>();
             services.AddScoped<INotificationService, LoggingNotificationService>();
+
+            // Register messaging, storage, tracing, metrics (mock for now)
+            services.AddSingleton<Messaging.IMessagingService, Messaging.MockMessagingService>();
+            services.AddSingleton<Storage.IStorageService, Storage.MockStorageService>();
+            services.AddSingleton<Observability.ITracingService, Observability.MockTracingService>();
+            services.AddSingleton<Observability.IMetricsService, Observability.MockMetricsService>();
 
             return services;
         }
@@ -95,6 +107,12 @@ namespace SmartAlarm.Infrastructure
             // Register infrastructure services
             services.AddScoped<IEmailService, LoggingEmailService>();
             services.AddScoped<INotificationService, LoggingNotificationService>();
+
+            // Register messaging, storage, tracing, metrics (mock for now)
+            services.AddSingleton<Messaging.IMessagingService, Messaging.MockMessagingService>();
+            services.AddSingleton<Storage.IStorageService, Storage.MockStorageService>();
+            services.AddSingleton<Observability.ITracingService, Observability.MockTracingService>();
+            services.AddSingleton<Observability.IMetricsService, Observability.MockMetricsService>();
 
             return services;
         }

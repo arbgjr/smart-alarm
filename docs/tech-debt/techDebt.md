@@ -1,3 +1,32 @@
+# 05/07/2025
+
+## Pendências da Infrastructure Layer para Produção
+
+- **Integrações reais de mensageria, storage, tracing e métricas**
+  - Atualmente, apenas mocks estão implementados para Messaging, Storage, Tracing e Metrics.
+  - Falta implementar/adaptar integrações reais com provedores de produção (ex: Oracle Cloud, Kafka, S3, Prometheus, etc.).
+  - Impacto: Sem integração real, não há mensageria, armazenamento externo, rastreamento ou métricas em produção.
+  - Prioridade: Alta
+  - Estimativa: 10 dias para todas as integrações principais.
+
+- **Testes de produção/integrados**
+  - Integração real com Autonomous DB, mensageria, storage, etc., ainda não validada em ambiente real.
+  - Impacto: Possíveis falhas não detectadas até o deploy.
+  - Prioridade: Alta
+  - Estimativa: 5 dias para testes e ajustes.
+
+- **Tracing detalhado em rotinas críticas**
+  - O tracing está disponível como mock, mas falta instrumentar pontos de gargalo reais (ex: queries lentas, processamento de eventos).
+  - Impacto: Dificuldade de diagnosticar problemas de performance em produção.
+  - Prioridade: Média
+  - Estimativa: 2 dias para instrumentação inicial.
+
+- **Documentação detalhada das integrações**
+  - Documentação inicial criada, mas falta detalhar integrações reais e decisões técnicas finais.
+  - Impacto: Dificulta onboarding e manutenção.
+  - Prioridade: Média
+  - Estimativa: 2 dias para documentação completa.
+
 ---
 
 ## 04/07/2025
