@@ -12,6 +12,7 @@ namespace SmartAlarm.Domain.Repositories
     {
         Task<Integration> GetByIdAsync(Guid id);
         Task<IEnumerable<Integration>> GetByAlarmIdAsync(Guid alarmId);
+        Task<IEnumerable<Integration>> GetAllAsync();
         Task AddAsync(Integration integration);
         Task UpdateAsync(Integration integration);
         Task DeleteAsync(Guid id);

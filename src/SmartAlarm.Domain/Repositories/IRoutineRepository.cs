@@ -12,6 +12,7 @@ namespace SmartAlarm.Domain.Repositories
     {
         Task<Routine> GetByIdAsync(Guid id);
         Task<IEnumerable<Routine>> GetByAlarmIdAsync(Guid alarmId);
+        Task<IEnumerable<Routine>> GetAllAsync();
         Task AddAsync(Routine routine);
         Task UpdateAsync(Routine routine);
         Task DeleteAsync(Guid id);

@@ -20,11 +20,14 @@ namespace SmartAlarm.Application.Handlers.User
 
         public async Task<List<UserResponseDto>> Handle(ListUsersQuery request, CancellationToken cancellationToken)
         {
-            // Não existe GetAllAsync, então precisamos de uma abordagem alternativa.
-            // Exemplo: retornar lista vazia ou lançar NotImplementedException.
-            // TODO: Implementar método de listagem de usuários conforme domínio.
-            // ReSharper disable once AsyncMethodWithoutAwait
-            throw new NotImplementedException("Listagem de usuários não implementada no repositório.");
+            var users = await _userRepository.GetAllAsync();
+            return users.Select(u => new UserResponseDto
+            {
+                Id = u.Id,
+                Name = u.Name.ToString(),
+                Email = u.Email.ToString(),
+                IsActive = u.IsActive
+            }).ToList();
         }
     }
 }

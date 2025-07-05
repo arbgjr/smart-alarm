@@ -8,9 +8,9 @@
    - Create Value Objects and essential business rules. ✅
 
 2. **Application Layer**
-   - Implement the first Use Cases (e.g., CreateAlarm, ListAlarms). ⚠️ (Initial handlers defined, but full implementation of use cases still pending)
+   - Implement the first Use Cases (e.g., CreateAlarm, ListAlarms). ✅
    - Define DTOs for input/output. ✅
-   - Create Handlers and commands/queries (e.g., CreateAlarmCommand, ListAlarmsQuery). ⚠️ (Structure created, but coverage of all commands/queries not yet complete)
+   - Create Handlers and commands/queries (e.g., CreateAlarmCommand, ListAlarmsQuery). ✅
 
 3. **Validation and Error Handling**
    - Configure FluentValidation for main commands. ⚠️ (Initial configuration done, but full coverage of all commands still pending)
@@ -25,8 +25,8 @@
    - Configure Swagger/OpenAPI for automatic documentation. ⚠️ (Initial configuration done, but full endpoint documentation still pending)
 
 6. **Automated Tests**
-   - Write unit tests for the main use cases (xUnit, Moq). ⚠️ (Automation script created, but minimum 80% coverage not yet reached)
-   - Cover success, error, and edge scenarios. ⚠️ (Partial coverage, error and edge case scenarios still pending)
+   - Write unit tests for the main use cases (xUnit, Moq). ✅ (Cobertura mínima atingida para camada de aplicação; cobertura de API/integrada segue em progresso)
+   - Cover success, error, and edge scenarios. ✅ (Principais cenários cobertos na camada de aplicação)
    - Transaction rollback test temporarily disabled due to SQLite in-memory limitations. Registered as tech debt; will be re-enabled with real integration tests.
 
 7. **Basic Security**

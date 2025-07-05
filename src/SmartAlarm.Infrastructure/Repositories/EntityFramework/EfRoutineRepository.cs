@@ -14,6 +14,10 @@ namespace SmartAlarm.Infrastructure.Repositories.EntityFramework
     /// </summary>
     public class EfRoutineRepository : IRoutineRepository
     {
+        public async Task<IEnumerable<Routine>> GetAllAsync()
+        {
+            return await _context.Routines.ToListAsync();
+        }
         private readonly SmartAlarmDbContext _context;
 
         public EfRoutineRepository(SmartAlarmDbContext context)

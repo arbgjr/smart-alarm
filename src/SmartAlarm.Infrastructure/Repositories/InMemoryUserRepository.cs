@@ -44,5 +44,10 @@ namespace SmartAlarm.Infrastructure.Repositories
             _users[user.Id] = user;
             return Task.CompletedTask;
         }
+
+        public Task<IEnumerable<User>> GetAllAsync()
+        {
+            return Task.FromResult(_users.Values.AsEnumerable());
+        }
     }
 }

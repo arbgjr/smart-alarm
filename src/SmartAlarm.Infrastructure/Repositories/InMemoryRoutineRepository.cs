@@ -44,5 +44,10 @@ namespace SmartAlarm.Infrastructure.Repositories
             _routines[routine.Id] = routine;
             return Task.CompletedTask;
         }
+
+        public Task<IEnumerable<Routine>> GetAllAsync()
+        {
+            return Task.FromResult(_routines.Values.AsEnumerable());
+        }
     }
 }

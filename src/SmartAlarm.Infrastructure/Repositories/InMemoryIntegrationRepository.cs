@@ -44,5 +44,10 @@ namespace SmartAlarm.Infrastructure.Repositories
             _integrations[integration.Id] = integration;
             return Task.CompletedTask;
         }
+
+        public Task<IEnumerable<Integration>> GetAllAsync()
+        {
+            return Task.FromResult(_integrations.Values.AsEnumerable());
+        }
     }
 }

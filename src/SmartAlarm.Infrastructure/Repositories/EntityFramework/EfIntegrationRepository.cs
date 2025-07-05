@@ -14,6 +14,10 @@ namespace SmartAlarm.Infrastructure.Repositories.EntityFramework
     /// </summary>
     public class EfIntegrationRepository : IIntegrationRepository
     {
+        public async Task<IEnumerable<Integration>> GetAllAsync()
+        {
+            return await _context.Integrations.ToListAsync();
+        }
         private readonly SmartAlarmDbContext _context;
 
         public EfIntegrationRepository(SmartAlarmDbContext context)

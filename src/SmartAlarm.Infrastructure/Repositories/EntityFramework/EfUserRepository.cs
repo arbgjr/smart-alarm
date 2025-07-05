@@ -14,6 +14,10 @@ namespace SmartAlarm.Infrastructure.Repositories.EntityFramework
     /// </summary>
     public class EfUserRepository : IUserRepository
     {
+        public async Task<IEnumerable<User>> GetAllAsync()
+        {
+            return await _context.Users.ToListAsync();
+        }
         private readonly SmartAlarmDbContext _context;
 
         public EfUserRepository(SmartAlarmDbContext context)

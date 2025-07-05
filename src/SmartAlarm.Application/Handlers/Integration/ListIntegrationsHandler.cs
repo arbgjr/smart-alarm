@@ -20,11 +20,17 @@ namespace SmartAlarm.Application.Handlers.Integration
 
         public async Task<List<IntegrationResponseDto>> Handle(ListIntegrationsQuery request, CancellationToken cancellationToken)
         {
-            // Não existe GetAllAsync, então precisamos de uma abordagem alternativa.
-            // Exemplo: retornar lista vazia ou lançar NotImplementedException.
-            // TODO: Implementar método de listagem de integrações conforme domínio.
-            // ReSharper disable once AsyncMethodWithoutAwait
-            throw new NotImplementedException("Listagem de integrações não implementada no repositório.");
+            var integrations = await _integrationRepository.GetAllAsync();
+            return integrations.Select(i => new IntegrationResponseDto
+            {
+                Id = i.Id,
+                Name = i.Name.ToString(),
+                Provider = i.Provider,
+                Configuration = string.IsNullOrWhiteSpace(i.Configuration)
+                    ? new Dictionary<string, string>()
+                    : System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(i.Configuration) ?? new Dictionary<string, string>(),
+                IsActive = i.IsActive
+            }).ToList();
         }
     }
 }
