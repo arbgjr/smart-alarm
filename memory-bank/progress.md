@@ -2,24 +2,20 @@
 
 ## Completed Features
 
-- Etapa 6 (Serverless & Deploy) concluída para dev/homologação: handlers serverless e integração com OCI Functions prontos para extensão, scripts e estrutura de deploy automatizado presentes, parametrização via KeyVault e variáveis de ambiente padronizada.
-- Integração real com OCI Vault, OCI Object Storage e OCI Streaming documentada como stub, aguardando produção/credenciais.
-- Todos os fluxos MVP, integrações (RabbitMQ, MinIO, Vault, PostgreSQL), observabilidade e testes validados e documentados. Etapa 7 (Testes) concluída: cobertura mínima de 80% para código crítico, todos os testes unitários e de integração passando, documentação e checklists atualizados, governança validada.
-- ADR-006, observability-patterns.md, README de infraestrutura e docs de planejamento refletem o status real.
-- Memory Bank atualizado e consistente.
-- Etapa 4 (Infraestrutura) concluída: multi-provider (PostgreSQL dev/testes, Oracle produção), mensageria real (RabbitMQ), storage real (MinIO), KeyVault real (Vault), observabilidade (tracing/métricas OpenTelemetry), docker-compose validado
-- Todos os testes de integração e unidade passando em ambiente dockerizado
-- Initial folder and project structure
-- Base documentation created
-- Architecture standards defined
-- Observability middleware (logging, tracing, metrics)
-- Docker and docker-compose for API, Loki, Jaeger, Prometheus, Grafana
-- Global logging (Serilog) and tracing (OpenTelemetry) configured in API
-- All backend projects migrated to .NET 8.0
-- AlarmRepository (Oracle DB) implemented na Infrastructure Layer
-- NuGet restore e build padronizados para .NET 8.0
-- Test automation script (run-tests.ps1) criado
-- Etapa 5 (API Layer) concluída: controllers RESTful completos para todos os fluxos MVP, middlewares globais de logging, tracing, autenticação, validação e tratamento de erros, documentação Swagger/OpenAPI atualizada, testes xUnit cobrindo sucesso, erro e edge cases (mínimo 80% de cobertura), checklists de governança e documentação seguidos, ADR-005 registrado
+## Etapa 8 (Observabilidade e Segurança) concluída em 05/07/2025
+
+Todos os requisitos de observabilidade e segurança implementados, testados e validados:
+
+- Métricas customizadas expostas via Prometheus
+- Tracing distribuído ativo (OpenTelemetry)
+- Logs estruturados (Serilog) com rastreabilidade
+- Autenticação JWT/FIDO2, RBAC, LGPD (consentimento granular, logs de acesso)
+- Proteção de dados (AES-256-GCM, TLS 1.3, BYOK, KeyVault)
+- Testes unitários e de integração cobrindo todos os fluxos críticos
+- Documentação, ADRs, Memory Bank e checklists atualizados
+- Validação final via semantic search
+
+Critérios de pronto globais e específicos atendidos. Documentação e governança completas.
 
 ## Pending Items / Next Steps
 

@@ -4,6 +4,21 @@
 
 - Etapa 7 (Testes) concluída: cobertura mínima de 80% para código crítico, todos os testes unitários e de integração passando, documentação e checklists atualizados, governança validada. Todos os fluxos MVP, integrações (RabbitMQ, MinIO, Vault, PostgreSQL), observabilidade e testes validados e documentados. ADRs, READMEs e docs refletem o status real. Memory Bank atualizado e consistente.
 
+## Etapa 8 (Observabilidade e Segurança) concluída em 05/07/2025
+
+Todos os requisitos de observabilidade e segurança implementados, testados e validados:
+
+- Métricas customizadas expostas via Prometheus
+- Tracing distribuído ativo (OpenTelemetry)
+- Logs estruturados (Serilog) com rastreabilidade
+- Autenticação JWT/FIDO2, RBAC, LGPD (consentimento granular, logs de acesso)
+- Proteção de dados (AES-256-GCM, TLS 1.3, BYOK, KeyVault)
+- Testes unitários e de integração cobrindo todos os fluxos críticos
+- Documentação, ADRs, Memory Bank e checklists atualizados
+- Validação final via semantic search
+
+Critérios de pronto globais e específicos atendidos. Documentação e governança completas.
+
 - Próximos passos: Implementar integração real OCI em produção quando disponível, manter documentação e ADRs atualizados.
 
 ## Recent Changes

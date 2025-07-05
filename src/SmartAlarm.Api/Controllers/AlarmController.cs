@@ -36,6 +36,7 @@ namespace SmartAlarm.Api.Controllers
         /// Create a new alarm.
         /// </summary>
         [HttpPost]
+        [Authorize(Roles = "Admin,User")]
         [ProducesResponseType(typeof(AlarmResponseDto), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Create([FromBody] CreateAlarmDto dto, CancellationToken cancellationToken)
@@ -110,6 +111,7 @@ namespace SmartAlarm.Api.Controllers
         /// Update an alarm.
         /// </summary>
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin,User")]
         [ProducesResponseType(typeof(AlarmResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -127,6 +129,7 @@ namespace SmartAlarm.Api.Controllers
         /// Delete an alarm.
         /// </summary>
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)

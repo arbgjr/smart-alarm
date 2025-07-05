@@ -99,27 +99,35 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true,
         ValidIssuer = jwtSettings["Issuer"],
         ValidAudience = jwtSettings["Audience"],
-        IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(jwtSettings["Secret"])),
+        IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(jwtSettings["Secret"] ?? string.Empty)),
         ClockSkew = TimeSpan.FromMinutes(2)
     };
 });
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<SmartAlarm.Api.Services.ICurrentUserService, SmartAlarm.Api.Services.CurrentUserService>();
 
+
+// LGPD: Serviço de consentimento do usuário
+builder.Services.AddSingleton<SmartAlarm.Api.Services.IUserConsentService, SmartAlarm.Api.Services.UserConsentService>();
+
 // Configure KeyVault services
 builder.Services.AddKeyVault(builder.Configuration);
 
+
 var app = builder.Build();
 
-// Observabilidade padrão
+// Observabilidade: logging estruturado e tracing
 app.UseSerilogRequestLogging();
+app.UseMiddleware<SmartAlarm.Observability.ObservabilityMiddleware>();
 
-// KeyVault middleware
+// Segurança: KeyVault, tratamento global de erros, autenticação e RBAC
 app.UseKeyVault();
-
-// Tratamento global de erros
 app.UseGlobalExceptionHandler();
+app.UseHttpsRedirection();
+app.UseAuthentication();
+app.UseAuthorization();
 
+// Swagger/OpenAPI
 app.UseSwagger();
 app.UseSwaggerUI(options =>
 {
@@ -127,35 +135,12 @@ app.UseSwaggerUI(options =>
     options.RoutePrefix = string.Empty;
 });
 
-app.UseHttpsRedirection();
-app.UseAuthentication();
-app.UseAuthorization();
+// Endpoint Prometheus /metrics
+app.MapPrometheusScrapingEndpoint("/metrics");
+
+// Controllers
 app.MapControllers();
-
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast = Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
 
 app.Run();
 
 public partial class Program { } // For testing purposes
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
