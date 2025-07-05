@@ -31,7 +31,7 @@ Siga este plano completo, prático e detalhado para transformar o backend do Sma
 
 ---
 
-## 1. Modelagem Completa do Domínio
+## 1. Modelagem Completa do Domínio ✅
 
 - **Revisar e completar entidades**: Definir todas as propriedades, métodos e regras de negócio das entidades principais (`Alarm`, `User`, `Schedule`, `Routine`, etc.), baseando-se nos requisitos do produto.
 - **Value Objects**: Implementar lógica de validação e invariantes em `Email`, `Name`, `TimeConfiguration` e outros VOs, garantindo imutabilidade e consistência.
