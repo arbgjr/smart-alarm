@@ -1,20 +1,26 @@
 # Smart Alarm — Active Context
 
 ## Current Focus
-- Initial structuring of services (AlarmService, AnalysisService, IntegrationService)
-- Definition of API contracts and domain models
-- CI/CD and test environment setup
+
+- Serviços de domínio implementados e testados (AlarmDomainService, UserDomainService)
+- Documentação e ADR dos serviços de domínio concluídos
+- Estrutura de testes AAA e cobertura mínima de 80% para regras críticas
 
 ## Recent Changes
-- Definition of base architecture and code standards
-- Creation of main directories and initial documentation
+
+- Implementação e testes dos serviços de domínio
+- Documentação Markdown e ADR-003 registrados
+- Checklist de governança seguido (owners, documentação, ADR)
 
 ## Next Steps
-- Detail endpoints and authentication/authorization flows
-- Implement handlers and validation with FluentValidation
-- Start unit and integration tests
+
+- Detalhar endpoints e fluxos de autenticação/autorização
+- Implementar handlers e validação com FluentValidation
+- Iniciar testes de integração e cobertura de Application Layer
 
 ## Active Decisions
-- Exclusive use of .NET 8.0
-- OCI Functions as serverless standard
-- Mandatory structured logging
+
+- Uso exclusivo de .NET 8.0
+- OCI Functions como padrão serverless
+- Logging estruturado obrigatório
+- Serviços de domínio centralizam regras de negócio e são ponto único de validação

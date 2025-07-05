@@ -32,7 +32,7 @@ namespace SmartAlarm.Domain.Entities
         {
             if (name == null) throw new ArgumentNullException(nameof(name));
             if (userId == Guid.Empty) throw new ArgumentException("UserId é obrigatório.", nameof(userId));
-            
+
             Id = id == Guid.Empty ? Guid.NewGuid() : id;
             Name = name;
             Time = time;
@@ -65,7 +65,7 @@ namespace SmartAlarm.Domain.Entities
             if (routine == null) throw new ArgumentNullException(nameof(routine));
             if (_routines.Any(r => r.Id == routine.Id))
                 throw new InvalidOperationException("Rotina já existe no alarme.");
-            
+
             _routines.Add(routine);
         }
 
@@ -83,7 +83,7 @@ namespace SmartAlarm.Domain.Entities
             if (integration == null) throw new ArgumentNullException(nameof(integration));
             if (_integrations.Any(i => i.Id == integration.Id))
                 throw new InvalidOperationException("Integração já existe no alarme.");
-            
+
             _integrations.Add(integration);
         }
 
@@ -103,7 +103,7 @@ namespace SmartAlarm.Domain.Entities
                 throw new InvalidOperationException("Schedule não pertence a este alarme.");
             if (_schedules.Any(s => s.Id == schedule.Id))
                 throw new InvalidOperationException("Schedule já existe no alarme.");
-            
+
             _schedules.Add(schedule);
         }
 
@@ -120,16 +120,15 @@ namespace SmartAlarm.Domain.Entities
         {
             if (!Enabled)
                 throw new InvalidOperationException("Não é possível disparar um alarme desabilitado.");
-            
+
             LastTriggeredAt = DateTime.UtcNow;
         }
 
-        public bool ShouldTriggerNow()
+        public virtual bool ShouldTriggerNow()
         {
             if (!Enabled) return false;
-            
             var now = DateTime.Now;
-            return _schedules.Any(s => s.IsActive && s.ShouldTriggerToday() && 
+            return _schedules.Any(s => s.IsActive && s.ShouldTriggerToday() &&
                                       s.Time.Hour == now.Hour && s.Time.Minute == now.Minute);
         }
     }

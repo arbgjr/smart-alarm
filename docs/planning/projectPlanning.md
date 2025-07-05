@@ -74,7 +74,7 @@ public class Alarm
 
 ---
 
-## 2. Serviços de Domínio
+## 2. Serviços de Domínio ✅
 
 - **Interfaces**: Definir métodos claros e completos nas interfaces de serviço de domínio (`IAlarmDomainService`, `IUserDomainService`, etc.), refletindo os casos de uso reais.
 - **Implementações**: Criar classes concretas para cada serviço, implementando as regras de negócio e orquestrando entidades e VOs.
