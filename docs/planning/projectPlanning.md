@@ -193,7 +193,8 @@ services.AddOpenTelemetryMetrics(builder =>
 
 - Mensageria: OCI Streaming (produção), RabbitMQ (dev/homologação)
 - Storage: OCI Object Storage (produção), MinIO (dev/homologação)
-- KeyVault: OCI Vault (produção), Azure Key Vault/AWS Secrets Manager (opcional)
+- KeyVault: OCI Vault (produção), Azure Key Vault/AWS Secrets Manager (opcional), Hashicorp Vault (dev/homologação)
+- Atualizar docker-compose.yml com serviços do ambiente dev
 
 **Exemplo – Integração Mensageria (OCI Streaming):**
 
@@ -218,6 +219,7 @@ var secret = await ociVaultProvider.GetSecretAsync("DbPassword");
 
 - Repositórios, mensageria, storage e keyvault com integração real e testes de integração
 - Métricas expostas em /metrics (Prometheus)
+- Health expostos em /health
 - Tracing distribuído ativo (OpenTelemetry)
 
 ---
