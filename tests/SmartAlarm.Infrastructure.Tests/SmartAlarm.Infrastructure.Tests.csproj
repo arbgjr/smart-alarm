@@ -26,6 +26,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\SmartAlarm.Infrastructure\SmartAlarm.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\SmartAlarm.Domain\SmartAlarm.Domain.csproj" />
+    <ProjectReference Include="..\..\src\SmartAlarm.KeyVault\SmartAlarm.KeyVault.csproj" />
   </ItemGroup>
 
 </Project>

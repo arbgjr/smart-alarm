@@ -381,7 +381,7 @@ Todos os requisitos de observabilidade e segurança foram **implementados, testa
 
 ---
 
-## 9. Integrações Externas
+## 9. Integrações Externas ✅
 
 **Mensageria:**
 
@@ -449,15 +449,15 @@ public async Task Deve_Ler_Escrver_Segredo_KeyVault()
 
 - Marcar cada item como concluído conforme a implementação real for avançando:
 
-- [ ] Entidades e VOs completos e validados
-- [ ] Serviços de domínio implementados
-- [ ] Application Layer funcional (Commands, Handlers, Validators)
-- [ ] Infraestrutura real (repositórios, mensageria, storage, métricas, tracing, keyvault)
-- [ ] Controllers RESTful completos
-- [ ] Handlers serverless e scripts de deploy
+- [x] Entidades e VOs completos e validados
+- [x] Serviços de domínio implementados
+- [x] Application Layer funcional (Commands, Handlers, Validators)
+- [x] Infraestrutura real (repositórios, mensageria, storage, métricas, tracing, keyvault)
+- [x] Controllers RESTful completos
+- [x] Handlers serverless e scripts de deploy
 - [x] Testes unitários e de integração cobrindo fluxos reais
-- [ ] Observabilidade e segurança implementadas
-- [ ] Documentação atualizada
+- [x] Observabilidade e segurança implementadas
+- [x] Documentação atualizada
 
 ---
 
@@ -504,8 +504,8 @@ public async Task Deve_Ler_Escrver_Segredo_KeyVault()
 
 **Checklist de Governança e Documentação:**
 
-- [ ] Owners definidos para cada serviço/domínio
-- [ ] ADRs atualizados para decisões técnicas
+- [x] Owners definidos para cada serviço/domínio
+- [x] ADRs atualizados para decisões técnicas
 - [x] Memory Bank atualizado a cada entrega
 - [x] Documentação de endpoints e arquitetura atualizada
 - [x] Checklist de PR seguido em todas as entregas
