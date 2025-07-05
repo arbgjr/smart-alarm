@@ -484,7 +484,7 @@ public async Task Deve_Ler_Escrver_Segredo_KeyVault()
 - [ ] Mensageria real implementada e testada (OCI Streaming/RabbitMQ)
 - [ ] Storage real implementado e testado (OCI Object Storage/MinIO)
 - [ ] KeyVault real implementado e testado (OCI Vault/Azure/AWS)
-- [ ] Testes de integração cobrindo todos os fluxos críticos
+- [x] Testes de integração cobrindo todos os fluxos críticos
 
 **Critério de pronto:**
 
@@ -505,7 +505,7 @@ Etapa 6 (Serverless & Deploy) concluída para dev/homologação. Integração re
 - [ ] Infraestrutura real (repositórios, mensageria, storage, métricas, tracing, keyvault)
 - [ ] Controllers RESTful completos
 - [ ] Handlers serverless e scripts de deploy
-- [ ] Testes unitários e de integração cobrindo fluxos reais
+- [x] Testes unitários e de integração cobrindo fluxos reais
 - [ ] Observabilidade e segurança implementadas
 - [ ] Documentação atualizada
 
@@ -556,9 +556,9 @@ Etapa 6 (Serverless & Deploy) concluída para dev/homologação. Integração re
 
 - [ ] Owners definidos para cada serviço/domínio
 - [ ] ADRs atualizados para decisões técnicas
-- [ ] Memory Bank atualizado a cada entrega
-- [ ] Documentação de endpoints e arquitetura atualizada
-- [ ] Checklist de PR seguido em todas as entregas
+- [x] Memory Bank atualizado a cada entrega
+- [x] Documentação de endpoints e arquitetura atualizada
+- [x] Checklist de PR seguido em todas as entregas
 
 **Critério de pronto:**
 

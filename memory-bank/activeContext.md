@@ -2,11 +2,7 @@
 
 ## Current Focus
 
-- Etapa 6 (Serverless & Deploy) concluída para dev/homologação: handlers serverless e integração com OCI Functions prontos para extensão, scripts e estrutura de deploy automatizado presentes, parametrização via KeyVault e variáveis de ambiente padronizada.
-- Integração real com OCI Vault, OCI Object Storage e OCI Streaming documentada como stub, aguardando produção/credenciais.
-- Todos os fluxos MVP, integrações (RabbitMQ, MinIO, Vault, PostgreSQL), observabilidade e testes validados e documentados.
-- ADR-006, observability-patterns.md, README de infraestrutura e docs de planejamento refletem o status real.
-- Memory Bank atualizado e consistente.
+- Etapa 7 (Testes) concluída: cobertura mínima de 80% para código crítico, todos os testes unitários e de integração passando, documentação e checklists atualizados, governança validada. Todos os fluxos MVP, integrações (RabbitMQ, MinIO, Vault, PostgreSQL), observabilidade e testes validados e documentados. ADRs, READMEs e docs refletem o status real. Memory Bank atualizado e consistente.
 
 - Próximos passos: Implementar integração real OCI em produção quando disponível, manter documentação e ADRs atualizados.
 
@@ -14,7 +10,7 @@
 
 - Infraestrutura multi-provider (PostgreSQL/Oracle) implementada e validada
 - Integrações reais: RabbitMQ, MinIO, Vault, PostgreSQL, observabilidade (OpenTelemetry)
-- Testes de integração e unidade validados em Docker
+- Testes de integração e unidade validados em Docker, cobertura mínima de 80% atingida, documentação e governança revisadas.
 - Documentação Markdown, ADR-003, ADR-004, observability-patterns.md atualizados
 - Checklist de governança seguido (owners, documentação, ADR)
 

@@ -150,6 +150,7 @@ appsettings.Local.json
 # Ignore test coverage
 coverage/
 coverage*.json
+TestCoverageReport/
 
 # Ignore generated swagger
 swagger/
