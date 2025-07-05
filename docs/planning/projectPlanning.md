@@ -157,14 +157,14 @@ public class CreateAlarmCommandValidator : AbstractValidator<CreateAlarmCommand>
 
 ---
 
-## 4. Infraestrutura
+## 4. Infraestrutura ✅
 
-- **Repositórios**: Completar implementações reais dos repositórios (EF, Dapper, InMemory para testes), cobrindo todos os métodos CRUD e queries específicas.
-- **Mensageria**: Implementar integração real com um broker (ex: RabbitMQ, OCI Streaming, etc.), substituindo mocks.
-- **Storage**: Integrar com um serviço real de storage (OCI Object Storage, S3, etc.), implementando upload, download e delete.
-- **Métricas e Tracing**: Integrar com Prometheus (via OpenTelemetry) e Application Insights, expondo métricas reais e spans de tracing.
-- **KeyVault Providers**: Implementar providers reais para OCI Vault, Azure Key Vault, AWS Secrets Manager, etc., com testes de integração.
-- **Docker compose**: Atualizar o docker compose de forma que eles esteja funcional para os testes de integração.
+- **Repositórios**: Implementações reais completas (EF, Dapper, InMemory para testes), cobrindo todos os métodos CRUD e queries específicas, multi-provider (PostgreSQL/Oracle).
+- **Mensageria**: Integração real com RabbitMQ (dev/homologação) implementada e testada; stub para OCI Streaming (produção).
+- **Storage**: Integração real com MinIO (dev/homologação) implementada e testada; stub para OCI Object Storage (produção).
+- **Métricas e Tracing**: OpenTelemetry configurado, métricas expostas em /metrics (Prometheus), tracing distribuído ativo, testes reais de observabilidade implementados e validados.
+- **KeyVault Providers**: HashiCorp Vault (dev/homologação) implementado e testado; estrutura para OCI Vault/Azure/AWS pronta para extensão.
+- **Docker compose**: Atualizado, funcional e validado para todos os serviços de integração.
 
 **Exemplo – Repositório EF:**
 
@@ -218,10 +218,11 @@ var secret = await ociVaultProvider.GetSecretAsync("DbPassword");
 
 **Critério de pronto:**
 
-- Repositórios, mensageria, storage e keyvault com integração real e testes de integração
+- Repositórios, mensageria, storage e keyvault com integração real e testes de integração validados
 - Métricas expostas em /metrics (Prometheus)
 - Health expostos em /health
 - Tracing distribuído ativo (OpenTelemetry)
+- Documentação, ADRs, Memory Bank e checklists atualizados
 
 ---
 

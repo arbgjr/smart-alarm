@@ -2,7 +2,7 @@
 
 ## Completed Features
 
-- Infraestrutura multi-provider (PostgreSQL dev/testes, Oracle produção) implementada e validada
+- Etapa 4 (Infraestrutura) concluída: multi-provider (PostgreSQL dev/testes, Oracle produção), mensageria real (RabbitMQ), storage real (MinIO), KeyVault real (Vault), observabilidade (tracing/métricas OpenTelemetry), docker-compose validado
 - Todos os testes de integração e unidade passando em ambiente dockerizado
 - Initial folder and project structure
 - Base documentation created

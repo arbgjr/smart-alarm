@@ -1,5 +1,7 @@
 # Observability Patterns and Guidelines
 
+**Status:** Todos os padrões, exemplos e integrações de observabilidade (tracing, métricas, logs estruturados) estão implementados, testados e validados conforme etapa 4 do planejamento.
+
 ## Overview
 
 This document provides comprehensive guidelines and examples for implementing observability in Smart Alarm services, following distributed tracing, structured logging, and metrics collection patterns.
@@ -72,19 +74,23 @@ public async Task<TResponse> Handle(TRequest request, CancellationToken cancella
 ### Tagging Standards
 
 **Entity Operations**:
+
 - `entity.id`: The primary identifier of the entity being operated on
 - `entity.type`: Type of entity (alarm, user, routine, etc.)
 - `operation.type`: create, read, update, delete, list
 
 **User Context**:
+
 - `user.id`: Current user identifier
 - `user.role`: User role if applicable
 
 **Request Context**:
+
 - `request.size`: Size of the request (e.g., number of items in batch operations)
 - `response.size`: Size of the response
 
 **Business Context**:
+
 - `alarm.name`: Alarm name for alarm operations
 - `alarm.enabled`: Whether alarm is enabled
 - `validation.errors`: Number of validation errors
@@ -259,6 +265,7 @@ public class GetAlarmByIdHandler : IRequestHandler<GetAlarmByIdQuery, AlarmRespo
 ## Code Review Checklist
 
 ### ✅ Distributed Tracing
+
 - [ ] Handler creates an activity with descriptive name
 - [ ] Activity includes relevant tags (entity.id, user.id, operation.type)
 - [ ] Activity status is set appropriately (Ok for success, Error for failures)
@@ -266,6 +273,7 @@ public class GetAlarmByIdHandler : IRequestHandler<GetAlarmByIdQuery, AlarmRespo
 - [ ] No sensitive information in activity tags
 
 ### ✅ Structured Logging
+
 - [ ] All operations log start/completion with relevant context
 - [ ] Error scenarios are logged with appropriate level (Warning/Error)
 - [ ] Log messages use structured parameters instead of string interpolation
@@ -273,6 +281,7 @@ public class GetAlarmByIdHandler : IRequestHandler<GetAlarmByIdQuery, AlarmRespo
 - [ ] Log messages are descriptive and actionable
 
 ### ✅ Metrics Collection
+
 - [ ] Success operations increment appropriate counters
 - [ ] Error scenarios increment error-specific counters
 - [ ] Metrics have descriptive names and units
@@ -280,6 +289,7 @@ public class GetAlarmByIdHandler : IRequestHandler<GetAlarmByIdQuery, AlarmRespo
 - [ ] Metrics align with business requirements
 
 ### ✅ Error Handling
+
 - [ ] All exceptions are caught and properly logged
 - [ ] Activity status reflects the actual outcome
 - [ ] Error metrics are updated for each error type

@@ -15,22 +15,22 @@ Provide reusable components for observability in all Smart Alarm services, follo
 ## How to use in other modules
 
 1. **Add a reference to the Observability project:**
-   
+
    In your module's `.csproj` file (e.g., Api, IntegrationService), include:
-   
+
    ```xml
    <ProjectReference Include="..\SmartAlarm.Observability\SmartAlarm.Observability.csproj" />
    ```
 
 2. **Add the required NuGet packages:**
-   
+
    - `Serilog.AspNetCore`
    - `OpenTelemetry.Extensions.Hosting`
    - `OpenTelemetry.Instrumentation.AspNetCore`
    - `OpenTelemetry.Exporter.Prometheus`
 
 3. **Configure Serilog and OpenTelemetry in `Program.cs`:**
-   
+
    ```csharp
    using Serilog;
    using OpenTelemetry.Resources;
@@ -60,14 +60,14 @@ Provide reusable components for observability in all Smart Alarm services, follo
    ```
 
 4. **Add the middleware to the pipeline:**
-   
+
    ```csharp
    app.UseObservability();
    app.UseOpenTelemetryPrometheusScrapingEndpoint();
    ```
 
 5. **Configure `appsettings.json` for Serilog:**
-   
+
    ```json
    {
      "Serilog": {
@@ -87,18 +87,18 @@ Provide reusable components for observability in all Smart Alarm services, follo
    ```
 
 ## Notes
+
 - Always follow Clean Architecture and SOLID standards.
 - The middleware is extensible for custom logs, distributed tracing, and custom metrics.
 - See `systemPatterns.md` to ensure architectural compliance.
 - **📚 Complete documentation**: See `docs/architecture/observability-patterns.md` for detailed implementation patterns and examples.
 
-## Implementation Requirements
+## Implementation Status
 
-All Application Layer handlers **MUST** implement:
+**Etapa 4 concluída:**
 
-1. **Distributed Tracing**: Activity creation with relevant tags and status
-2. **Structured Logging**: Contextual logging with structured parameters
-3. **Metrics Collection**: Success/error counters and performance histograms
-4. **Error Handling**: Proper activity status and error metrics on failures
+- Observabilidade implementada e validada: tracing distribuído (OpenTelemetry), métricas customizadas (Prometheus), logs estruturados (Serilog), health endpoints e dashboards.
+- Testes reais de integração para tracing e métricas presentes e passando.
+- Todos os handlers críticos da Application Layer instrumentados conforme padrões (systemPatterns.md, observability-patterns.md).
 
-Refer to the complete observability patterns documentation for implementation examples and code review guidelines.
+Consulte `docs/architecture/observability-patterns.md` para exemplos e padrões detalhados.
