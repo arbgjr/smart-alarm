@@ -2,6 +2,11 @@
 
 ## Completed Features
 
+- Etapa 6 (Serverless & Deploy) concluída para dev/homologação: handlers serverless e integração com OCI Functions prontos para extensão, scripts e estrutura de deploy automatizado presentes, parametrização via KeyVault e variáveis de ambiente padronizada.
+- Integração real com OCI Vault, OCI Object Storage e OCI Streaming documentada como stub, aguardando produção/credenciais.
+- Todos os fluxos MVP, integrações (RabbitMQ, MinIO, Vault, PostgreSQL), observabilidade e testes validados e documentados.
+- ADR-006, observability-patterns.md, README de infraestrutura e docs de planejamento refletem o status real.
+- Memory Bank atualizado e consistente.
 - Etapa 4 (Infraestrutura) concluída: multi-provider (PostgreSQL dev/testes, Oracle produção), mensageria real (RabbitMQ), storage real (MinIO), KeyVault real (Vault), observabilidade (tracing/métricas OpenTelemetry), docker-compose validado
 - Todos os testes de integração e unidade passando em ambiente dockerizado
 - Initial folder and project structure

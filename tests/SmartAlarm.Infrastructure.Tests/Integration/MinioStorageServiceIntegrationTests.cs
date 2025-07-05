@@ -12,6 +12,8 @@ namespace SmartAlarm.Infrastructure.Tests.Integration
 
         public MinioStorageServiceIntegrationTests()
         {
+            // Força o endpoint para localhost para rodar fora do Docker
+            Environment.SetEnvironmentVariable("MINIO_ENDPOINT", "localhost");
             var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
             _logger = loggerFactory.CreateLogger<MinioStorageService>();
             _service = new MinioStorageService(_logger);

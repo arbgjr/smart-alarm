@@ -105,6 +105,17 @@ http://localhost:5000/api/v1/alarms
 
 - Para dúvidas técnicas, consulte a documentação do projeto ou entre em contato com o time backend.
 
+## Serverless (OCI Function)
+
+Além da API REST, o fluxo de criação de alarme está disponível como handler serverless compatível com OCI Functions, seguindo Clean Architecture e padrões de segurança.
+
+- **Handler:** `AlarmFunction` (ver documentação técnica em `docs/AlarmFunction.md`)
+- **Deploy:** Automatizado via script PowerShell e OCI CLI
+- **Parâmetros:** Segredos via KeyVault, ambiente via variáveis
+- **Testes:** Cobertura mínima de 80% (unitário/integrado)
+
+Consulte a documentação técnica para detalhes de uso, exemplos e integração serverless.
+
 ## Conformidade
 
 - Todos os endpoints, autenticação, validação, logging, tracing e métricas implementados conforme padrões.

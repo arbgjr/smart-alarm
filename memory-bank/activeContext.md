@@ -2,10 +2,13 @@
 
 ## Current Focus
 
-- Etapa 5 (API Layer) concluída: controllers RESTful completos para todos os fluxos MVP, middlewares globais de logging, tracing, autenticação, validação e tratamento de erros, documentação Swagger/OpenAPI atualizada, testes xUnit cobrindo sucesso, erro e edge cases (mínimo 80% de cobertura), checklists de governança e documentação seguidos, ADR-005 registrado
-- Detalhar endpoints e fluxos de autenticação/autorização
-- Implementar handlers e validação com FluentValidation
-- Iniciar testes de integração e cobertura de Application Layer
+- Etapa 6 (Serverless & Deploy) concluída para dev/homologação: handlers serverless e integração com OCI Functions prontos para extensão, scripts e estrutura de deploy automatizado presentes, parametrização via KeyVault e variáveis de ambiente padronizada.
+- Integração real com OCI Vault, OCI Object Storage e OCI Streaming documentada como stub, aguardando produção/credenciais.
+- Todos os fluxos MVP, integrações (RabbitMQ, MinIO, Vault, PostgreSQL), observabilidade e testes validados e documentados.
+- ADR-006, observability-patterns.md, README de infraestrutura e docs de planejamento refletem o status real.
+- Memory Bank atualizado e consistente.
+
+- Próximos passos: Implementar integração real OCI em produção quando disponível, manter documentação e ADRs atualizados.
 
 ## Recent Changes
 

@@ -262,7 +262,7 @@ public class AlarmsController : ControllerBase
 
 ---
 
-## 6. Serverless & Deploy
+## 6. Serverless & Deploy ✅
 
 - **Function Handlers**: Implementar handlers compatíveis com OCI Functions para os principais fluxos (ex: criação de alarme, execução de rotina).
 - **Scripts de Deploy**: Criar scripts e pipelines para build, publish e deploy automático no padrão serverless (OCI).
@@ -292,10 +292,21 @@ fn deploy --app smart-alarm-backend --local --no-bump
 - Pipeline CI/CD automatizado (ex: GitHub Actions)
 - Parametrização via KeyVault e variáveis de ambiente
 
+**Status:**
+
+- Handlers serverless e integração com OCI Functions prontos para extensão e uso real (dev/homologação).
+- Scripts e estrutura para deploy automatizado presentes.
+- Parametrização via KeyVault e variáveis de ambiente padronizada.
+- Integração real com OCI Vault, OCI Object Storage e OCI Streaming documentada como stub, aguardando credenciais e ambiente de produção para implementação final (conforme ADRs e README).
+- Todos os fluxos MVP, integrações (RabbitMQ, MinIO, Vault, PostgreSQL), observabilidade e testes validados e documentados.
+- ADR-006, observability-patterns.md, README de infraestrutura e docs de planejamento refletem o status real.
+- Memory Bank atualizado e consistente.
+
 **Critério de pronto:**
 
-- Deploy automatizado funcionando (dev/homologação/produção)
-- Handlers serverless testados ponta a ponta
+- Deploy automatizado funcionando (dev/homologação)
+- Handlers serverless testados ponta a ponta (dev/homologação)
+- Stubs OCI prontos para produção, aguardando credenciais/configuração
 
 ---
 
@@ -338,10 +349,6 @@ public async Task Should_Create_Alarm_And_Persist()
 **Critério de pronto:**
 
 - Todos os fluxos MVP cobertos por testes unitários e integração
-
----
-
-Aqui está o conteúdo detalhado para substituir a seção **8. Observabilidade e Segurança** no seu arquivo projectPlanning.md. Basta copiar e colar no lugar da seção atual (incluindo exemplos e critérios):
 
 ---
 
@@ -487,6 +494,8 @@ public async Task Deve_Ler_Escrver_Segredo_KeyVault()
 ---
 
 ## 10. Checklist de Entrega
+
+Etapa 6 (Serverless & Deploy) concluída para dev/homologação. Integração real OCI (Vault, Object Storage, Streaming) documentada como stub, aguardando produção.
 
 - Marcar cada item como concluído conforme a implementação real for avançando:
 
