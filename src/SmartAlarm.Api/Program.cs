@@ -5,6 +5,8 @@ using OpenTelemetry.Metrics;
 using SmartAlarm.Api.Middleware;
 using SmartAlarm.Api.Configuration;
 using SmartAlarm.KeyVault.Extensions;
+using SmartAlarm.Infrastructure;
+using MediatR;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +18,12 @@ builder.Host.UseSerilog((context, services, configuration) =>
         .ReadFrom.Services(services)
         .Enrich.FromLogContext();
 });
+
+// Registrar MediatR apontando para a Application Layer
+builder.Services.AddMediatR(typeof(SmartAlarm.Application.Commands.CreateAlarmCommand).Assembly);
+
+// Registrar infraestrutura (repositories e serviços)
+builder.Services.AddSmartAlarmInfrastructure(builder.Configuration);
 
 // Configuração do OpenTelemetry (Tracing e Métricas)
 builder.Services.AddOpenTelemetry()
@@ -98,7 +106,7 @@ var summaries = new[]
 
 app.MapGet("/weatherforecast", () =>
 {
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
+    var forecast = Enumerable.Range(1, 5).Select(index =>
         new WeatherForecast
         (
             DateOnly.FromDateTime(DateTime.Now.AddDays(index)),

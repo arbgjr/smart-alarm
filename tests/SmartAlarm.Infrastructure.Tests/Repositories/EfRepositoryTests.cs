@@ -23,11 +23,14 @@ namespace SmartAlarm.Infrastructure.Tests.Repositories
 
         public EfRepositoryTests()
         {
+            var connection = new Microsoft.Data.Sqlite.SqliteConnection("DataSource=:memory:");
+            connection.Open();
             var options = new DbContextOptionsBuilder<SmartAlarmDbContext>()
-                .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+                .UseSqlite(connection)
                 .Options;
 
             _context = new SmartAlarmDbContext(options);
+            _context.Database.EnsureCreated();
             _userRepository = new EfUserRepository(_context);
             _alarmRepository = new EfAlarmRepository(_context);
         }

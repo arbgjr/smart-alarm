@@ -22,7 +22,7 @@ namespace SmartAlarm.Infrastructure.Data.Configurations
             // Configure Name value object
             builder.Property(r => r.Name)
                 .HasConversion(
-                    name => name.Value,
+                    name => name != null ? name.Value : string.Empty,
                     value => new Domain.ValueObjects.Name(value))
                 .HasColumnName("Name")
                 .HasMaxLength(255)
@@ -43,8 +43,10 @@ namespace SmartAlarm.Infrastructure.Data.Configurations
             // Configure Actions as JSON
             builder.Property(r => r.Actions)
                 .HasConversion(
-                    actions => System.Text.Json.JsonSerializer.Serialize(actions, (System.Text.Json.JsonSerializerOptions)null),
-                    json => System.Text.Json.JsonSerializer.Deserialize<string[]>(json, (System.Text.Json.JsonSerializerOptions)null))
+                    actions => System.Text.Json.JsonSerializer.Serialize(actions ?? new List<string>(), System.Text.Json.JsonSerializerOptions.Default),
+                    json => string.IsNullOrWhiteSpace(json)
+                        ? new List<string>()
+                        : System.Text.Json.JsonSerializer.Deserialize<List<string>>(json, System.Text.Json.JsonSerializerOptions.Default) ?? new List<string>())
                 .HasColumnName("Actions")
                 .HasColumnType("CLOB");
 

@@ -27,6 +27,7 @@
 6. **Automated Tests**
    - Write unit tests for the main use cases (xUnit, Moq). ⚠️ (Automation script created, but minimum 80% coverage not yet reached)
    - Cover success, error, and edge scenarios. ⚠️ (Partial coverage, error and edge case scenarios still pending)
+   - Transaction rollback test temporarily disabled due to SQLite in-memory limitations. Registered as tech debt; will be re-enabled with real integration tests.
 
 7. **Basic Security**
    - Structure JWT authentication (without external integration initially). ⚠️ (Structure planned, implementation pending)

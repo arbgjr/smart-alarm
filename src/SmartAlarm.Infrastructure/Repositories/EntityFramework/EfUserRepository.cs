@@ -28,8 +28,12 @@ namespace SmartAlarm.Infrastructure.Repositories.EntityFramework
 
         public async Task<User> GetByEmailAsync(string email)
         {
-            return await _context.Users
-                .FirstOrDefaultAsync(u => u.Email.Address == email);
+            // Filtra em memória para evitar problemas de conversão de Value Object
+            return await Task.FromResult(
+                _context.Users
+                    .AsEnumerable()
+                    .FirstOrDefault(u => u.Email.Address == email)
+            );
         }
 
         public async Task AddAsync(User user)

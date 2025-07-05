@@ -48,7 +48,7 @@ namespace SmartAlarm.Domain.Entities
         public bool ShouldTriggerToday()
         {
             var today = DateTime.Today.DayOfWeek;
-            
+
             return Recurrence switch
             {
                 ScheduleRecurrence.Once => true,
@@ -76,32 +76,5 @@ namespace SmartAlarm.Domain.Entities
         }
     }
 
-    /// <summary>
-    /// Enum para tipos de recorrência de agenda.
-    /// </summary>
-    public enum ScheduleRecurrence
-    {
-        Once = 0,
-        Daily = 1,
-        Weekly = 2,
-        Weekdays = 3,
-        Weekends = 4
-    }
-
-    /// <summary>
-    /// Enum com flags para dias da semana.
-    /// </summary>
-    [Flags]
-    public enum DaysOfWeek
-    {
-        None = 0,
-        Sunday = 1,
-        Monday = 2,
-        Tuesday = 4,
-        Wednesday = 8,
-        Thursday = 16,
-        Friday = 32,
-        Saturday = 64,
-        All = Sunday | Monday | Tuesday | Wednesday | Thursday | Friday | Saturday
-    }
+    // ...existing code...
 }

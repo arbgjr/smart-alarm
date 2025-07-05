@@ -1,6 +1,18 @@
+---
+
+## 04/07/2025
+
+### Teste de Rollback de Transação desabilitado
+
+- **Descrição**: O teste `UnitOfWork_Should_RollbackTransactions` foi desabilitado porque o SQLite in-memory não suporta rollback real de transações. Reabilitar quando testes de integração com banco real forem implementados.
+- **Impacto**: Não há validação automatizada de rollback transacional.
+- **Prioridade**: Média
+- **Estimativa**: 1 dia para reabilitar/testar quando integração real estiver disponível.
+
 # Registro de Débito Técnico - Backend Smart Alarm
 
 ## Data: 03/07/2025
+
 ## Análise realizada por: [Especialista em Documentação]
 
 ### Débitos Técnicos Críticos

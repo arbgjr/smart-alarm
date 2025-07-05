@@ -8,10 +8,10 @@ using Xunit;
 
 namespace SmartAlarm.Tests.Api
 {
-    public class AuthenticationTests : IClassFixture<WebApplicationFactory<SmartAlarm.Api.Program>>
+    public class AuthenticationTests : IClassFixture<CustomWebApplicationFactory<SmartAlarm.Api.Program>>
     {
-        private readonly WebApplicationFactory<SmartAlarm.Api.Program> _factory;
-        public AuthenticationTests(WebApplicationFactory<SmartAlarm.Api.Program> factory)
+        private readonly CustomWebApplicationFactory<SmartAlarm.Api.Program> _factory;
+        public AuthenticationTests(CustomWebApplicationFactory<SmartAlarm.Api.Program> factory)
         {
             _factory = factory;
         }
