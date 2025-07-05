@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using SmartAlarm.Api.Models;
+using SmartAlarm.Infrastructure.Configuration;
 using SmartAlarm.Api.Services;
 using SmartAlarm.Application.DTOs.User;
 using System.Threading.Tasks;
@@ -17,36 +18,37 @@ namespace SmartAlarm.Api.Controllers
     [Route("api/v1/auth")]
     public class AuthController : ControllerBase
     {
+
         private readonly ILogger<AuthController> _logger;
-        private readonly IConfiguration _configuration;
+        private readonly IConfigurationResolver _configResolver;
         private readonly ICurrentUserService _currentUserService;
 
-        public AuthController(ILogger<AuthController> logger, IConfiguration configuration, ICurrentUserService currentUserService)
+        public AuthController(ILogger<AuthController> logger, IConfigurationResolver configResolver, ICurrentUserService currentUserService)
         {
             _logger = logger;
-            _configuration = configuration;
+            _configResolver = configResolver;
             _currentUserService = currentUserService;
         }
 
         [HttpPost("login")]
+
         public async Task<IActionResult> Login([FromBody] LoginRequestDto loginDto)
         {
             // Simulação de autenticação (mock)
             if (loginDto.Username == "admin" && loginDto.Password == "admin")
             {
-                var token = GenerateJwtToken(loginDto.Username);
+                var token = await GenerateJwtTokenAsync(loginDto.Username);
                 return Ok(new LoginResponseDto { Token = token });
             }
             _logger.LogWarning("Tentativa de login inválida para o usuário {Username}", loginDto.Username);
             return Unauthorized(new ErrorResponse { StatusCode = 401, Title = "Credenciais inválidas", Detail = "Usuário ou senha incorretos." });
         }
 
-        private string GenerateJwtToken(string username)
+        private async Task<string> GenerateJwtTokenAsync(string username)
         {
-            var jwtSettings = _configuration.GetSection("Jwt");
-            var secret = jwtSettings["Secret"];
-            var issuer = jwtSettings["Issuer"];
-            var audience = jwtSettings["Audience"];
+            var secret = await _configResolver.GetConfigAsync("Jwt:Secret");
+            var issuer = await _configResolver.GetConfigAsync("Jwt:Issuer");
+            var audience = await _configResolver.GetConfigAsync("Jwt:Audience");
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
             var claims = new[]
@@ -59,7 +61,7 @@ namespace SmartAlarm.Api.Controllers
                 issuer: issuer,
                 audience: audience,
                 claims: claims,
-                expires: DateTime.UtcNow.AddHours(2),
+                expires: DateTime.UtcNow.AddHours(1),
                 signingCredentials: creds
             );
             return new JwtSecurityTokenHandler().WriteToken(token);

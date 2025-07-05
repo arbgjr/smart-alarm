@@ -32,6 +32,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SmartAlarm.Domain\SmartAlarm.Domain.csproj" />
+    <ProjectReference Include="..\SmartAlarm.KeyVault\SmartAlarm.KeyVault.csproj" />
   </ItemGroup>
 
 </Project>

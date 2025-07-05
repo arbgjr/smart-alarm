@@ -2,6 +2,7 @@ using System.Text;
 using Microsoft.Extensions.Logging;
 using SmartAlarm.Infrastructure.Storage;
 using Xunit;
+using Moq;
 
 namespace SmartAlarm.Infrastructure.Tests.Integration
 {
@@ -9,14 +10,19 @@ namespace SmartAlarm.Infrastructure.Tests.Integration
     {
         private readonly MinioStorageService _service;
         private readonly ILogger<MinioStorageService> _logger;
+        private readonly Mock<SmartAlarm.Infrastructure.Configuration.IConfigurationResolver> _configResolverMock;
 
         public MinioStorageServiceIntegrationTests()
         {
             // Força o endpoint para localhost para rodar fora do Docker
             Environment.SetEnvironmentVariable("MINIO_ENDPOINT", "localhost");
+            Environment.SetEnvironmentVariable("MINIO_PORT", "9000");
             var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
             _logger = loggerFactory.CreateLogger<MinioStorageService>();
-            _service = new MinioStorageService(_logger);
+            _configResolverMock = new Mock<SmartAlarm.Infrastructure.Configuration.IConfigurationResolver>();
+            _configResolverMock.Setup(x => x.GetConfigAsync("MINIO_ENDPOINT", It.IsAny<System.Threading.CancellationToken>())).ReturnsAsync("localhost");
+            _configResolverMock.Setup(x => x.GetConfigAsync("MINIO_PORT", It.IsAny<System.Threading.CancellationToken>())).ReturnsAsync("9000");
+            _service = new MinioStorageService(_logger, _configResolverMock.Object);
         }
 
         [Fact(DisplayName = "Deve fazer upload, download e delete no MinIO")]

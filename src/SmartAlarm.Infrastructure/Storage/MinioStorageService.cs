@@ -2,6 +2,7 @@ using System.IO;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Minio;
+using SmartAlarm.Infrastructure.Configuration;
 
 namespace SmartAlarm.Infrastructure.Storage
 {
@@ -14,17 +15,25 @@ namespace SmartAlarm.Infrastructure.Storage
         private readonly ILogger<MinioStorageService> _logger;
         private const string BucketName = "smartalarm";
 
-        public MinioStorageService(ILogger<MinioStorageService> logger)
+        private readonly IConfigurationResolver _configResolver;
+
+        public MinioStorageService(ILogger<MinioStorageService> logger, IConfigurationResolver configResolver)
         {
-            // Permite sobrescrever o endpoint via variável de ambiente para rodar localmente
-            var endpoint = Environment.GetEnvironmentVariable("MINIO_ENDPOINT") ?? "minio";
-            var portStr = Environment.GetEnvironmentVariable("MINIO_PORT") ?? "9000";
-            int port = int.TryParse(portStr, out var p) ? p : 9000;
+            _logger = logger;
+            _configResolver = configResolver;
+
+            // Busca configs obrigatoriamente via ConfigurationResolver
+            var endpoint = _configResolver.GetConfigAsync("MINIO_ENDPOINT").GetAwaiter().GetResult();
+            var portStr = _configResolver.GetConfigAsync("MINIO_PORT").GetAwaiter().GetResult();
+            if (!int.TryParse(portStr, out var port))
+            {
+                _logger.LogError("MINIO_PORT inválido: {PortStr}", portStr);
+                throw new InvalidOperationException($"MINIO_PORT inválido: {portStr}");
+            }
             _minioClient = new MinioClient()
                 .WithEndpoint(endpoint, port)
                 .WithCredentials("minio", "minio123")
                 .Build();
-            _logger = logger;
         }
 
         public async Task UploadAsync(string path, Stream content)

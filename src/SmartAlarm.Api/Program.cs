@@ -111,6 +111,9 @@ builder.Services.AddScoped<SmartAlarm.Api.Services.ICurrentUserService, SmartAla
 builder.Services.AddSingleton<SmartAlarm.Api.Services.IUserConsentService, SmartAlarm.Api.Services.UserConsentService>();
 
 // Configure KeyVault services
+
+// Registra IConfigurationResolver para injeção de dependência
+builder.Services.AddScoped<SmartAlarm.Infrastructure.Configuration.IConfigurationResolver, SmartAlarm.Infrastructure.Configuration.ConfigurationResolver>();
 builder.Services.AddKeyVault(builder.Configuration);
 
 

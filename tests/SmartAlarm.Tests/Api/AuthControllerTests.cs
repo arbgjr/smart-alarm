@@ -14,18 +14,15 @@ namespace SmartAlarm.Tests.Api
     {
         private readonly AuthController _controller;
         private readonly Mock<ILogger<AuthController>> _loggerMock = new();
-        private readonly Mock<IConfiguration> _configMock = new();
+        private readonly Mock<SmartAlarm.Infrastructure.Configuration.IConfigurationResolver> _configResolverMock = new();
         private readonly Mock<ICurrentUserService> _currentUserServiceMock = new();
 
         public AuthControllerTests()
         {
-            var inMemorySettings = new Dictionary<string, string?> {
-                {"Jwt:Secret", "TEST_SECRET_KEY_12345678901234567890123456789012"},
-                {"Jwt:Issuer", "TestIssuer"},
-                {"Jwt:Audience", "TestAudience"}
-            };
-            var config = new ConfigurationBuilder().AddInMemoryCollection(inMemorySettings).Build();
-            _controller = new AuthController(_loggerMock.Object, config, _currentUserServiceMock.Object);
+            _configResolverMock.Setup(x => x.GetConfigAsync("Jwt:Secret", It.IsAny<System.Threading.CancellationToken>())).ReturnsAsync("TEST_SECRET_KEY_12345678901234567890123456789012");
+            _configResolverMock.Setup(x => x.GetConfigAsync("Jwt:Issuer", It.IsAny<System.Threading.CancellationToken>())).ReturnsAsync("TestIssuer");
+            _configResolverMock.Setup(x => x.GetConfigAsync("Jwt:Audience", It.IsAny<System.Threading.CancellationToken>())).ReturnsAsync("TestAudience");
+            _controller = new AuthController(_loggerMock.Object, _configResolverMock.Object, _currentUserServiceMock.Object);
         }
 
         [Fact]
