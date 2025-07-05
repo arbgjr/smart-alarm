@@ -11,45 +11,46 @@ namespace SmartAlarm.Infrastructure.Data
     /// Entity Framework Core implementation of Unit of Work pattern.
     /// Provides transaction coordination and ensures consistency across repositories.
     /// </summary>
+
     public class EfUnitOfWork : IUnitOfWork
     {
-        private readonly SmartAlarmDbContext _context;
-        private IDbContextTransaction _transaction;
+        protected readonly SmartAlarmDbContext _context;
+        private IDbContextTransaction? _transaction;
         private bool _disposed = false;
 
         // Lazy-loaded repositories
-        private IAlarmRepository _alarms;
-        private IUserRepository _users;
-        private IScheduleRepository _schedules;
-        private IRoutineRepository _routines;
-        private IIntegrationRepository _integrations;
+        protected IAlarmRepository? _alarms;
+        protected IUserRepository? _users;
+        protected IScheduleRepository? _schedules;
+        protected IRoutineRepository? _routines;
+        protected IIntegrationRepository? _integrations;
 
         public EfUnitOfWork(SmartAlarmDbContext context)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public IAlarmRepository Alarms
+        public virtual IAlarmRepository Alarms
         {
             get { return _alarms ??= new EfAlarmRepository(_context); }
         }
 
-        public IUserRepository Users
+        public virtual IUserRepository Users
         {
             get { return _users ??= new EfUserRepository(_context); }
         }
 
-        public IScheduleRepository Schedules
+        public virtual IScheduleRepository Schedules
         {
             get { return _schedules ??= new EfScheduleRepository(_context); }
         }
 
-        public IRoutineRepository Routines
+        public virtual IRoutineRepository Routines
         {
             get { return _routines ??= new EfRoutineRepository(_context); }
         }
 
-        public IIntegrationRepository Integrations
+        public virtual IIntegrationRepository Integrations
         {
             get { return _integrations ??= new EfIntegrationRepository(_context); }
         }

@@ -48,7 +48,7 @@ namespace SmartAlarm.Infrastructure.Data.Configurations
                         ? new List<string>()
                         : System.Text.Json.JsonSerializer.Deserialize<List<string>>(json, System.Text.Json.JsonSerializerOptions.Default) ?? new List<string>())
                 .HasColumnName("Actions")
-                .HasColumnType("CLOB");
+                .HasColumnType("text");
 
             // Index for AlarmId
             builder.HasIndex(r => r.AlarmId)

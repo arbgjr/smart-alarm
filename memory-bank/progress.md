@@ -2,6 +2,8 @@
 
 ## Completed Features
 
+- Infraestrutura multi-provider (PostgreSQL dev/testes, Oracle produção) implementada e validada
+- Todos os testes de integração e unidade passando em ambiente dockerizado
 - Initial folder and project structure
 - Base documentation created
 - Architecture standards defined

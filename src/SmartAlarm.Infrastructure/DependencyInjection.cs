@@ -2,9 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using SmartAlarm.Domain.Repositories;
 using SmartAlarm.Infrastructure.Data;
@@ -25,30 +22,45 @@ namespace SmartAlarm.Infrastructure
         /// </summary>
         public static IServiceCollection AddSmartAlarmInfrastructure(this IServiceCollection services, IConfiguration configuration)
         {
-            // Add Entity Framework DbContext
-            services.AddDbContext<SmartAlarmDbContext>(options =>
+
+            // Registro condicional de provider do banco
+            var dbProvider = configuration.GetValue<string>("Database:Provider");
+            if (string.Equals(dbProvider, "PostgreSQL", StringComparison.OrdinalIgnoreCase))
             {
-                var connectionString = configuration.GetConnectionString("OracleDb");
-                if (!string.IsNullOrEmpty(connectionString))
+                var pgConn = configuration.GetConnectionString("PostgresDb");
+                services.AddDbContext<SmartAlarmDbContext>(options =>
                 {
-                    options.UseOracle(connectionString);
-                }
-                else
+                    if (!string.IsNullOrEmpty(pgConn))
+                        options.UseNpgsql(pgConn);
+                    else
+                        options.UseInMemoryDatabase("SmartAlarmInMemory");
+                });
+                // UnitOfWork e repositórios específicos para PostgreSQL
+                services.AddScoped<IUnitOfWork, EfUnitOfWorkPostgres>();
+                services.AddScoped<IAlarmRepository, EfAlarmRepositoryPostgres>();
+                services.AddScoped<IUserRepository, EfUserRepositoryPostgres>();
+                services.AddScoped<IScheduleRepository, EfScheduleRepositoryPostgres>();
+                services.AddScoped<IRoutineRepository, EfRoutineRepositoryPostgres>();
+                services.AddScoped<IIntegrationRepository, EfIntegrationRepositoryPostgres>();
+            }
+            else
+            {
+                var oracleConn = configuration.GetConnectionString("OracleDb");
+                services.AddDbContext<SmartAlarmDbContext>(options =>
                 {
-                    // Fallback to in-memory database for development/testing
-                    options.UseInMemoryDatabase("SmartAlarmInMemory");
-                }
-            });
-
-            // Register Unit of Work
-            services.AddScoped<IUnitOfWork, EfUnitOfWork>();
-
-            // Register EF Core repositories
-            services.AddScoped<IAlarmRepository, EfAlarmRepository>();
-            services.AddScoped<IUserRepository, EfUserRepository>();
-            services.AddScoped<IScheduleRepository, EfScheduleRepository>();
-            services.AddScoped<IRoutineRepository, EfRoutineRepository>();
-            services.AddScoped<IIntegrationRepository, EfIntegrationRepository>();
+                    if (!string.IsNullOrEmpty(oracleConn))
+                        options.UseOracle(oracleConn);
+                    else
+                        options.UseInMemoryDatabase("SmartAlarmInMemory");
+                });
+                // UnitOfWork e repositórios padrão (Oracle)
+                services.AddScoped<IUnitOfWork, EfUnitOfWork>();
+                services.AddScoped<IAlarmRepository, EfAlarmRepository>();
+                services.AddScoped<IUserRepository, EfUserRepository>();
+                services.AddScoped<IScheduleRepository, EfScheduleRepository>();
+                services.AddScoped<IRoutineRepository, EfRoutineRepository>();
+                services.AddScoped<IIntegrationRepository, EfIntegrationRepository>();
+            }
 
             // Register infrastructure services
             services.AddScoped<IEmailService, LoggingEmailService>();

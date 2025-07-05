@@ -36,7 +36,7 @@ namespace SmartAlarm.Infrastructure.Data.Configurations
             builder.Property(i => i.Configuration)
                 .IsRequired()
                 .HasColumnName("Configuration")
-                .HasColumnType("CLOB");
+                .HasColumnType("text");
 
             builder.Property(i => i.IsActive)
                 .IsRequired()

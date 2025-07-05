@@ -2,6 +2,11 @@
 
 Esta camada implementa todas as preocupações técnicas e integrações externas do Smart Alarm, seguindo Clean Architecture.
 
+## Decisão Arquitetural Importante (2025-07-05)
+
+> **Abstração Multi-Provider:**
+> A infraestrutura implementa repositórios e UnitOfWork desacoplados do domínio, com implementações específicas para cada banco (PostgreSQL para dev/testes, Oracle para produção). A seleção do provider é feita via DI e configuração, conforme definido na [ADR-004](../../docs/architecture/adr-004-repository-abstraction.md).
+
 ## Responsabilidades
 
 - Implementa repositórios concretos para interfaces de domínio (InMemory, EF, Dapper).
@@ -19,15 +24,21 @@ Esta camada implementa todas as preocupações técnicas e integrações externa
 
 ## Como usar
 
-Registrar infraestrutura no Startup:
+Registrar a infraestrutura no Startup, escolhendo o provider conforme ambiente:
 
 ```csharp
+// Para produção (Oracle)
 services.AddSmartAlarmInfrastructure(configuration);
+
+// Para testes/dev (PostgreSQL)
+// (implementar AddSmartAlarmInfrastructurePostgres se necessário)
+// services.AddSmartAlarmInfrastructurePostgres(configuration);
 ```
 
 ## Extensão
 
 - Adicione novos serviços em `DependencyInjection.cs`.
+- Implemente repositórios específicos para cada banco, seguindo as interfaces do domínio.
 - Consulte os READMEs de cada subpasta para detalhes de uso e extensão.
 
 ---

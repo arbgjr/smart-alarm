@@ -16,8 +16,12 @@ namespace SmartAlarm.Infrastructure.Storage
 
         public MinioStorageService(ILogger<MinioStorageService> logger)
         {
+            // Permite sobrescrever o endpoint via variável de ambiente para rodar localmente
+            var endpoint = Environment.GetEnvironmentVariable("MINIO_ENDPOINT") ?? "minio";
+            var portStr = Environment.GetEnvironmentVariable("MINIO_PORT") ?? "9000";
+            int port = int.TryParse(portStr, out var p) ? p : 9000;
             _minioClient = new MinioClient()
-                .WithEndpoint("minio", 9000)
+                .WithEndpoint(endpoint, port)
                 .WithCredentials("minio", "minio123")
                 .Build();
             _logger = logger;
