@@ -9,11 +9,13 @@
   <ItemGroup>
     <PackageReference Include="MediatR" Version="11.1.0" />
     <PackageReference Include="FluentValidation" Version="11.7.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.0" />
+    <PackageReference Include="Fido2" Version="3.0.1" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\SmartAlarm.Domain\SmartAlarm.Domain.csproj" />
+    <ProjectReference Include="..\SmartAlarm.Infrastructure\SmartAlarm.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
