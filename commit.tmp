@@ -1,1 +1,10 @@
-feat: Adicionar documentação detalhada sobre débitos técnicos e plano de ação para melhorias no backend
+feat: Implement FIDO2/WebAuthn authentication and authorization handlers
+
+- Added Fido2Handlers for user credential retrieval and token validation.
+- Created AuthQueries for fetching user credentials and validating tokens.
+- Developed AuthValidators for command validation including login, registration, and FIDO2 commands.
+- Introduced IFido2Service and IJwtTokenService interfaces for FIDO2 and JWT operations.
+- Implemented UserCredential and Role entities for user authentication.
+- Developed Fido2Service and JwtTokenService for handling FIDO2 and JWT logic.
+- Added SimpleFido2Service as a temporary implementation for FIDO2 operations.
+- Included necessary extensions for FIDO2 service configuration.

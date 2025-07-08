@@ -19,25 +19,24 @@ Critérios de pronto globais e específicos atendidos. Documentação e governan
 
 ## Pending Items / Next Steps
 
-- Implement main endpoints (AlarmService) — Presentation Layer (API)
 - Set up JWT/FIDO2 authentication
 - Implement automated tests for handlers, repositories, middleware, and API (min. 80% coverage)
-- Test the observability environment with `docker-compose up --build` and validate integration between API, Loki, Jaeger, Prometheus, and Grafana
-- Document endpoints and architecture (Swagger/OpenAPI, technical docs)
-- Set up CI/CD for build, tests, deploy, and observability validation
-- Plan and prioritize business features (alarms, routines, integrations)
-- Register decisions and next steps in the Memory Bank
+- Test the observability environment with `docker-compose up --build` e validar integração entre API, Loki, Jaeger, Prometheus, Grafana
+- Documentar endpoints e arquitetura (Swagger/OpenAPI, docs técnicas)
+- Set up CI/CD para build, testes, deploy e validação de observabilidade
+- Planejar e priorizar features de negócio (alarmes, rotinas, integrações)
+- Registrar decisões e próximos passos no Memory Bank
 - Atualizar Oracle.ManagedDataAccess para versão oficial .NET 8.0 assim que disponível
 
 ## Current Status
 
-- Project in structuring and detailed planning phase
+- Endpoints principais do AlarmService implementados e handlers funcionais
+- Projeto pronto para iniciar testes automatizados e integração de autenticação
 - Infraestrutura de observabilidade e logging pronta para uso
-- Pronto para iniciar Presentation Layer (API RESTful)
 
 ## Known Issues
 
-- Integration with OCI Functions not yet tested in production
-- Definition of external integration contracts pending
+- Integração com OCI Functions ainda não testada em produção
+- Definição dos contratos de integração externa pendente
 - Oracle.ManagedDataAccess com warnings de compatibilidade (aguardando versão oficial)
-- No critical issues reported at this time
+- Nenhum bug crítico reportado até o momento

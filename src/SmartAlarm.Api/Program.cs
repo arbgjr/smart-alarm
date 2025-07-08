@@ -6,7 +6,11 @@ using SmartAlarm.Api.Middleware;
 using SmartAlarm.Api.Configuration;
 using SmartAlarm.KeyVault.Extensions;
 using SmartAlarm.Infrastructure;
+using SmartAlarm.Infrastructure.Extensions;
+using SmartAlarm.Application.Behaviors;
 using MediatR;
+using FluentValidation;
+using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -99,7 +103,7 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true,
         ValidIssuer = jwtSettings["Issuer"],
         ValidAudience = jwtSettings["Audience"],
-        IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(jwtSettings["Secret"] ?? string.Empty)),
+        IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(jwtSettings["Secret"] ?? throw new InvalidOperationException("JWT Secret not configured"))),
         ClockSkew = TimeSpan.FromMinutes(2)
     };
 });
@@ -116,6 +120,14 @@ builder.Services.AddSingleton<SmartAlarm.Api.Services.IUserConsentService, Smart
 builder.Services.AddScoped<SmartAlarm.Infrastructure.Configuration.IConfigurationResolver, SmartAlarm.Infrastructure.Configuration.ConfigurationResolver>();
 builder.Services.AddKeyVault(builder.Configuration);
 
+// Configurar MediatR
+builder.Services.AddMediatR(typeof(SmartAlarm.Application.Handlers.Auth.LoginHandler).Assembly);
+
+// Registrar serviços de autenticação
+builder.Services.AddScoped<SmartAlarm.Domain.Abstractions.IJwtTokenService, SmartAlarm.Infrastructure.Security.JwtTokenService>();
+
+// Configurar FIDO2
+builder.Services.AddFido2Services(builder.Configuration);
 
 var app = builder.Build();
 

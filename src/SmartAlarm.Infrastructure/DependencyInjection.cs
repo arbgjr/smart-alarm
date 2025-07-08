@@ -36,7 +36,7 @@ namespace SmartAlarm.Infrastructure
                         options.UseInMemoryDatabase("SmartAlarmInMemory");
                 });
                 // UnitOfWork e repositórios específicos para PostgreSQL
-                services.AddScoped<IUnitOfWork, EfUnitOfWorkPostgres>();
+                services.AddScoped<IUnitOfWork, EfUnitOfWork>();
                 services.AddScoped<IAlarmRepository, EfAlarmRepositoryPostgres>();
                 services.AddScoped<IUserRepository, EfUserRepositoryPostgres>();
                 services.AddScoped<IScheduleRepository, EfScheduleRepositoryPostgres>();
@@ -141,7 +141,7 @@ namespace SmartAlarm.Infrastructure
             services.AddScoped<IAlarmRepository>(provider =>
             {
                 var logger = provider.GetRequiredService<ILogger<AlarmRepository>>();
-                var connectionString = configuration.GetConnectionString("OracleDb");
+                var connectionString = configuration.GetConnectionString("OracleDb") ?? throw new InvalidOperationException("OracleDb connection string not found");
                 return new AlarmRepository(connectionString, logger);
             });
 

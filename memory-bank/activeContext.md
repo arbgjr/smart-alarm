@@ -1,6 +1,22 @@
 # Smart Alarm — Active Context
 
 ## Current Focus
+- Implementação dos endpoints principais do AlarmService (CRUD)
+- Handlers e validação com FluentValidation
+- Estruturação de logging e métricas nos fluxos críticos
+- Preparação para testes automatizados e integração de autenticação JWT/FIDO2
+
+## Recent Changes
+- AlarmController implementado com endpoints RESTful (Create, List, GetById, Update, Delete)
+- Handlers para criação, atualização, exclusão, listagem e consulta de alarmes
+- Validação com FluentValidation aplicada nos comandos e DTOs
+- Logging estruturado e métricas em todos os handlers principais
+
+## Next Steps
+- Implementar autenticação JWT/FIDO2
+- Iniciar testes automatizados (xUnit, Moq, cobertura mínima 80%)
+- Documentar endpoints e arquitetura (Swagger/OpenAPI)
+- Validar integração de observabilidade (Loki, Jaeger, Prometheus, Grafana)
 
 Este documento reflete o status real do backend do Smart Alarm, baseado em análise detalhada do código-fonte, corrigindo avaliações anteriores equivocadas e distinguindo entre pendências reais e comentários desatualizados.
 
