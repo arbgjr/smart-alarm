@@ -7,6 +7,7 @@ using SmartAlarm.Api.Configuration;
 using SmartAlarm.KeyVault.Extensions;
 using SmartAlarm.Infrastructure;
 using SmartAlarm.Infrastructure.Extensions;
+using SmartAlarm.Infrastructure;
 using SmartAlarm.Application.Behaviors;
 using MediatR;
 using FluentValidation;
@@ -120,11 +121,11 @@ builder.Services.AddSingleton<SmartAlarm.Api.Services.IUserConsentService, Smart
 builder.Services.AddScoped<SmartAlarm.Infrastructure.Configuration.IConfigurationResolver, SmartAlarm.Infrastructure.Configuration.ConfigurationResolver>();
 builder.Services.AddKeyVault(builder.Configuration);
 
+// Configure Infrastructure services
+builder.Services.AddSmartAlarmInfrastructure(builder.Configuration);
+
 // Configurar MediatR
 builder.Services.AddMediatR(typeof(SmartAlarm.Application.Handlers.Auth.LoginHandler).Assembly);
-
-// Registrar serviços de autenticação
-builder.Services.AddScoped<SmartAlarm.Domain.Abstractions.IJwtTokenService, SmartAlarm.Infrastructure.Security.JwtTokenService>();
 
 // Configurar FIDO2
 builder.Services.AddFido2Services(builder.Configuration);

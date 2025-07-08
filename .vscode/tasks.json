@@ -1,0 +1,132 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Validar Integrações de Arquivos",
+            "type": "shell",
+            "command": "pwsh",
+            "args": [
+                "-Command",
+                "Get-ChildItem -Path '.github/instructions/*.md' | ForEach-Object { Write-Host \"Verificando $($_.Name)...\"; Select-String -Path $_.FullName -Pattern '\\.md' | Measure-Object | Select-Object -ExpandProperty Count }"
+            ],
+            "group": "test",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Verificar Links entre Arquivos",
+            "type": "shell",
+            "command": "pwsh",
+            "args": [
+                "-Command",
+                "$files = @('done-ready.instructions.md', 'documentation.instructions.md', 'copilot-specific.instructions.md'); foreach($file in $files) { Write-Host \"Verificando referências para $file...\"; Get-ChildItem -Path '.github' -Recurse -Include '*.md', '*.json' | Select-String -Pattern $file | Select-Object Filename, LineNumber, Line }"
+            ],
+            "group": "test",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Consultar Memory Bank",
+            "type": "shell",
+            "command": "pwsh",
+            "args": [
+                "-Command",
+                "Write-Host 'Memory Bank Status:'; Write-Host '=================='; Get-ChildItem -Path 'memory-bank' -Filter '*.md' | ForEach-Object { Write-Host \"$($_.Name):\" -ForegroundColor Yellow; Get-Content $_.FullName | Select-Object -First 3; Write-Host '' }"
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Verificar Integração Memory Bank",
+            "type": "shell",
+            "command": "pwsh",
+            "args": [
+                "-Command",
+                "Write-Host 'Verificando referências ao Memory Bank...'; $files = @('.github/instructions/*.md', '.github/prompts/*.md', 'copilot-instructions.md', '.vscode/settings.json'); foreach($pattern in $files) { Get-ChildItem -Path $pattern -ErrorAction SilentlyContinue | ForEach-Object { $content = Get-Content $_.FullName -Raw; if($content -match 'memory.?bank') { Write-Host \"✅ $($_.Name) referencia Memory Bank\" -ForegroundColor Green } else { Write-Host \"❌ $($_.Name) não referencia Memory Bank\" -ForegroundColor Red } } }"
+            ],
+            "group": "test",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Update Memory Bank",
+            "type": "shell",
+            "command": "echo",
+            "args": [
+                "Para atualizar o Memory Bank, use o comando 'update memory bank' no GitHub Copilot Chat"
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "MCP: Analisar Contexto",
+            "type": "shell",
+            "command": "echo",
+            "args": [
+                "Use o prompt: @workspace #file:.github/prompts/memory-analysis.prompt.md"
+            ],
+            "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "MCP: Atualizar Memory",
+            "type": "shell",
+            "command": "echo",
+            "args": [
+                "Use o prompt: @workspace #file:.github/prompts/memory-update.prompt.md"
+            ],
+            "group": "build"
+        },
+        {
+            "label": "MCP: Planejar Feature",
+            "type": "shell",
+            "command": "echo",
+            "args": [
+                "Use o prompt: @workspace #file:.github/prompts/sequential-planning.prompt.md"
+            ],
+            "group": "build"
+        },
+        {
+            "label": "Atualizar Variáveis de Ambiente",
+            "type": "shell",
+            "command": "powershell",
+            "args": [
+                "-Command",
+                "function Update-Environment { foreach($level in 'Machine', 'User') { [System.Environment]::GetEnvironmentVariables($level).GetEnumerator() | % { Set-Item -Path env:$($_.Name) -Value $_.Value } } }; Update-Environment; Write-Host 'Variáveis de ambiente atualizadas!' -ForegroundColor Green"
+            ],
+            "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        }
+    ]
+}

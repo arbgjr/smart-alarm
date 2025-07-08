@@ -1,4 +1,4 @@
-# ADR-004: Integração com SmartAlarm.KeyVault para Gerenciamento de Secrets
+# ADR-999: Integração com SmartAlarm.KeyVault para Gerenciamento de Secrets
 
 ## Status
 

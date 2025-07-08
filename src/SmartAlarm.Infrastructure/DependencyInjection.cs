@@ -8,6 +8,8 @@ using SmartAlarm.Infrastructure.Data;
 using SmartAlarm.Infrastructure.Repositories;
 using SmartAlarm.Infrastructure.Repositories.EntityFramework;
 using SmartAlarm.Infrastructure.Services;
+using SmartAlarm.Infrastructure.Security;
+using SmartAlarm.Domain.Abstractions;
 
 namespace SmartAlarm.Infrastructure
 {
@@ -65,43 +67,6 @@ namespace SmartAlarm.Infrastructure
             // Register infrastructure services
             services.AddScoped<IEmailService, LoggingEmailService>();
             services.AddScoped<INotificationService, LoggingNotificationService>();
-
-
-            // Mensageria: RabbitMQ local/dev, Mock para outros ambientes
-
-            var useRabbitMq = Microsoft.Extensions.Configuration.ConfigurationBinder.GetValue<bool>(configuration, "Messaging:UseRabbitMq");
-            if (useRabbitMq)
-                services.AddSingleton<Messaging.IMessagingService, Messaging.RabbitMqMessagingService>();
-            else
-                services.AddSingleton<Messaging.IMessagingService, Messaging.MockMessagingService>();
-
-            // Storage: MinIO local/dev, Mock para outros ambientes
-
-            var useMinio = Microsoft.Extensions.Configuration.ConfigurationBinder.GetValue<bool>(configuration, "Storage:UseMinio");
-            if (useMinio)
-                services.AddSingleton<Storage.IStorageService, Storage.MinioStorageService>();
-            else
-                services.AddSingleton<Storage.IStorageService, Storage.MockStorageService>();
-
-            // KeyVault: HashiCorp Vault local/dev
-
-            var useVault = Microsoft.Extensions.Configuration.ConfigurationBinder.GetValue<bool>(configuration, "KeyVault:UseHashiCorpVault");
-            if (useVault)
-            {
-                Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensions.AddHttpClient<KeyVault.HashiCorpVaultProvider>(services, client =>
-                {
-                    client.BaseAddress = new System.Uri("http://vault:8200");
-                });
-                services.AddSingleton<KeyVault.IKeyVaultProvider, KeyVault.HashiCorpVaultProvider>();
-            }
-            else
-            {
-                services.AddSingleton<KeyVault.IKeyVaultProvider, KeyVault.MockKeyVaultProvider>();
-            }
-
-            // Observability (mantém mock, real via OpenTelemetry no Api)
-            services.AddSingleton<Observability.ITracingService, Observability.MockTracingService>();
-            services.AddSingleton<Observability.IMetricsService, Observability.MockMetricsService>();
 
             return services;
         }

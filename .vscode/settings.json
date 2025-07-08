@@ -1,0 +1,127 @@
+{
+	"chat.promptFiles": true,
+	"chat.promptFilesLocations": {
+		".github/prompts/**/*.prompt.md": true
+	},
+	"chat.modeFilesLocations": {
+		".github/chatmodes/**/*.chatmode.md": true
+	},
+	"github.copilot.chat.codeGeneration.useInstructionFiles": true,
+	"chat.instructionsFilesLocations": {
+		".github/instructions/**/*.instructions.md": true
+	},
+	"github.copilot.chat.commitMessageGeneration.instructions": [
+		{
+			"file": ".github/instructions/commit_message.instructions.md"
+		}
+	],
+	"github.copilot.chat.pullRequestDescriptionGeneration.instructions": [
+		{
+			"file": ".github/instructions/pull_request.instructions.md"
+		}
+	],
+	"github.copilot.chat.reviewSelection.instructions": [
+		{
+			"file": ".github/instructions/code-review.infrastructure.instructions.md"
+		},
+		{
+			"file": ".github/instructions/code-review.frontend.instructions.md"
+		},
+		{
+			"file": ".github/instructions/code-review.dotnet.instructions.md"
+		},
+		{
+			"text": "Verificar aderência aos padrões SOLID e Clean Code"
+		},
+		{
+			"text": "Avaliar segurança, performance e manutenibilidade"
+		},
+		{
+			"text": "Verificar consistência com padrões do Memory Bank"
+		},
+		{
+			"text": "Identificar se mudanças impactam contexto do projeto"
+		}
+	],
+	"chat.agent.enabled": true,
+	"chat.agent.maxRequests": 20,
+	"github.copilot.chat.agent.runTasks": true,
+	"github.copilot.chat.agent.autoFix": true,
+	"github.copilot.chat.edits.temporalContext.enabled": true,
+	"github.copilot.chat.edits.suggestRelatedFilesFromGitHistory": true,
+	"chat.implicitContext.enabled": {
+		"chatSelection": "always",
+		"editor": "always"
+	},
+	"github.copilot.chat.agent.thinkingTool": true,
+	"inlineChat.lineNaturalLanguageHint": true,
+	"chat.tools.autoApprove": false,
+	"github.copilot.chat.scopeSelection": true,
+	"chat.detectParticipant.enabled": true,
+	"github.copilot.chat.codesearch.enabled": true,
+	"github.copilot.chat.useProjectTemplates": true,
+	"github.copilot.chat.terminalChatLocation": "chatView",
+	"chat.editing.autoAcceptDelay": 15,
+	"inlineChat.finishOnType": true,
+	"inlineChat.holdToSpeech": true,
+	"inlineChat.lineEmptyHint": true,
+	"inlineChat.enableV2": true,
+	"accessibility.verbosity.inlineChat": true,
+	"accessibility.verbosity.panelChat": true,
+	"accessibility.signals.chatRequestSent": {
+		"sound": "on"
+	},
+	"accessibility.signals.chatResponseReceived": {
+		"sound": "on"
+	},
+	"github.copilot.enable": {
+		"*": true,
+		"scminput": false
+	},
+	"github.copilot.nextEditSuggestions.enabled": true,
+	"github.copilot.nextEditSuggestions.fixes": true,
+	"github.copilot.editor.enableCodeActions": true,
+	"github.copilot.renameSuggestions.triggerAutomatically": true,
+	"editor.inlineSuggest.edits.allowCodeShifting": "horizontal",
+	"editor.inlineSuggest.edits.renderSideBySide": "auto",
+	"editor.inlineSuggest.syntaxHighlightingEnabled": true,
+	"editor.inlineSuggest.edits.showCollapsed": true,
+	"editor.inlineSuggest.showToolbar": "always",
+	"github.copilot.chat.localeOverride": "pt-br",
+	"workbench.commandPalette.experimental.askChatLocation": "chatView",
+	"editor.formatOnSave": false,
+	"git.enableSmartCommit": true,
+	"git.autofetch": true,
+	"chat.sendElementsToChat.enabled": true,
+	"chat.sendElementsToChat.attachCSS": true,
+	"chat.sendElementsToChat.attachImages": true,
+	"chat.commandCenter.enabled": true,
+	"chat.edits2.enabled": true,
+	"github.copilot.chat.newWorkspaceCreation.enabled": true,
+	"github.copilot.chat.editor.temporalContext.enabled": true,
+	"chat.mcp.discovery.enabled": {
+		"claude-desktop": true,
+		"windsurf": true,
+		"cursor-global": true,
+		"cursor-workspace": true
+	},
+	"workbench.startupEditor": "none",
+
+	"explorer.sortOrder": "type",
+	"explorer.sortOrderLexicographicOptions": "default",
+	"explorer.fileNesting.enabled": true,
+	"explorer.fileNesting.expand": false,
+	"explorer.fileNesting.patterns": {
+		"*.cs": "$(capture).*.cs",
+		"*.csproj": "$(capture).csproj.user",
+		"Dockerfile": "Dockerfile.*",
+		"README.md": "README*.md"
+	},
+	"files.exclude": {
+		"**/bin": true,
+		"**/obj": true,
+		"**/.vs": true,
+		"**/node_modules": true
+	},
+}
+

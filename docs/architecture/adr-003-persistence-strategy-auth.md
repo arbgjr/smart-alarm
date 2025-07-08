@@ -1,4 +1,4 @@
-# ADR-003: Estratégia de Persistência para Autenticação JWT/FIDO2
+# ADR-999: Estratégia de Persistência para Autenticação JWT/FIDO2
 
 ## Status
 Aceito

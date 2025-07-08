@@ -1,0 +1,67 @@
+{
+    "inputs": [
+        {
+            "id": "github_token",
+            "type": "promptString",
+            "description": "GitHub Personal Access Token",
+            "password": true
+        },
+		{
+			"id": "memory_file_path",
+			"type": "promptString",
+			"description": "Path to the memory storage file",
+			"password": false
+		}
+    ],
+    "servers": {
+        "github": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "@modelcontextprotocol/server-github"
+            ],
+            "env": {
+                "GITHUB_PERSONAL_ACCESS_TOKEN": "${input:github_token}"
+            }
+        },
+        "filesystem": {
+            "command": "npx",
+            "args": ["-y", "@modelcontextprotocol/server-filesystem", "${workspaceFolder}"]
+        },
+        "memory": {
+			"type": "stdio",
+            "command": "npx",
+            "args": ["-y", "@modelcontextprotocol/server-memory"],
+			"env": {
+				"MEMORY_FILE_PATH": "${input:memory_file_path}"
+			}
+        },
+        "sequentialthinking": {
+			"type": "stdio",
+            "command": "npx",
+            "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+        },        
+        "everything": {
+            "command": "npx",
+            "args": ["-y", "@modelcontextprotocol/server-everything"]
+        },
+		"microsoft-docs": {
+			"type": "http",
+			"url": "https://learn.microsoft.com/api/mcp"
+		},
+
+        "git": {
+            "command": "uvx",
+            "args": ["mcp-server-git"]
+        },
+        "time": {
+            "command": "uvx",
+            "args": ["mcp-server-time", "--local-timezone", "America/Sao_Paulo"]
+        },
+		"markitdown": {
+			"type": "stdio",
+			"command": "uvx",
+			"args": ["markitdown-mcp"]
+		}
+    }
+}
