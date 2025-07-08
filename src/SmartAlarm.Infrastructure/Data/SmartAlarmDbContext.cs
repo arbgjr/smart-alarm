@@ -18,6 +18,8 @@ namespace SmartAlarm.Infrastructure.Data
         public DbSet<Schedule> Schedules { get; set; }
         public DbSet<Routine> Routines { get; set; }
         public DbSet<Integration> Integrations { get; set; }
+        public DbSet<Role> Roles { get; set; }
+        public DbSet<UserRole> UserRoles { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

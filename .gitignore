@@ -79,9 +79,6 @@ obj/
 *.userosscache
 *.sln.docstates
 
-# Visual Studio Code
-.vscode/
-
 # Rider
 .idea/
 *.sln.iml

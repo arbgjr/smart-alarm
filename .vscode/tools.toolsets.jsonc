@@ -1,0 +1,72 @@
+{
+  "development": {
+    "tools": ["codebase", "fetch", "findTestFiles", "githubRepo", "problems", "search", "usages", "changes", "write_file", "read_file", "sequentialthinking"],
+    "description": "General development and code analysis tools",
+    "icon": "code"
+  },
+  "architecture": {
+    "tools": ["codebase", "search", "usages", "githubRepo", "findTestFiles", "git_diff", "read_file", "sequentialthinking"],
+    "description": "Architecture design and system analysis tools",
+    "icon": "blueprint"
+  },
+  "security": {
+    "tools": ["codebase", "problems", "search", "usages", "read_file", "sequentialthinking", "fetch"],
+    "description": "Security and vulnerability analysis tools",
+    "icon": "shield"
+  },
+  "testing": {
+    "tools": ["findTestFiles", "codebase", "problems", "usages", "write_file", "read_file", "sequentialthinking"],
+    "description": "Test creation and analysis tools",
+    "icon": "beaker"
+  },
+  "debugging": {
+    "tools": ["problems", "codebase", "search", "changes", "usages", "git_log", "read_file", "sequentialthinking"],
+    "description": "Debugging and problem analysis tools",
+    "icon": "bug"
+  },
+  "performance": {
+    "tools": ["codebase", "search", "usages", "problems", "sequentialthinking"],
+    "description": "Performance analysis and optimization tools",
+    "icon": "pulse"
+  },
+  "cognitive-agent": {
+    "tools": ["create_entities", "create_relations", "add_observations", "search_nodes", "open_nodes", "sequentialthinking", "memory", "read_file"],
+    "description": "Cognitive agent with persistent memory and sequential thinking",
+    "icon": "robot"
+  },
+  "memory-system": {
+    "tools": ["create_entities", "create_relations", "add_observations", "search_nodes", "open_nodes", "read_graph", "memory", "read_file"],
+    "description": "Knowledge graph-based memory system",
+    "icon": "database"
+  },
+  "reasoning-tools": {
+    "tools": ["sequentialthinking"],
+    "description": "Sequential thinking and analysis tools",
+    "icon": "lightbulb"
+  },
+  "research-agent": {
+    "tools": ["search_nodes", "sequentialthinking", "fetch", "write_file", "add_observations", "read_file"],
+    "description": "Research agent that saves findings to memory",
+    "icon": "search"
+  },
+  "debugging-assistant": {
+    "tools": ["search_nodes", "sequentialthinking", "git_log", "read_file", "create_relations"],
+    "description": "Debug assistant that remembers previous solutions",
+    "icon": "bug"
+  },
+  "architecture-reviewer": {
+    "tools": ["search_nodes", "sequentialthinking", "git_diff", "create_entities", "read_file"],
+    "description": "Reviewer that considers past architectural decisions",
+    "icon": "eye"
+  },
+  "security-expert": {
+    "tools": ["read_file", "search", "problems", "sequentialthinking", "fetch"],
+    "description": "Security expert for threat modeling and vulnerability review",
+    "icon": "shield"
+  },
+  "qa-expert": {
+    "tools": ["findTestFiles", "write_file", "read_file", "problems", "sequentialthinking"],
+    "description": "QA expert for test automation and coverage analysis",
+    "icon": "beaker"
+  }
+}

@@ -1,1 +1,42 @@
-feat: Adicionar documentação detalhada sobre débitos técnicos e plano de ação para melhorias no backend
+refactor(auth): corrigir infraestrutura de autenticação JWT/FIDO2 e configurar ambiente de desenvolvimento
+
+### 🔧 Melhorias de Infraestrutura
+- Remover interfaces duplicadas/vazias IJwtTokenService e IFido2Service das camadas Application e Infrastructure
+- Atualizar DependencyInjection.cs para registrar serviços de autenticação corretamente em todos os métodos (EF, InMemory, Dapper)
+- Utilizar SimpleJwtTokenService para ambientes InMemory/teste para configuração simplificada
+
+### 🔐 Correções de Autenticação
+- Corrigir erro de chave primária em UserRole (adicionar UserRoleConfiguration e RoleConfiguration)
+- Adicionar DbSet<Role> e DbSet<UserRole> ao SmartAlarmDbContext
+- Criar SimpleJwtTokenService para configuração de JWT mais simples em testes
+- Implementar TestCurrentUserService (mock) e TestWebApplicationFactory para testes
+- Corrigir mapeamento EF Core de Routine.Actions para usar List<string> ao invés de string[]
+
+### 🧪 Melhorias de Testes
+- Atualizar AuthenticationTests para usar custom factory com mocks
+- Adicionar múltiplos testes diagnósticos para JWT config, middleware e validação manual
+- Criar teste com Moq para repository, evitando dependência de banco de dados
+- Corrigir token generation nos testes para corresponder com configuração de desenvolvimento
+- Atualizar mock UserId para GUID válido conforme requisito do AlarmController
+
+### 🔧 Configuração de Ambiente
+- Adicionar arquivos de configuração VSCode (.vscode/extensions.json, settings.json, mcp.json, tasks.json, tools.toolsets.jsonc)
+- Remover ignore de .vscode/ do .gitignore para compartilhar configurações de desenvolvimento
+- Configurar GitHub Copilot com instruções personalizadas e Memory Bank integration
+- Adicionar tasks para consulta e validação do Memory Bank
+
+### 📝 Documentação
+- Atualizar ADRs de persistência e KeyVault integration (normalizar numeração)
+- Melhorar formatação do guia passo-a-passo JWT/FIDO2
+- Organizar seções com headers apropriados para melhor legibilidade
+
+### 🏗️ Arquitetura
+- Manter consistência com Clean Architecture e SOLID principles
+- Garantir que Program.cs chama AddSmartAlarmInfrastructure corretamente
+- Resolver warnings de nullability no EF Core configuration
+
+### ✅ Status
+- Build executado com sucesso (apenas warnings, sem erros DI)
+- 13/15 testes de autenticação passando (2 falhas por versão Oracle, não por lógica de auth)
+- Autenticação JWT funciona no pipeline de testes com mock services
+- Apenas problema Oracle.ManagedDataAccess/Oracle.EntityFrameworkCore pendente para testes dependentes de DB

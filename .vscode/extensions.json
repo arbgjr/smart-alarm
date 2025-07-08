@@ -1,0 +1,19 @@
+{
+    "recommendations": [
+        "EditorConfig.EditorConfig",
+        "GitHub.copilot",
+        "GitHub.copilot-chat",
+        "eamodio.gitlens",
+        "ms-vscode.powershell",
+        "humao.rest-client",
+        "ms-azuretools.vscode-docker",
+        "ms-vscode.copilot-mermaid-diagram",
+        "github.vscode-pull-request-github",
+        "ms-vscode.vscode-websearchforcopilot",
+        "ms-dotnettools.vscode-dotnet-runtime",
+        "ms-dotnettools.csharp",
+        "ms-dotnettools.csdevkit",
+        "visualstudioexptteam.vscodeintellicode",
+        "emmanuelbeziat.vscode-great-icons"
+    ]
+}

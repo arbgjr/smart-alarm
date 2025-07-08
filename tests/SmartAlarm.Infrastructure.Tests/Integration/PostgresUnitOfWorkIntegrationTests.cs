@@ -82,7 +82,7 @@ namespace SmartAlarm.Infrastructure.Tests.Integration
                 .Options;
             using (var freshContext = new SmartAlarmDbContext(options))
             {
-                var freshUow = new EfUnitOfWorkPostgres(freshContext);
+                var freshUow = new EfUnitOfWork(freshContext);
                 var userAfterRollback = await freshUow.Users.GetByIdAsync(user.Id);
                 userAfterRollback.Should().BeNull();
             }
