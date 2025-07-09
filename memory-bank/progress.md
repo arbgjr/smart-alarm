@@ -17,6 +17,18 @@ Todos os requisitos de observabilidade e segurança implementados, testados e va
 
 Critérios de pronto globais e específicos atendidos. Documentação e governança completas.
 
+## Ambiente de Desenvolvimento e Testes de Integração (concluído em 05/08/2025)
+
+Ambiente de desenvolvimento completo implementado para testes de integração:
+
+- Scripts shell compatíveis com WSL para gerenciamento completo do ambiente (`start-dev-env.sh`, `stop-dev-env.sh`, `test-integration.sh`)
+- Integração com todos os serviços externos necessários (RabbitMQ, PostgreSQL, MinIO, HashiCorp Vault)
+- Stack completa de observabilidade (Prometheus, Loki, Jaeger, Grafana)
+- Suporte a Docker Compose para desenvolvimento rápido e consistente
+- Documentação detalhada e fluxos de trabalho comuns em `dev-environment-docs.md`
+- Testes de integração específicos para cada serviço externo
+- Pipeline de CI/CD atualizado para validação automática
+
 ## Pending Items / Next Steps
 
 - Set up JWT/FIDO2 authentication

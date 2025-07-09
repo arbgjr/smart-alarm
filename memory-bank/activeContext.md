@@ -152,3 +152,26 @@ Este documento reflete fielmente o status real do backend, corrigindo avaliaçõ
 - **Persistência multi-provider:** acesso a dados abstraído por interfaces, com implementações específicas para PostgreSQL (dev/testes) e Oracle (produção), selecionadas via DI/configuração. Decisão registrada em ADR-004.
 - Integrações reais de mensageria, storage, keyvault e observabilidade implementadas e testadas
 - Todos os testes de integração e unidade devem passar em ambiente dockerizado antes de concluir tarefas críticas.
+
+## Environment Setup and Testing
+
+- Scripts para ambiente de desenvolvimento e testes de integração foram criados e padronizados:
+  - `start-dev-env.sh`: Inicia serviços necessários para desenvolvimento/testes
+  - `stop-dev-env.sh`: Encerra ambiente (stop/clean/purge)
+  - `test-integration.sh`: Executa testes de integração específicos ou completos
+
+- Stack completa de observabilidade implementada via Docker Compose:
+  - Prometheus para métricas
+  - Loki para logs
+  - Jaeger para tracing
+  - Grafana para dashboards
+
+- Fluxos de teste de integração padronizados para todos os serviços:
+  - RabbitMQ: mensageria e eventos
+  - PostgreSQL: persistência de dados
+  - MinIO: armazenamento de objetos
+  - HashiCorp Vault: gerenciamento de segredos
+  - KeyVault: abstração para múltiplos provedores
+  - Observabilidade: logs, métricas e tracing
+
+- Documentação completa em `dev-environment-docs.md` para onboarding rápido de novos desenvolvedores
