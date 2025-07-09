@@ -5,53 +5,36 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SmartAlarm.Domain.Abstractions;
 using SmartAlarm.KeyVault.Abstractions;
 using SmartAlarm.KeyVault.Extensions;
+using SmartAlarm.KeyVault.Tests.Mocks;
 using Xunit;
+using System.Linq;
 
 namespace SmartAlarm.KeyVault.Tests.Integration
 {
-    public class KeyVaultIntegrationTests : IClassFixture<WebApplicationFactory<Program>>
+    public class KeyVaultIntegrationTests : IClassFixture<CustomWebApplicationFactory>
     {
-        private readonly WebApplicationFactory<Program> _factory;
+        private readonly CustomWebApplicationFactory _factory;
 
-        public KeyVaultIntegrationTests(WebApplicationFactory<Program> factory)
+        public KeyVaultIntegrationTests(CustomWebApplicationFactory factory)
         {
             _factory = factory;
         }
 
         [Fact]
         [Trait("Category", "Integration")]
-        public async Task KeyVaultService_ShouldBeRegisteredInDI()
+        public void KeyVaultService_ShouldBeRegisteredInDI()
         {
             // Arrange
-            var client = _factory.WithWebHostBuilder(builder =>
-            {
-                builder.ConfigureAppConfiguration((context, config) =>
-                {
-                    config.AddInMemoryCollection(new[]
-                    {
-                        new System.Collections.Generic.KeyValuePair<string, string?>("KeyVault:Enabled", "true"),
-                        new System.Collections.Generic.KeyValuePair<string, string?>("HashiCorpVault:ServerAddress", "http://localhost:8200"),
-                        new System.Collections.Generic.KeyValuePair<string, string?>("HashiCorpVault:Token", "test-token")
-                    });
-                });
-
-                builder.ConfigureServices(services =>
-                {
-                    // Remove existing KeyVault registration to avoid conflicts
-                    var serviceDescriptor = new ServiceDescriptor(typeof(IKeyVaultService), typeof(IKeyVaultService), ServiceLifetime.Singleton);
-                    services.Remove(serviceDescriptor);
-
-                    // Add KeyVault services
-                    services.AddKeyVault(services.BuildServiceProvider().GetRequiredService<IConfiguration>());
-                });
-            }).CreateClient();
+            var client = _factory.CreateClient();
 
             // Act & Assert
             using var scope = _factory.Services.CreateScope();
             var keyVaultService = scope.ServiceProvider.GetService<IKeyVaultService>();
             keyVaultService.Should().NotBeNull();
+            keyVaultService.Should().BeAssignableTo<IKeyVaultService>();
         }
 
         [Fact]
@@ -59,23 +42,7 @@ namespace SmartAlarm.KeyVault.Tests.Integration
         public async Task GetAvailableProvidersAsync_ShouldReturnEmptyList_WhenNoProvidersAvailable()
         {
             // Arrange
-            using var scope = _factory.WithWebHostBuilder(builder =>
-            {
-                builder.ConfigureAppConfiguration((context, config) =>
-                {
-                    config.AddInMemoryCollection(new[]
-                    {
-                        new System.Collections.Generic.KeyValuePair<string, string?>("KeyVault:Enabled", "true"),
-                        new System.Collections.Generic.KeyValuePair<string, string?>("HashiCorpVault:ServerAddress", "http://localhost:8200"),
-                        new System.Collections.Generic.KeyValuePair<string, string?>("HashiCorpVault:Token", "test-token")
-                    });
-                });
-
-                builder.ConfigureServices(services =>
-                {
-                    services.AddKeyVault(services.BuildServiceProvider().GetRequiredService<IConfiguration>());
-                });
-            }).Services.CreateScope();
+            using var scope = _factory.Services.CreateScope();
 
             var keyVaultService = scope.ServiceProvider.GetRequiredService<IKeyVaultService>();
 
@@ -83,8 +50,8 @@ namespace SmartAlarm.KeyVault.Tests.Integration
             var availableProviders = await keyVaultService.GetAvailableProvidersAsync();
 
             // Assert
-            // Se o Vault está rodando, espera-se pelo menos o provider HashiCorp
-            availableProviders.Should().Contain("HashiCorp");
+            // Quando o KeyVault está ativo, mas sem provedores configurados corretamente
+            availableProviders.Should().BeEmpty();
         }
 
         [Fact]
@@ -92,23 +59,7 @@ namespace SmartAlarm.KeyVault.Tests.Integration
         public async Task GetSecretAsync_ShouldReturnNull_WhenSecretNotFound()
         {
             // Arrange
-            using var scope = _factory.WithWebHostBuilder(builder =>
-            {
-                builder.ConfigureAppConfiguration((context, config) =>
-                {
-                    config.AddInMemoryCollection(new[]
-                    {
-                        new System.Collections.Generic.KeyValuePair<string, string?>("KeyVault:Enabled", "true"),
-                        new System.Collections.Generic.KeyValuePair<string, string?>("HashiCorpVault:ServerAddress", "http://localhost:8200"),
-                        new System.Collections.Generic.KeyValuePair<string, string?>("HashiCorpVault:Token", "test-token")
-                    });
-                });
-
-                builder.ConfigureServices(services =>
-                {
-                    services.AddKeyVault(services.BuildServiceProvider().GetRequiredService<IConfiguration>());
-                });
-            }).Services.CreateScope();
+            using var scope = _factory.Services.CreateScope();
 
             var keyVaultService = scope.ServiceProvider.GetRequiredService<IKeyVaultService>();
 
@@ -124,23 +75,7 @@ namespace SmartAlarm.KeyVault.Tests.Integration
         public async Task SetSecretAsync_ShouldReturnFalse_WhenNoProvidersAvailable()
         {
             // Arrange
-            using var scope = _factory.WithWebHostBuilder(builder =>
-            {
-                builder.ConfigureAppConfiguration((context, config) =>
-                {
-                    config.AddInMemoryCollection(new[]
-                    {
-                        new System.Collections.Generic.KeyValuePair<string, string?>("KeyVault:Enabled", "true"),
-                        new System.Collections.Generic.KeyValuePair<string, string?>("HashiCorpVault:ServerAddress", "http://localhost:8200"),
-                        new System.Collections.Generic.KeyValuePair<string, string?>("HashiCorpVault:Token", "test-token")
-                    });
-                });
-
-                builder.ConfigureServices(services =>
-                {
-                    services.AddKeyVault(services.BuildServiceProvider().GetRequiredService<IConfiguration>());
-                });
-            }).Services.CreateScope();
+            using var scope = _factory.Services.CreateScope();
 
             var keyVaultService = scope.ServiceProvider.GetRequiredService<IKeyVaultService>();
 

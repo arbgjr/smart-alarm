@@ -19,7 +19,7 @@ Smart Alarm is an innovative solution for managing alarms and routines, focused 
 
 ## Documentation
 
-- See the `docs/architecture`, `docs/development`, and `docs/business` directories for technical and functional details
+- See the [`docs_structore.md`](docs_structure.md) for more details
 
 ## Contribution
 

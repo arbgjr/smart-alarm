@@ -8,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using SmartAlarm.Tests.Factories;
+using SmartAlarm.Tests.Mocks;
 using Xunit;
 
 namespace SmartAlarm.Tests.Api
@@ -409,10 +410,10 @@ namespace SmartAlarm.Tests.Api
                 builder.ConfigureServices(services =>
                 {
                     // Replace the alarm repository with an in-memory mock
-                    var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(SmartAlarm.Domain.Repositories.IAlarmRepository));
-                    if (descriptor != null)
+                    var descriptors = services.Where(d => d.ServiceType == typeof(SmartAlarm.Domain.Repositories.IAlarmRepository)).ToList();
+                    foreach (var desc in descriptors)
                     {
-                        services.Remove(descriptor);
+                        services.Remove(desc);
                     }
                     
                     services.AddScoped<SmartAlarm.Domain.Repositories.IAlarmRepository>(provider =>
@@ -422,6 +423,14 @@ namespace SmartAlarm.Tests.Api
                                .ReturnsAsync(new List<SmartAlarm.Domain.Entities.Alarm>());
                         return mockRepo.Object;
                     });
+                    
+                    // Adicionar o MockJwtTokenService
+                    var jwtDescriptors = services.Where(d => d.ServiceType == typeof(SmartAlarm.Domain.Abstractions.IJwtTokenService)).ToList();
+                    foreach (var desc in jwtDescriptors)
+                    {
+                        services.Remove(desc);
+                    }
+                    services.AddSingleton<SmartAlarm.Domain.Abstractions.IJwtTokenService, MockJwtTokenService>();
                 });
             }).CreateClient();
             
