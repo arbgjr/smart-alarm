@@ -16,15 +16,17 @@
 - Logging estruturado e métricas em todos os handlers principais
 - Simplificados os testes de integração para MinIO e Vault para usar verificação HTTP de saúde
 - Corrigidos problemas de compilação relacionados a APIs incompatíveis em VaultSharp
-- Melhorado script docker-test.sh com verificação dinâmica de saúde dos serviços
-- Implementado sistema de execução seletiva de testes por categoria (essentials, observability)
-- Adicionado diagnóstico detalhado e sugestões de solução para falhas em testes
+- Implementado docker-test-fix.sh para resolver problemas de conectividade em testes de integração
+- Estabelecida abordagem para comunicação entre contêineres usando redes Docker compartilhadas
+- Melhorada resolução de nomes de serviços com estratégias de fallback
+- Adicionado diagnóstico detalhado e sugestões de solução para falhas de conectividade
 
 ## Next Steps
 
 - Implementar autenticação JWT/FIDO2
+- Corrigir erro de compilação em PostgresIntegrationTests.cs
+- Verificar atributos Category=Integration em todos os testes
 - Continuar testes automatizados (xUnit, Moq, cobertura mínima 80%)
-- Resolver problemas de conectividade nos testes de serviços de observabilidade
 - Documentar endpoints e arquitetura (Swagger/OpenAPI)
 - Validar integração de observabilidade (Loki, Jaeger, Prometheus, Grafana)
 - Integrar melhorias de testes de integração com pipeline CI/CD
@@ -44,6 +46,9 @@
 - **Inicialização Condicional**: Serviços de observabilidade inicializados apenas quando necessário
 - **Diagnóstico Aprimorado**: Informações detalhadas sobre o status dos serviços
 - **Modo Debug**: Opção para apenas verificar ambiente sem executar testes
+- **Rede Compartilhada**: Criação de rede dedicada para comunicação entre contêineres
+- **Resolução de Nomes**: Mapeamento explícito de nomes de serviços para IPs
+- **Diagnóstico de Rede**: Ferramentas para identificar problemas de comunicação entre contêineres
 
 Este documento reflete o status real do backend do Smart Alarm, baseado em análise detalhada do código-fonte, corrigindo avaliações anteriores equivocadas e distinguindo entre pendências reais e comentários desatualizados.
 
