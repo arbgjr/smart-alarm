@@ -102,15 +102,41 @@ get_container_ip() {
     local container_name=$1
     local network_name=${2:-"smartalarm-test-net"}
     
-    # Usar uma abordagem mais direta para obter o IP do contêiner na rede específica
-    docker inspect "$container_name" 2>/dev/null | grep -A 10 "\"$network_name\"" | grep '"IPAddress"' | head -1 | cut -d'"' -f4
+    # Verificar se o contêiner existe
+    if ! docker ps --format "{{.Names}}" | grep -q "^${container_name}$"; then
+        echo ""
+        return 1
+    fi
+    
+    # Tentar obter IP da rede específica primeiro
+    local ip=$(docker inspect "$container_name" 2>/dev/null | \
+        grep -A 10 "\"$network_name\"" | \
+        grep '"IPAddress"' | \
+        head -1 | \
+        cut -d'"' -f4)
+    
+    # Se não conseguiu da rede específica, tentar da rede padrão
+    if [[ -z "$ip" || "$ip" == "" ]]; then
+        ip=$(docker inspect "$container_name" \
+            --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' \
+            2>/dev/null | head -1)
+    fi
+    
+    # Validar se é um IP válido
+    if [[ "$ip" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        echo "$ip"
+        return 0
+    else
+        echo ""
+        return 1
+    fi
 }
 
 # Função para gerar mapeamentos de host
 generate_host_mappings() {
     local host_mappings=""
     
-    print_message "${CYAN}" "Gerando mapeamentos de host para contêineres..." >&2
+    print_message "${BLUE}" "Gerando mapeamentos de host para contêineres..." >&2
     
     # Detectar o prefixo dos contêineres
     local prefix="smart-alarm"
@@ -132,7 +158,13 @@ generate_host_mappings() {
             continue
         fi
         
-        local ip=$(get_container_ip "$container_name")
+        # Tentar obter IP do contêiner na rede de teste
+        local ip=$(get_container_ip "$container_name" "smartalarm-test-net")
+        
+        # Se não conseguiu da rede de teste, tentar da rede padrão
+        if [[ -z "$ip" || "$ip" == "" ]]; then
+            ip=$(docker inspect "$container_name" --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' 2>/dev/null | head -1)
+        fi
         
         if [[ -n "$ip" && "$ip" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             host_mappings="$host_mappings --add-host $service:$ip"
@@ -174,37 +206,43 @@ setup_shared_network() {
     
     print_message "${GREEN}" "Serviços detectados com prefixo: ${CONTAINER_PREFIX}"
     
-    # Criar mapeamento de nomes de serviços para nomes de contêineres
-    declare -A CONTAINER_MAP
+    # Lista de serviços para conectar
+    local services=("postgres" "rabbitmq" "minio" "vault" "prometheus" "loki" "jaeger" "grafana")
     
     # Conectar contêineres de serviço à rede compartilhada
-    for service in postgres rabbitmq minio vault prometheus loki jaeger grafana; do
-        # Tentar diferentes padrões de nomes para encontrar o contêiner
-        for pattern in "${CONTAINER_PREFIX}_${service}" "${CONTAINER_PREFIX}-${service}" "${service}"; do
-            container=$(docker ps --format '{{.Names}}' | grep "$pattern" | head -n 1)
-            if [[ -n "$container" ]]; then
-                print_message "${YELLOW}" "Conectando ${container} à rede compartilhada..."
-                docker network connect smartalarm-test-net $container 2>/dev/null || true
-                
-                # Armazenar mapeamento para uso posterior
-                CONTAINER_MAP[$service]=$container
-                break
+    for service in "${services[@]}"; do
+        local container_name="${CONTAINER_PREFIX}-${service}-1"
+        
+        # Verificar se o contêiner existe e está em execução
+        if docker ps --format '{{.Names}}' | grep -q "^${container_name}$"; then
+            print_message "${YELLOW}" "Conectando ${container_name} à rede compartilhada..."
+            
+            # Verificar se já está conectado antes de tentar conectar
+            if ! docker network inspect smartalarm-test-net --format '{{range .Containers}}{{.Name}} {{end}}' | grep -q "${container_name}"; then
+                docker network connect smartalarm-test-net "$container_name" 2>/dev/null || {
+                    print_message "${YELLOW}" "  Aviso: ${container_name} pode já estar conectado à rede"
+                }
+            else
+                print_message "${GREEN}" "  ${container_name} já está conectado à rede"
             fi
-        done
+        else
+            print_message "${YELLOW}" "  ⚠️  Contêiner ${container_name} não encontrado ou não está em execução"
+        fi
     done
     
     # Confirmar conexões
     print_message "${GREEN}" "Configuração de rede concluída. Contêineres conectados:"
-    docker network inspect -f '{{range .Containers}}{{.Name}} {{end}}' smartalarm-test-net | tr " " "\n" | grep -v '^$'
+    docker network inspect -f '{{range .Containers}}{{.Name}} {{end}}' smartalarm-test-net | tr " " "\n" | grep -v '^$' | sort
     
-    # Imprimir mapeamento de nomes para depuração
-    print_message "${YELLOW}" "Mapeamento de nomes de serviços para contêineres:"
-    for service in "${!CONTAINER_MAP[@]}"; do
-        echo "$service -> ${CONTAINER_MAP[$service]}"
+    # Imprimir IPs dos contêineres para diagnóstico
+    print_message "${YELLOW}" "Mapeamento de IPs na rede smartalarm-test-net:"
+    for service in "${services[@]}"; do
+        local container_name="${CONTAINER_PREFIX}-${service}-1"
+        local ip=$(get_container_ip "$container_name" "smartalarm-test-net")
+        if [[ -n "$ip" && "$ip" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "  $service -> $container_name -> $ip"
+        fi
     done
-    
-    # Exportar o mapeamento para uso em outras funções
-    export CONTAINER_MAP
 }
 
 # Função para preparar e executar contêiner de teste
@@ -221,8 +259,8 @@ WORKDIR /app
 ENV DOTNET_NOLOGO=true
 ENV ContinueOnError=true
 
-# Instalar ferramentas necessárias
-RUN apt-get update && apt-get install -y curl iputils-ping dnsutils
+# Instalar ferramentas necessárias (incluindo netcat para testar conectividade)
+RUN apt-get update && apt-get install -y curl iputils-ping dnsutils netcat-openbsd
 
 # Script para execução dos testes
 COPY entrypoint.sh /entrypoint.sh
@@ -235,82 +273,130 @@ EOF
     cat > ${temp_dir}/entrypoint.sh <<EOF
 #!/bin/bash
 
-# Adicionar mapeamentos adicionais ao /etc/hosts para resolução de nomes
-{
-    echo "127.0.0.1 localhost"
-    echo "::1 localhost ip6-localhost ip6-loopback"
-    
-    # Adicionar mapeamentos para os serviços - nomes curtos
-    # Usando os IPs reais dos contêineres
-    # Isso é crucial para fazer a resolução de nomes funcionar
-    if [ ! -z "\$SERVICE_MAPPINGS" ]; then
-        echo "\$SERVICE_MAPPINGS" | tr '|' '\n' | while read mapping; do
-            if [ ! -z "\$mapping" ]; then
-                echo "\$mapping"
-            fi
-        done
-    fi
-    
-    # Manter outras entradas do hosts original
-    cat /etc/hosts | grep -v "localhost" | grep -v "postgres" | grep -v "rabbitmq" | grep -v "minio" | grep -v "vault"
-} > /tmp/hosts.new
-
-cat /tmp/hosts.new > /etc/hosts 2>/dev/null || {
-    echo "Aviso: Não foi possível modificar /etc/hosts (somente leitura). Usando resolução DNS padrão."
-}
+# Aguardar um pouco para a rede se estabilizar
+sleep 2
 
 # Mostrar informações de rede
 echo "=== Informações de rede ==="
 echo "Endereço IP do contêiner:"
 hostname -I
-echo "Arquivo hosts:"
+echo "Arquivo hosts original:"
 cat /etc/hosts
 echo "Arquivo resolv.conf:"
 cat /etc/resolv.conf
-echo "Nomes de hosts disponíveis:"
-getent hosts
 
-# Testar conexões com serviços
-echo "=== Testando conexão com serviços ==="
-for service in postgres rabbitmq minio vault prometheus loki jaeger grafana; do
-    echo "Testando conexão com $service..."
+# Aguardar que os serviços estejam disponíveis
+echo "=== Aguardando serviços ficarem disponíveis ==="
+wait_for_service() {
+    local service=\$1
+    local port=\$2
+    local timeout=30
+    local count=0
     
-    # Tentar ping para o serviço
-    if ping -c 2 -W 1 $service &>/dev/null; then
-        echo "✓ Conexão com $service bem-sucedida"
-    else
-        echo "✗ Falha ao conectar com $service"
-        echo "  Verificando resolução DNS:"
-        getent hosts $service || echo "  DNS não consegue resolver $service"
-        echo "  Tentando ping pelo IP direto:"
+    echo "Aguardando \$service:\$port..."
+    while ! nc -z \$service \$port 2>/dev/null; do
+        if [ \$count -ge \$timeout ]; then
+            echo "⚠️ Timeout aguardando \$service:\$port"
+            return 1
+        fi
+        sleep 1
+        count=\$((count + 1))
+    done
+    echo "✅ \$service:\$port está disponível"
+    return 0
+}
+
+# Aguardar serviços críticos
+wait_for_service postgres 5432
+wait_for_service vault 8200
+wait_for_service minio 9000
+wait_for_service rabbitmq 5672
+
+# Testar conectividade de rede com cada serviço
+echo "=== Testando conectividade de rede ==="
+services=("postgres" "rabbitmq" "minio" "vault" "prometheus" "loki" "jaeger" "grafana")
+
+for service in "\${services[@]}"; do
+    echo "Testando conectividade com \$service..."
+    
+    # Verificar resolução DNS primeiro
+    if getent hosts \$service >/dev/null 2>&1; then
+        echo "  ✓ DNS resolve \$service"
         
-        # Tente usar os IPs configurados como variáveis de ambiente
-        service_upper=$(echo $service | tr '[:lower:]' '[:upper:]')
-        host_var_name="${service_upper}_HOST"
-        host_value=""
-        case "$service_upper" in
-            POSTGRES) host_value="$POSTGRES_HOST" ;;
-            RABBITMQ) host_value="$RABBITMQ_HOST" ;;
-            MINIO) host_value="$MINIO_HOST" ;;
-            VAULT) host_value="$VAULT_HOST" ;;
-            PROMETHEUS) host_value="$PROMETHEUS_HOST" ;;
-            LOKI) host_value="$LOKI_HOST" ;;
-            JAEGER) host_value="$JAEGER_HOST" ;;
-            GRAFANA) host_value="$GRAFANA_HOST" ;;
+        # Tentar ping
+        if ping -c 2 -W 1 \$service &>/dev/null; then
+            echo "  ✓ Ping para \$service bem-sucedido"
+        else
+            echo "  ⚠️ Ping para \$service falhou"
+        fi
+        
+        # Testar conectividade da porta específica
+        case "\$service" in
+            postgres) port=5432 ;;
+            rabbitmq) port=5672 ;;
+            minio) port=9000 ;;
+            vault) port=8200 ;;
+            prometheus) port=9090 ;;
+            loki) port=3100 ;;
+            jaeger) port=16686 ;;
+            grafana) port=3000 ;;
         esac
-        service_ip=$(getent hosts "$host_value" 2>/dev/null | awk '{print $1}')
         
-        if [ -n "$service_ip" ]; then
-            echo "  Tentando ping para $host_value ($service_ip)"
-            ping -c 1 -W 1 "$service_ip" && echo "  ✓ Ping bem-sucedido pelo IP!" || echo "  ✗ Ping falhou pelo IP"
+        if nc -z \$service \$port 2>/dev/null; then
+            echo "  ✅ \$service:\$port está acessível"
+        else
+            echo "  ❌ \$service:\$port não está acessível"
+        fi
+    else
+        echo "  ❌ DNS não consegue resolver \$service"
+        
+        # Tentar usar variáveis de ambiente
+        service_upper=\$(echo \$service | tr '[:lower:]' '[:upper:]')
+        case "\$service_upper" in
+            POSTGRES) host_value="\$POSTGRES_HOST" ;;
+            RABBITMQ) host_value="\$RABBITMQ_HOST" ;;
+            MINIO) host_value="\$MINIO_HOST" ;;
+            VAULT) host_value="\$VAULT_HOST" ;;
+            PROMETHEUS) host_value="\$PROMETHEUS_HOST" ;;
+            LOKI) host_value="\$LOKI_HOST" ;;
+            JAEGER) host_value="\$JAEGER_HOST" ;;
+            GRAFANA) host_value="\$GRAFANA_HOST" ;;
+        esac
+        
+        if [ -n "\$host_value" ]; then
+            echo "  Tentando via variável de ambiente: \$host_value"
+            if getent hosts "\$host_value" >/dev/null 2>&1; then
+                echo "  ✓ Variável de ambiente resolve"
+            else
+                echo "  ❌ Variável de ambiente não resolve"
+            fi
         fi
     fi
+    echo ""
 done
 
-# Executar testes
-echo "=== Executando testes ==="
-dotnet test \$*
-exit \$?
+# Verificar se temos argumentos válidos para dotnet test
+if [ \$# -eq 0 ]; then
+    echo "⚠️ Nenhum argumento fornecido para dotnet test"
+    echo "Modo interativo - iniciando bash..."
+    exec /bin/bash
+else
+    # Executar testes apenas se temos projetos válidos
+    echo "=== Executando testes ==="
+    echo "Argumentos recebidos: \$*"
+    
+    # Verificar se o primeiro argumento é um arquivo de projeto válido
+    first_arg="\$1"
+    if [[ "\$first_arg" == *.csproj ]]; then
+        echo "Executando testes com dotnet test..."
+        dotnet test \$*
+        exit \$?
+    else
+        echo "⚠️ Primeiro argumento não é um arquivo .csproj válido: \$first_arg"
+        echo "Modo interativo - iniciando bash..."
+        exec /bin/bash
+    fi
+fi
 EOF
     
     # Construir a imagem de teste
@@ -321,11 +407,11 @@ EOF
     rm -rf ${temp_dir}
     
     # Preparar variáveis de ambiente para os testes
-    # Usar nomes simples dos serviços como hosts para os testes
+    # Usar nomes em maiúsculas para compatibilidade com DockerHelper
     local env_vars=""
     
-    # Configurar variáveis de ambiente com nomes de serviço simples
-    # Isso permite que os testes usem postgres ao invés de smart-alarm_postgres_1
+    # Configurar variáveis de ambiente com nomes de serviço em maiúsculas
+    # Isso permite que os testes usem POSTGRES_HOST ao invés de nomes hardcoded
     env_vars="-e POSTGRES_HOST=postgres \
               -e RABBITMQ_HOST=rabbitmq \
               -e MINIO_HOST=minio \
@@ -345,6 +431,11 @@ EOF
               -e JAEGER_PORT=16686 \
               -e GRAFANA_PORT=3000"
     
+    # Adicionar credenciais específicas para PostgreSQL
+    env_vars="${env_vars} -e POSTGRES_USER=smartalarm \
+              -e POSTGRES_PASSWORD=smartalarm123 \
+              -e POSTGRES_DB=smartalarm"
+    
     # Se não for modo debug, executar testes
     if [[ "$1" != "debug" ]]; then
         print_message "${BLUE}" "Executando testes de integração..."
@@ -353,10 +444,23 @@ EOF
         local host_mappings=$(generate_host_mappings)
         
         # Encontrar os projetos de teste de integração
-        local test_projects=$(find "$(pwd)/tests" -name "*Integration*.csproj" | tr '\n' ' ')
+        local test_projects=""
+        if [[ -d "$(pwd)/tests" ]]; then
+            test_projects=$(find "$(pwd)/tests" -name "*Integration*.csproj" 2>/dev/null | head -1)
+        fi
         
-        print_message "${YELLOW}" "Projetos de teste encontrados:"
-        echo "$test_projects"
+        if [[ -z "$test_projects" ]]; then
+            print_message "${RED}" "Nenhum projeto de teste de integração encontrado!"
+            print_message "${YELLOW}" "Buscando qualquer projeto de teste..."
+            test_projects=$(find "$(pwd)/tests" -name "*.csproj" 2>/dev/null | head -1)
+        fi
+        
+        if [[ -z "$test_projects" ]]; then
+            print_message "${RED}" "Nenhum projeto de teste encontrado! Verifique a estrutura do projeto."
+            return 1
+        fi
+        
+        print_message "${YELLOW}" "Projeto de teste selecionado: $test_projects"
         
         # Executar contêiner com hosts mapeados
         docker run --rm \
@@ -367,7 +471,7 @@ EOF
             ${env_vars} \
             -v "$(pwd):/app" \
             smartalarm-test-image:latest \
-            ${test_projects} \
+            "$test_projects" \
             "--filter" "${TEST_FILTER}" \
             ${VERBOSE}
         
@@ -387,21 +491,11 @@ EOF
         docker_opts="--cap-add=NET_ADMIN"
         
         # Executar contêiner em modo interativo para diagnóstico
-        # Configurando a resolução de hosts usando aliases de rede
-        local add_hosts=""
-        
-        # Obter IPs dos contêineres de forma segura
-        for service in postgres rabbitmq minio vault prometheus loki jaeger grafana; do
-            local container="${CONTAINER_PREFIX}_${service}_1"
-            local container_ip=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$container" 2>/dev/null)
-            
-            if [[ -n "$container_ip" && "$container_ip" != "" ]]; then
-                add_hosts="$add_hosts --add-host=${service}:${container_ip} "
-            fi
-        done
-        
         # Gerar mapeamentos de host dinamicamente
         local host_mappings=$(generate_host_mappings)
+        
+        print_message "${YELLOW}" "Host mappings que serão aplicados:"
+        echo "  $host_mappings"
         
         # Executar contêiner com hosts mapeados e modo interativo
         docker run --rm -it \

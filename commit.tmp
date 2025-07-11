@@ -1,1 +1,1 @@
-feat(tests): implementar resolução de nomes de serviços e mapeamentos de host para contêineres Docker
+fix(tests): melhorar a resolução de IPs e conectividade entre contêineres Docker
