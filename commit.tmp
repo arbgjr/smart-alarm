@@ -1,1 +1,1 @@
-feat: adicionar suporte a valores nulos em métodos de repositório e ajustar testes de configuração
+chore: atualizar versão do FluentAssertions para 7.0.0 nos projetos de teste e apagar lixo.
