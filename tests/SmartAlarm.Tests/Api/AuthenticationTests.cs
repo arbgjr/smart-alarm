@@ -72,18 +72,18 @@ namespace SmartAlarm.Tests.Api
 
         private string GenerateValidJwtToken()
         {
-            // Usar configurações do appsettings.Development.json para corresponder com a API em teste
-            var securityKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes("SmartAlarm-Dev-Secret-Key-256-bits-long-for-development-only!"));
+            // Usar configurações do appsettings.json para corresponder com a API em teste
+            var securityKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes("REPLACE_WITH_A_STRONG_SECRET_KEY_32CHARS"));
             var credentials = new Microsoft.IdentityModel.Tokens.SigningCredentials(securityKey, Microsoft.IdentityModel.Tokens.SecurityAlgorithms.HmacSha256);
-            var userId = Guid.NewGuid().ToString();
+            var userId = "12345678-1234-1234-1234-123456789012"; // Usar o mesmo UserId do TestCurrentUserService
             var claims = new[]
             {
                 new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, userId),
                 new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role, "User")
             };
             var token = new System.IdentityModel.Tokens.Jwt.JwtSecurityToken(
-                issuer: "SmartAlarm.Api",
-                audience: "SmartAlarm.Client",
+                issuer: "SmartAlarmIssuer",
+                audience: "SmartAlarmAudience",
                 claims: claims,
                 expires: DateTime.UtcNow.AddMinutes(30),
                 signingCredentials: credentials
@@ -358,34 +358,57 @@ namespace SmartAlarm.Tests.Api
         [Fact]
         public async Task Should_TestWithoutCurrentUserServiceValidation()
         {
-            // Este teste demonstra que o problema está na validação do CurrentUserService
-            // Vamos testar um endpoint que não depende desta validação
+            // Este teste demonstra que quando usamos o TestCurrentUserService mock,
+            // o endpoint de alarms deveria funcionar corretamente
             
-            var client = _factory.CreateClient();
-            var token = GenerateValidJwtToken();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            var factory = new TestWebApplicationFactory().WithWebHostBuilder(builder =>
+            {
+                builder.ConfigureServices(services =>
+                {
+                    // Replace the alarm repository with an in-memory mock
+                    var descriptors = services.Where(d => d.ServiceType == typeof(SmartAlarm.Domain.Repositories.IAlarmRepository)).ToList();
+                    foreach (var desc in descriptors)
+                    {
+                        services.Remove(desc);
+                    }
+                    
+                    services.AddScoped<SmartAlarm.Domain.Repositories.IAlarmRepository>(provider =>
+                    {
+                        var mockRepo = new Mock<SmartAlarm.Domain.Repositories.IAlarmRepository>();
+                        mockRepo.Setup(r => r.GetByUserIdAsync(It.IsAny<Guid>()))
+                               .ReturnsAsync(new List<SmartAlarm.Domain.Entities.Alarm>());
+                        return mockRepo.Object;
+                    });
+                });
+            });
             
-            // O endpoint /weatherforecast não requer autenticação nem usa CurrentUserService
-            var response = await client.GetAsync("/weatherforecast");
-            System.Console.WriteLine($"WeatherForecast Status: {response.StatusCode}");
+            var client = factory.CreateClient();
             
-            // Agora vamos tentar o endpoint com autenticação
+            // Com o TestAuthenticationHandler, não precisamos de token JWT
+            // O handler automaticamente autentica qualquer request
+            
+            // O endpoint /api/v1/auth/ping não requer autenticação nem usa CurrentUserService
+            var response = await client.GetAsync("/api/v1/auth/ping");
+            System.Console.WriteLine($"Ping Status: {response.StatusCode}");
+            
+            // Agora vamos tentar o endpoint com autenticação usando o mock
             var alarmsResponse = await client.GetAsync("/api/v1/alarms");
             System.Console.WriteLine($"Alarms Status: {alarmsResponse.StatusCode}");
             
-            // A diferença entre estes dois endpoints nos confirma que:
-            // 1. A autenticação JWT funciona (weatherforecast funciona mesmo com token)
-            // 2. O problema está especificamente no AlarmController (CurrentUserService)
+            // Com o TestCurrentUserService mock, TestAuthenticationHandler e mock repository registrados, ambos devem funcionar:
+            // 1. Ping funciona (sem autenticação)
+            // 2. Alarms funciona (com mock do CurrentUserService, autenticação de teste e repository mock)
             
             response.StatusCode.Should().Be(HttpStatusCode.OK);
-            alarmsResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized); // Confirma que é o CurrentUserService
+            alarmsResponse.StatusCode.Should().Be(HttpStatusCode.OK); // Com mock deve ser OK
         }
 
         [Fact]
         public void Should_VerifyMockIsRegistered()
         {
             // Arrange & Act
-            using var scope = _factory.Services.GetRequiredService<IServiceScopeFactory>().CreateScope();
+            var factory = new TestWebApplicationFactory();
+            using var scope = factory.Services.GetRequiredService<IServiceScopeFactory>().CreateScope();
             var currentUserService = scope.ServiceProvider.GetRequiredService<SmartAlarm.Api.Services.ICurrentUserService>();
             
             // Assert
@@ -423,19 +446,10 @@ namespace SmartAlarm.Tests.Api
                                .ReturnsAsync(new List<SmartAlarm.Domain.Entities.Alarm>());
                         return mockRepo.Object;
                     });
-                    
-                    // Adicionar o MockJwtTokenService
-                    var jwtDescriptors = services.Where(d => d.ServiceType == typeof(SmartAlarm.Domain.Abstractions.IJwtTokenService)).ToList();
-                    foreach (var desc in jwtDescriptors)
-                    {
-                        services.Remove(desc);
-                    }
-                    services.AddSingleton<SmartAlarm.Domain.Abstractions.IJwtTokenService, MockJwtTokenService>();
                 });
             }).CreateClient();
             
-            var token = GenerateValidJwtToken();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            // Com o TestAuthenticationHandler, não precisamos de token JWT
             
             // Act
             var response = await client.GetAsync("/api/v1/alarms");

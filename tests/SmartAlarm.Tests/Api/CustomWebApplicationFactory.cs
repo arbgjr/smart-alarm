@@ -24,7 +24,7 @@ namespace SmartAlarm.Tests.Api
             {
                 var dict = new System.Collections.Generic.Dictionary<string, string?>
                 {
-                    {"Jwt:Key", "REPLACE_WITH_A_STRONG_SECRET_KEY_32CHARS"},
+                    {"Jwt:Secret", "REPLACE_WITH_A_STRONG_SECRET_KEY_32CHARS"},
                     {"Jwt:Issuer", "SmartAlarmIssuer"},
                     {"Jwt:Audience", "SmartAlarmAudience"}
                 };

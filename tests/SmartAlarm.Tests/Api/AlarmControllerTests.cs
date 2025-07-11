@@ -21,7 +21,7 @@ namespace SmartAlarm.Tests.Api
         {
             var securityKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes("REPLACE_WITH_A_STRONG_SECRET_KEY_32CHARS"));
             var credentials = new Microsoft.IdentityModel.Tokens.SigningCredentials(securityKey, Microsoft.IdentityModel.Tokens.SecurityAlgorithms.HmacSha256);
-            var userId = Guid.NewGuid().ToString();
+            var userId = "12345678-1234-1234-1234-123456789012"; // Usar o mesmo UserId do TestCurrentUserService
             var claims = new[]
             {
                 new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, userId),

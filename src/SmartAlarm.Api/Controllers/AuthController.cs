@@ -384,4 +384,17 @@ public class AuthController : ControllerBase
     }
 
     #endregion
+
+    /// <summary>
+    /// Endpoint público para verificação de status da API
+    /// </summary>
+    /// <returns>Status da API</returns>
+    [HttpGet("ping")]
+    [AllowAnonymous]
+    [SwaggerOperation(Summary = "Ping da API", Description = "Verifica se a API está funcionando")]
+    [SwaggerResponse(200, "API funcionando")]
+    public IActionResult Ping()
+    {
+        return Ok(new { Status = "OK", Timestamp = DateTime.UtcNow });
+    }
 }

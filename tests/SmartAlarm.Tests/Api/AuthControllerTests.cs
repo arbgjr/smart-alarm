@@ -39,14 +39,15 @@ namespace SmartAlarm.Tests.Api
                 }
             };
 
-            _mediatorMock.Setup(x => x.Send(It.IsAny<object>(), It.IsAny<CancellationToken>()))
+            _mediatorMock.Setup(x => x.Send(It.IsAny<SmartAlarm.Application.Commands.Auth.LoginCommand>(), It.IsAny<CancellationToken>()))
                         .ReturnsAsync(expectedResponse);
 
             // Act
             var result = await _controller.Login(loginDto);
 
             // Assert
-            var okResult = Assert.IsType<OkObjectResult>(result.Result);
+            var actionResult = Assert.IsType<ActionResult<AuthResponseDto>>(result);
+            var okResult = Assert.IsType<OkObjectResult>(actionResult.Result);
             var response = Assert.IsType<AuthResponseDto>(okResult.Value);
             Assert.True(response.Success);
             Assert.False(string.IsNullOrEmpty(response.AccessToken));
@@ -59,14 +60,15 @@ namespace SmartAlarm.Tests.Api
             var loginDto = new LoginRequestDto { Email = "user@test.com", Password = "wrong" };
             var expectedResponse = new AuthResponseDto { Success = false, Message = "Credenciais inválidas" };
 
-            _mediatorMock.Setup(x => x.Send(It.IsAny<object>(), It.IsAny<CancellationToken>()))
+            _mediatorMock.Setup(x => x.Send(It.IsAny<SmartAlarm.Application.Commands.Auth.LoginCommand>(), It.IsAny<CancellationToken>()))
                         .ReturnsAsync(expectedResponse);
 
             // Act
             var result = await _controller.Login(loginDto);
 
             // Assert
-            var unauthorizedResult = Assert.IsType<UnauthorizedObjectResult>(result.Result);
+            var actionResult = Assert.IsType<ActionResult<AuthResponseDto>>(result);
+            var unauthorizedResult = Assert.IsType<UnauthorizedObjectResult>(actionResult.Result);
             var response = Assert.IsType<AuthResponseDto>(unauthorizedResult.Value);
             Assert.False(response.Success);
         }
