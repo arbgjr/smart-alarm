@@ -1,1 +1,31 @@
-fix(test): melhorar resolução de nomes entre contêineres Docker
+fix(test): melhorar execução de testes de integração em ambientes Docker
+
+Implementa um script robusto para execução de testes de integração em ambiente Docker,
+corrigindo problemas de resolução de nomes e conectividade entre contêineres.
+
+Problema:
+- Testes falham com "Connection refused" quando tentam acessar serviços via localhost
+- Resolução de nomes entre contêineres falha com "Temporary failure in name resolution"
+- Contêineres na mesma rede Docker não conseguem resolver nomes uns dos outros
+- Configuração inadequada de rede impede a comunicação direta entre serviços
+- Falta de diagnóstico adequado dificulta a identificação da causa raiz
+
+Solução:
+- Criação de script docker-test-fix.sh com tratamento robusto de erros
+- Estabelecimento de rede Docker compartilhada para todos os contêineres
+- Inclusão de mapeamentos explícitos de nomes para IPs de contêineres
+- Adição de diagnóstico de rede e ferramentas de troubleshooting
+- Tratamento de falhas na resolução DNS com estratégia de fallback
+
+O script garante que:
+1. Todos os contêineres estejam na mesma rede Docker
+2. Nomes curtos de serviços (postgres, minio, etc.) sejam resolvidos corretamente
+3. Testes possam usar nomes de serviços em vez de hardcoded localhost
+4. A execução seja consistente entre ambientes diferentes
+
+Próximos passos:
+- Corrigir erro de compilação em PostgresIntegrationTests.cs
+- Verificar atributos Category=Integration em todos os testes
+- Melhorar a configuração de hostname e DNS nos contêineres
+
+Refs: Issue #42

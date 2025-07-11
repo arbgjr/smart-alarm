@@ -230,7 +230,27 @@ for service in postgres rabbitmq minio vault prometheus loki jaeger grafana; do
         echo "  Verificando resolução DNS:"
         getent hosts $service || echo "  DNS não consegue resolver $service"
         echo "  Tentando ping pelo IP direto:"
-        getent hosts $service | awk '{print $1}' | xargs -r ping -c 1 || true
+        
+        # Tente usar os IPs configurados como variáveis de ambiente
+        service_upper=$(echo $service | tr '[:lower:]' '[:upper:]')
+        host_var_name="${service_upper}_HOST"
+        host_value=""
+        case "$service_upper" in
+            POSTGRES) host_value="$POSTGRES_HOST" ;;
+            RABBITMQ) host_value="$RABBITMQ_HOST" ;;
+            MINIO) host_value="$MINIO_HOST" ;;
+            VAULT) host_value="$VAULT_HOST" ;;
+            PROMETHEUS) host_value="$PROMETHEUS_HOST" ;;
+            LOKI) host_value="$LOKI_HOST" ;;
+            JAEGER) host_value="$JAEGER_HOST" ;;
+            GRAFANA) host_value="$GRAFANA_HOST" ;;
+        esac
+        service_ip=$(getent hosts "$host_value" 2>/dev/null | awk '{print $1}')
+        
+        if [ -n "$service_ip" ]; then
+            echo "  Tentando ping para $host_value ($service_ip)"
+            ping -c 1 -W 1 "$service_ip" && echo "  ✓ Ping bem-sucedido pelo IP!" || echo "  ✗ Ping falhou pelo IP"
+        fi
     fi
 done
 
@@ -293,6 +313,12 @@ EOF
             fi
         done
         
+        # Encontrar os projetos de teste de integração
+        local test_projects=$(find "$(pwd)/tests" -name "*Integration*.csproj" | tr '\n' ' ')
+        
+        print_message "${YELLOW}" "Projetos de teste encontrados:"
+        echo "$test_projects"
+        
         # Executar contêiner com hosts adicionados
         docker run --rm \
             --name smartalarm-test-runner \
@@ -303,7 +329,7 @@ EOF
             ${env_vars} \
             -v "$(pwd):/app" \
             smartalarm-test-image:latest \
-            "/app/tests/integration/**/*.csproj" \
+            ${test_projects} \
             "--filter" "${TEST_FILTER}" \
             ${VERBOSE}
         
