@@ -95,6 +95,10 @@ cleanup_previous_resources() {
         
         docker network rm smartalarm-test-net &>/dev/null || true
     fi
+    
+    # Limpar redes órfãs do Docker
+    print_message "${YELLOW}" "Limpando redes órfãs..."
+    docker network prune -f &>/dev/null || true
 }
 
 # Função para obter IP de um contêiner
@@ -200,11 +204,118 @@ setup_shared_network() {
     elif docker ps | grep -q "smartalarm"; then
         CONTAINER_PREFIX="smartalarm"
     else
-        print_message "${RED}" "Nenhum contêiner de serviço encontrado. Execute start-dev-env.sh primeiro."
-        exit 1
+        print_message "${YELLOW}" "Nenhum contêiner de serviço encontrado. Iniciando serviços automaticamente..."
+        
+        # Verificar se o arquivo docker-compose.yml existe
+        if [[ ! -f "docker-compose.yml" ]]; then
+            print_message "${RED}" "Arquivo docker-compose.yml não encontrado no diretório atual."
+            print_message "${YELLOW}" "Certifique-se de estar no diretório raiz do projeto."
+            exit 1
+        fi
+        
+        # Limpar ambiente Docker completamente antes de iniciar
+        print_message "${BLUE}" "Limpando ambiente Docker anterior..."
+        ${DOCKER_COMPOSE_CMD} down --volumes --remove-orphans 2>/dev/null || true
+        
+        # Aguardar um pouco para o Docker limpar recursos
+        sleep 3
+        
+        # Iniciar os serviços
+        print_message "${BLUE}" "Iniciando serviços com Docker Compose..."
+        ${DOCKER_COMPOSE_CMD} up -d
+        
+        if [[ $? -ne 0 ]]; then
+            print_message "${RED}" "Falha ao iniciar os serviços. Verifique a configuração do Docker Compose."
+            exit 1
+        fi
+        
+        # Aguardar os serviços ficarem prontos
+        print_message "${YELLOW}" "Aguardando serviços ficarem prontos..."
+        sleep 15
+        
+        # Verificar novamente os contêineres
+        if docker ps | grep -q "smart-alarm"; then
+            CONTAINER_PREFIX="smart-alarm"
+            print_message "${GREEN}" "Serviços iniciados com sucesso! Prefixo: ${CONTAINER_PREFIX}"
+        elif docker ps | grep -q "smartalarm"; then
+            CONTAINER_PREFIX="smartalarm"
+            print_message "${GREEN}" "Serviços iniciados com sucesso! Prefixo: ${CONTAINER_PREFIX}"
+        else
+            print_message "${RED}" "Falha ao iniciar os serviços. Contêineres não encontrados após inicialização."
+            print_message "${YELLOW}" "Verificando logs de erros..."
+            ${DOCKER_COMPOSE_CMD} logs --tail=10
+            
+            # Tentar uma segunda vez
+            print_message "${YELLOW}" "Tentando reiniciar serviços..."
+            ${DOCKER_COMPOSE_CMD} down --volumes --remove-orphans 2>/dev/null || true
+            sleep 5
+            ${DOCKER_COMPOSE_CMD} up -d
+            sleep 15
+            
+            if docker ps | grep -q "smart-alarm\|smartalarm"; then
+                if docker ps | grep -q "smart-alarm"; then
+                    CONTAINER_PREFIX="smart-alarm"
+                else
+                    CONTAINER_PREFIX="smartalarm"
+                fi
+                print_message "${GREEN}" "Serviços iniciados na segunda tentativa! Prefixo: ${CONTAINER_PREFIX}"
+            else
+                print_message "${RED}" "Falha definitiva ao iniciar os serviços."
+                exit 1
+            fi
+        fi
     fi
     
     print_message "${GREEN}" "Serviços detectados com prefixo: ${CONTAINER_PREFIX}"
+    
+    # Aguardar que os serviços estejam prontos para aceitar conexões
+    print_message "${BLUE}" "Verificando saúde dos serviços..."
+    
+    # Função para aguardar um serviço ficar disponível
+    wait_for_service() {
+        local service_name=$1
+        local port=$2
+        local timeout=${3:-30}
+        local count=0
+        
+        local container_name="${CONTAINER_PREFIX}-${service_name}-1"
+        
+        # Verificar se o contêiner existe
+        if ! docker ps --format "{{.Names}}" | grep -q "^${container_name}$"; then
+            print_message "${YELLOW}" "  ⚠️  Contêiner ${container_name} não encontrado"
+            return 1
+        fi
+        
+        # Obter IP do contêiner
+        local ip=$(get_container_ip "$container_name")
+        if [[ -z "$ip" ]]; then
+            print_message "${YELLOW}" "  ⚠️  Não foi possível obter IP do ${container_name}"
+            return 1
+        fi
+        
+        print_message "${YELLOW}" "  Aguardando ${service_name} (${ip}:${port})..."
+        
+        while ! nc -z "$ip" "$port" 2>/dev/null; do
+            if [ $count -ge $timeout ]; then
+                print_message "${RED}" "  ❌ Timeout aguardando ${service_name}"
+                return 1
+            fi
+            sleep 1
+            count=$((count + 1))
+        done
+        
+        print_message "${GREEN}" "  ✅ ${service_name} está pronto"
+        return 0
+    }
+    
+    # Aguardar serviços essenciais (sem falhar se algum não estiver disponível)
+    print_message "${BLUE}" "Verificando disponibilidade dos serviços essenciais..."
+    wait_for_service "postgres" 5432 60 || print_message "${YELLOW}" "  ⚠️  PostgreSQL pode não estar totalmente pronto"
+    wait_for_service "vault" 8200 30 || print_message "${YELLOW}" "  ⚠️  Vault pode não estar totalmente pronto"
+    wait_for_service "minio" 9000 30 || print_message "${YELLOW}" "  ⚠️  MinIO pode não estar totalmente pronto"
+    wait_for_service "rabbitmq" 5672 30 || print_message "${YELLOW}" "  ⚠️  RabbitMQ pode não estar totalmente pronto"
+    
+    print_message "${GREEN}" "Verificação de serviços concluída. Prosseguindo com a configuração de rede..."
     
     # Lista de serviços para conectar
     local services=("postgres" "rabbitmq" "minio" "vault" "prometheus" "loki" "jaeger" "grafana")

@@ -21,21 +21,57 @@ namespace SmartAlarm.Infrastructure.Tests.Integration
 
         public PostgresUnitOfWorkIntegrationTests()
         {
-            var connStr = Environment.GetEnvironmentVariable("POSTGRES_CONN") ??
-                "Host=localhost;Port=5432;Database=smartalarm;Username=smartalarm;Password=smartalarm123";
-            _connection = new Npgsql.NpgsqlConnection(connStr);
-            _connection.Open();
-            var options = new DbContextOptionsBuilder<SmartAlarmDbContext>()
-                .UseNpgsql(_connection)
-                .Options;
-            _context = new SmartAlarmDbContext(options);
-            _context.Database.EnsureCreated();
-            // Limpeza das tabelas para evitar conflitos de chave única
-            using (var cmd = _connection.CreateCommand())
+            // Usar DockerHelper para resolver as configurações do PostgreSQL
+            var host = DockerHelper.ResolveServiceHostname("postgres");
+            var port = DockerHelper.ResolveServicePort("postgres", 5432);
+            var user = Environment.GetEnvironmentVariable("POSTGRES_USER") ?? "smartalarm";
+            var password = Environment.GetEnvironmentVariable("POSTGRES_PASSWORD") ?? "smartalarm123";
+            var database = Environment.GetEnvironmentVariable("POSTGRES_DB") ?? "smartalarm";
+            
+            // Primeiro conectar ao database padrão para criar o database de teste
+            var defaultConnStr = $"Host={host};Port={port};Username={user};Password={password};Database={database}";
+            
+            // Usar um database único para cada teste para evitar conflitos
+            var testDbName = $"smartalarm_test_{Guid.NewGuid():N}";
+            
+            try
             {
-                cmd.CommandText = "DELETE FROM \"Alarms\"; DELETE FROM \"Users\";";
-                cmd.ExecuteNonQuery();
+                Console.WriteLine($"Criando database de teste: {testDbName}");
+                
+                // Conectar ao database padrão e criar o database de teste
+                using (var defaultConnection = new Npgsql.NpgsqlConnection(defaultConnStr))
+                {
+                    defaultConnection.Open();
+                    using (var cmd = defaultConnection.CreateCommand())
+                    {
+                        cmd.CommandText = $"CREATE DATABASE \"{testDbName}\"";
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+                
+                Console.WriteLine($"Database {testDbName} criado com sucesso");
+                
+                // Agora conectar ao database de teste criado
+                var testConnStr = $"Host={host};Port={port};Username={user};Password={password};Database={testDbName}";
+                _connection = new Npgsql.NpgsqlConnection(testConnStr);
+                _connection.Open();
+                
+                var options = new DbContextOptionsBuilder<SmartAlarmDbContext>()
+                    .UseNpgsql(_connection)
+                    .Options;
+                _context = new SmartAlarmDbContext(options);
+                
+                // Criar as tabelas
+                Console.WriteLine("Criando tabelas...");
+                var created = _context.Database.EnsureCreated();
+                Console.WriteLine($"Tabelas criadas: {created}");
             }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Erro ao preparar database: {ex.Message}");
+                throw;
+            }
+            
             _unitOfWork = new EfUnitOfWork(_context);
         }
 
@@ -99,9 +135,65 @@ namespace SmartAlarm.Infrastructure.Tests.Integration
 
         public void Dispose()
         {
-            _unitOfWork.Dispose();
-            _context.Dispose();
-            _connection.Dispose();
+            try
+            {
+                // Obter o nome do database antes de fechar a conexão
+                var dbName = _connection?.Database;
+                
+                _unitOfWork?.Dispose();
+                _context?.Dispose();
+                _connection?.Close();
+                _connection?.Dispose();
+                
+                // Limpar o database de teste se conseguirmos
+                if (!string.IsNullOrEmpty(dbName) && dbName.StartsWith("smartalarm_test_"))
+                {
+                    try
+                    {
+                        var host = DockerHelper.ResolveServiceHostname("postgres");
+                        var port = DockerHelper.ResolveServicePort("postgres", 5432);
+                        var user = Environment.GetEnvironmentVariable("POSTGRES_USER") ?? "smartalarm";
+                        var password = Environment.GetEnvironmentVariable("POSTGRES_PASSWORD") ?? "smartalarm123";
+                        var database = Environment.GetEnvironmentVariable("POSTGRES_DB") ?? "smartalarm";
+                        
+                        var defaultConnStr = $"Host={host};Port={port};Username={user};Password={password};Database={database}";
+                        
+                        using (var cleanupConnection = new Npgsql.NpgsqlConnection(defaultConnStr))
+                        {
+                            cleanupConnection.Open();
+                            
+                            // Primeiro, forçar a desconexão de todas as sessões do database de teste
+                            using (var disconnectCmd = cleanupConnection.CreateCommand())
+                            {
+                                disconnectCmd.CommandText = $@"
+                                    SELECT pg_terminate_backend(pid)
+                                    FROM pg_stat_activity 
+                                    WHERE datname = '{dbName}' AND pid <> pg_backend_pid()";
+                                disconnectCmd.ExecuteNonQuery();
+                            }
+                            
+                            // Aguardar um pouco para as conexões serem terminadas
+                            await Task.Delay(100);
+                            
+                            // Agora tentar remover o database
+                            using (var cmd = cleanupConnection.CreateCommand())
+                            {
+                                cmd.CommandText = $"DROP DATABASE IF EXISTS \"{dbName}\"";
+                                cmd.ExecuteNonQuery();
+                                Console.WriteLine($"Database de teste {dbName} removido");
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Aviso: Não foi possível limpar o database de teste {dbName}: {ex.Message}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Erro durante dispose: {ex.Message}");
+            }
         }
     }
 }
