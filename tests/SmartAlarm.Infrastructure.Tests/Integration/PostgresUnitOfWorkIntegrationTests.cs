@@ -76,6 +76,7 @@ namespace SmartAlarm.Infrastructure.Tests.Integration
         }
 
         [Fact(DisplayName = "Deve realizar CRUD completo no PostgreSQL")]
+        [Trait("Category", "Integration")]
         public async Task Deve_Crud_Completo()
         {
             var user = new User(Guid.NewGuid(), new Name("User CRUD"), new Email("crud@example.com"));
@@ -102,6 +103,7 @@ namespace SmartAlarm.Infrastructure.Tests.Integration
         }
 
         [Fact(DisplayName = "Deve realizar commit e rollback de transação no PostgreSQL")]
+        [Trait("Category", "Integration")]
         public async Task Deve_Commit_Rollback_Transacao()
         {
             var user = new User(Guid.NewGuid(), new Name("User Tx"), new Email("tx@example.com"));
@@ -173,7 +175,7 @@ namespace SmartAlarm.Infrastructure.Tests.Integration
                             }
                             
                             // Aguardar um pouco para as conexões serem terminadas
-                            await Task.Delay(100);
+                            System.Threading.Thread.Sleep(100);
                             
                             // Agora tentar remover o database
                             using (var cmd = cleanupConnection.CreateCommand())

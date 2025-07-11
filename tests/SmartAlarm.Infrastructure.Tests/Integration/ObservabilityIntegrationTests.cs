@@ -13,6 +13,7 @@ namespace SmartAlarm.Infrastructure.Tests.Integration
     public class ObservabilityIntegrationTests
     {
         [Fact(DisplayName = "Deve emitir Activity (tracing) e log estruturado em operação real")]
+        [Trait("Category", "Integration")]
         public async Task Deve_Emitir_Tracing_e_Log()
         {
             // Arrange

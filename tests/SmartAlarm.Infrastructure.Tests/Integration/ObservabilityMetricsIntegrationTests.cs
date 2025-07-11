@@ -11,6 +11,7 @@ namespace SmartAlarm.Infrastructure.Tests.Integration
     public class ObservabilityMetricsIntegrationTests
     {
         [Fact(DisplayName = "Deve emitir e capturar métrica customizada via Meter (OpenTelemetry)")]
+        [Trait("Category", "Integration")]
         public async Task Deve_Emitir_e_Capturar_Metrica_Customizada()
         {
             // Arrange

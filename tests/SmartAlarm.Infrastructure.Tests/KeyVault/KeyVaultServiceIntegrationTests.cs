@@ -16,11 +16,17 @@ namespace SmartAlarm.Infrastructure.Tests.KeyVault
         {
             var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
             _logger = loggerFactory.CreateLogger<HashiCorpVaultProvider>();
-            var httpClient = new HttpClient { BaseAddress = new Uri("http://localhost:8200") };
+            
+            // Usar DockerHelper para resolver configurações do Vault
+            var host = DockerHelper.ResolveServiceHostname("vault");
+            var port = DockerHelper.ResolveServicePort("vault", 8200);
+            
+            var httpClient = new HttpClient { BaseAddress = new Uri($"http://{host}:{port}") };
             _provider = new HashiCorpVaultProvider(httpClient, _logger);
         }
 
         [Fact(DisplayName = "Deve ler e escrever segredo no HashiCorp Vault real")]
+        [Trait("Category", "Integration")]
         public async Task Deve_Ler_Escrever_Segredo_HashicorpVault()
         {
             // Arrange

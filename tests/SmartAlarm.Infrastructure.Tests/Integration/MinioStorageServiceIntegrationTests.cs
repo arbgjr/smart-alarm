@@ -14,18 +14,23 @@ namespace SmartAlarm.Infrastructure.Tests.Integration
 
         public MinioStorageServiceIntegrationTests()
         {
-            // Força o endpoint para localhost para rodar fora do Docker
-            Environment.SetEnvironmentVariable("MINIO_ENDPOINT", "localhost");
-            Environment.SetEnvironmentVariable("MINIO_PORT", "9000");
+            // Usar DockerHelper para resolver configurações do MinIO
+            var host = DockerHelper.ResolveServiceHostname("minio");
+            var port = DockerHelper.ResolveServicePort("minio", 9000);
+            
+            Environment.SetEnvironmentVariable("MINIO_ENDPOINT", host);
+            Environment.SetEnvironmentVariable("MINIO_PORT", port.ToString());
+            
             var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
             _logger = loggerFactory.CreateLogger<MinioStorageService>();
             _configResolverMock = new Mock<SmartAlarm.Infrastructure.Configuration.IConfigurationResolver>();
-            _configResolverMock.Setup(x => x.GetConfigAsync("MINIO_ENDPOINT", It.IsAny<System.Threading.CancellationToken>())).ReturnsAsync("localhost");
-            _configResolverMock.Setup(x => x.GetConfigAsync("MINIO_PORT", It.IsAny<System.Threading.CancellationToken>())).ReturnsAsync("9000");
+            _configResolverMock.Setup(x => x.GetConfigAsync("MINIO_ENDPOINT", It.IsAny<System.Threading.CancellationToken>())).ReturnsAsync(host);
+            _configResolverMock.Setup(x => x.GetConfigAsync("MINIO_PORT", It.IsAny<System.Threading.CancellationToken>())).ReturnsAsync(port.ToString());
             _service = new MinioStorageService(_logger, _configResolverMock.Object);
         }
 
         [Fact(DisplayName = "Deve fazer upload, download e delete no MinIO")]
+        [Trait("Category", "Integration")]
         public async Task Deve_Upload_Download_Delete_Arquivo()
         {
             // Arrange
