@@ -121,6 +121,9 @@ setup_shared_network() {
     
     print_message "${GREEN}" "Serviços detectados com prefixo: ${CONTAINER_PREFIX}"
     
+    # Criar mapeamento de nomes de serviços para nomes de contêineres
+    declare -A CONTAINER_MAP
+    
     # Conectar contêineres de serviço à rede compartilhada
     for service in postgres rabbitmq minio vault prometheus loki jaeger grafana; do
         # Tentar diferentes padrões de nomes para encontrar o contêiner
@@ -129,6 +132,9 @@ setup_shared_network() {
             if [[ -n "$container" ]]; then
                 print_message "${YELLOW}" "Conectando ${container} à rede compartilhada..."
                 docker network connect smartalarm-test-net $container 2>/dev/null || true
+                
+                # Armazenar mapeamento para uso posterior
+                CONTAINER_MAP[$service]=$container
                 break
             fi
         done
@@ -137,6 +143,15 @@ setup_shared_network() {
     # Confirmar conexões
     print_message "${GREEN}" "Configuração de rede concluída. Contêineres conectados:"
     docker network inspect -f '{{range .Containers}}{{.Name}} {{end}}' smartalarm-test-net | tr " " "\n" | grep -v '^$'
+    
+    # Imprimir mapeamento de nomes para depuração
+    print_message "${YELLOW}" "Mapeamento de nomes de serviços para contêineres:"
+    for service in "${!CONTAINER_MAP[@]}"; do
+        echo "$service -> ${CONTAINER_MAP[$service]}"
+    done
+    
+    # Exportar o mapeamento para uso em outras funções
+    export CONTAINER_MAP
 }
 
 # Função para preparar e executar contêiner de teste
@@ -156,9 +171,6 @@ ENV ContinueOnError=true
 # Instalar ferramentas necessárias
 RUN apt-get update && apt-get install -y curl iputils-ping dnsutils
 
-# Configurar DNS para depuração
-RUN echo "nameserver 8.8.8.8" >> /etc/resolv.conf
-
 # Script para execução dos testes
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
@@ -169,6 +181,30 @@ EOF
     # Criar script entrypoint para execução dos testes
     cat > ${temp_dir}/entrypoint.sh <<EOF
 #!/bin/bash
+
+# Adicionar mapeamentos adicionais ao /etc/hosts para resolução de nomes
+{
+    echo "127.0.0.1 localhost"
+    echo "::1 localhost ip6-localhost ip6-loopback"
+    
+    # Adicionar mapeamentos para os serviços - nomes curtos
+    # Usando os IPs reais dos contêineres
+    # Isso é crucial para fazer a resolução de nomes funcionar
+    if [ ! -z "\$SERVICE_MAPPINGS" ]; then
+        echo "\$SERVICE_MAPPINGS" | tr '|' '\n' | while read mapping; do
+            if [ ! -z "\$mapping" ]; then
+                echo "\$mapping"
+            fi
+        done
+    fi
+    
+    # Manter outras entradas do hosts original
+    cat /etc/hosts | grep -v "localhost" | grep -v "postgres" | grep -v "rabbitmq" | grep -v "minio" | grep -v "vault"
+} > /tmp/hosts.new
+
+cat /tmp/hosts.new > /etc/hosts 2>/dev/null || {
+    echo "Aviso: Não foi possível modificar /etc/hosts (somente leitura). Usando resolução DNS padrão."
+}
 
 # Mostrar informações de rede
 echo "=== Informações de rede ==="
@@ -183,10 +219,20 @@ getent hosts
 
 # Testar conexões com serviços
 echo "=== Testando conexão com serviços ==="
-ping -c 2 postgres || true
-ping -c 2 rabbitmq || true
-ping -c 2 minio || true
-ping -c 2 vault || true
+for service in postgres rabbitmq minio vault prometheus loki jaeger grafana; do
+    echo "Testando conexão com $service..."
+    
+    # Tentar ping para o serviço
+    if ping -c 2 -W 1 $service &>/dev/null; then
+        echo "✓ Conexão com $service bem-sucedida"
+    else
+        echo "✗ Falha ao conectar com $service"
+        echo "  Verificando resolução DNS:"
+        getent hosts $service || echo "  DNS não consegue resolver $service"
+        echo "  Tentando ping pelo IP direto:"
+        getent hosts $service | awk '{print $1}' | xargs -r ping -c 1 || true
+    fi
+done
 
 # Executar testes
 echo "=== Executando testes ==="
@@ -202,35 +248,58 @@ EOF
     rm -rf ${temp_dir}
     
     # Preparar variáveis de ambiente para os testes
-    # Usar nomes de contêineres como hosts para os serviços
+    # Usar nomes simples dos serviços como hosts para os testes
     local env_vars=""
     
-    # Mapeamento de contêineres para variáveis de ambiente
-    declare -A service_vars=(
-        ["postgres"]="POSTGRES_HOST=postgres POSTGRES_PORT=5432"
-        ["rabbitmq"]="RABBITMQ_HOST=rabbitmq RABBITMQ_PORT=5672"
-        ["minio"]="MINIO_HOST=minio MINIO_PORT=9000"
-        ["vault"]="VAULT_HOST=vault VAULT_PORT=8200"
-        ["prometheus"]="PROMETHEUS_HOST=prometheus PROMETHEUS_PORT=9090"
-        ["loki"]="LOKI_HOST=loki LOKI_PORT=3100"
-        ["jaeger"]="JAEGER_HOST=jaeger JAEGER_PORT=16686"
-        ["grafana"]="GRAFANA_HOST=grafana GRAFANA_PORT=3000"
-    )
+    # Configurar variáveis de ambiente com nomes de serviço simples
+    # Isso permite que os testes usem postgres ao invés de smart-alarm_postgres_1
+    env_vars="-e POSTGRES_HOST=postgres \
+              -e RABBITMQ_HOST=rabbitmq \
+              -e MINIO_HOST=minio \
+              -e VAULT_HOST=vault \
+              -e PROMETHEUS_HOST=prometheus \
+              -e LOKI_HOST=loki \
+              -e JAEGER_HOST=jaeger \
+              -e GRAFANA_HOST=grafana"
     
-    # Construir a string de variáveis de ambiente
-    for service in "${!service_vars[@]}"; do
-        env_vars="${env_vars} -e ${service_vars[$service]}"
-    done
+    # Adicionar portas padrão às variáveis de ambiente
+    env_vars="${env_vars} -e POSTGRES_PORT=5432 \
+              -e RABBITMQ_PORT=5672 \
+              -e MINIO_PORT=9000 \
+              -e VAULT_PORT=8200 \
+              -e PROMETHEUS_PORT=9090 \
+              -e LOKI_PORT=3100 \
+              -e JAEGER_PORT=16686 \
+              -e GRAFANA_PORT=3000"
     
     # Se não for modo debug, executar testes
     if [[ "$1" != "debug" ]]; then
         print_message "${BLUE}" "Executando testes de integração..."
         
+        # Permitir que o contêiner modifique /etc/hosts se necessário
+        docker_opts="--cap-add=NET_ADMIN"
+        
         # Executar os testes no contêiner conectado à rede compartilhada
+        # Configurando a resolução de hosts usando aliases de rede
+        local add_hosts=""
+        
+        # Obter IPs dos contêineres de forma segura
+        for service in postgres rabbitmq minio vault prometheus loki jaeger grafana; do
+            local container="${CONTAINER_PREFIX}_${service}_1"
+            local container_ip=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$container" 2>/dev/null)
+            
+            if [[ -n "$container_ip" && "$container_ip" != "" ]]; then
+                add_hosts="$add_hosts --add-host=${service}:${container_ip} "
+            fi
+        done
+        
+        # Executar contêiner com hosts adicionados
         docker run --rm \
             --name smartalarm-test-runner \
             --network=smartalarm-test-net \
             --hostname test-runner \
+            ${docker_opts} \
+            ${add_hosts} \
             ${env_vars} \
             -v "$(pwd):/app" \
             smartalarm-test-image:latest \
@@ -250,11 +319,30 @@ EOF
     else
         print_message "${YELLOW}" "Modo de depuração - executando contêiner para diagnóstico..."
         
+        # Permitir que o contêiner modifique /etc/hosts se necessário
+        docker_opts="--cap-add=NET_ADMIN"
+        
         # Executar contêiner em modo interativo para diagnóstico
+        # Configurando a resolução de hosts usando aliases de rede
+        local add_hosts=""
+        
+        # Obter IPs dos contêineres de forma segura
+        for service in postgres rabbitmq minio vault prometheus loki jaeger grafana; do
+            local container="${CONTAINER_PREFIX}_${service}_1"
+            local container_ip=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$container" 2>/dev/null)
+            
+            if [[ -n "$container_ip" && "$container_ip" != "" ]]; then
+                add_hosts="$add_hosts --add-host=${service}:${container_ip} "
+            fi
+        done
+        
+        # Executar contêiner com hosts adicionados e modo interativo
         docker run --rm -it \
             --name smartalarm-test-runner \
             --network=smartalarm-test-net \
             --hostname test-runner \
+            ${docker_opts} \
+            ${add_hosts} \
             ${env_vars} \
             -v "$(pwd):/app" \
             smartalarm-test-image:latest \
