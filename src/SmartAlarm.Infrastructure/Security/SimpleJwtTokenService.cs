@@ -1,4 +1,4 @@
-using System.IdentityModel.Tokens.Jwt;
+﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
@@ -11,7 +11,7 @@ using SmartAlarm.Domain.Entities;
 namespace SmartAlarm.Infrastructure.Security;
 
 /// <summary>
-/// Implementação simplificada do serviço de tokens JWT que usa configurações da aplicação
+/// ImplementaÃ§Ã£o simplificada do serviÃ§o de tokens JWT que usa configuraÃ§Ãµes da aplicaÃ§Ã£o
 /// Usado principalmente para testes e ambientes de desenvolvimento
 /// </summary>
 public class SimpleJwtTokenService : IJwtTokenService
@@ -26,7 +26,7 @@ public class SimpleJwtTokenService : IJwtTokenService
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    public async Task<string> GenerateTokenAsync(User user, IEnumerable<string> roles)
+    public Task<string> GenerateTokenAsync(User user, IEnumerable<string> roles)
     {
         try
         {
@@ -53,7 +53,7 @@ public class SimpleJwtTokenService : IJwtTokenService
                 new(ClaimTypes.Email, user.Email.ToString()),
                 new("email_verified", user.EmailVerified.ToString()),
                 new("is_active", user.IsActive.ToString()),
-                new("jti", Guid.NewGuid().ToString()) // JWT ID para controle de revogação
+                new("jti", Guid.NewGuid().ToString()) // JWT ID para controle de revogaÃ§Ã£o
             };
 
             // Adicionar roles como claims
@@ -73,7 +73,7 @@ public class SimpleJwtTokenService : IJwtTokenService
             var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
 
             _logger.LogInformation("JWT token generated for user {UserId}", user.Id);
-            return tokenString;
+            return Task.FromResult(tokenString);
         }
         catch (Exception ex)
         {
@@ -82,7 +82,7 @@ public class SimpleJwtTokenService : IJwtTokenService
         }
     }
 
-    public async Task<string> GenerateRefreshTokenAsync(User user)
+    public Task<string> GenerateRefreshTokenAsync(User user)
     {
         try
         {
@@ -96,7 +96,7 @@ public class SimpleJwtTokenService : IJwtTokenService
             var refreshToken = Convert.ToBase64String(tokenBytes);
 
             _logger.LogInformation("Refresh token generated for user {UserId}", user.Id);
-            return refreshToken;
+            return Task.FromResult(refreshToken);
         }
         catch (Exception ex)
         {
@@ -166,18 +166,18 @@ public class SimpleJwtTokenService : IJwtTokenService
         }
     }
 
-    public async Task<Guid?> GetUserIdFromTokenAsync(string token)
+    public Task<Guid?> GetUserIdFromTokenAsync(string token)
     {
         try
         {
-            var claims = await ValidateTokenAndGetClaimsAsync(token);
+            var claims = ValidateTokenAndGetClaimsAsync(token).Result;
             if (claims == null)
                 return null;
 
             var userIdClaim = claims.FirstOrDefault(x => x.Type == ClaimTypes.NameIdentifier);
             if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out var userId))
             {
-                return userId;
+                return Task.FromResult<Guid?>(userId);
             }
 
             return null;
@@ -189,73 +189,73 @@ public class SimpleJwtTokenService : IJwtTokenService
         }
     }
 
-    public async Task<bool> ValidateRefreshTokenAsync(string refreshToken)
+    public Task<bool> ValidateRefreshTokenAsync(string refreshToken)
     {
         try
         {
             if (string.IsNullOrWhiteSpace(refreshToken))
-                return false;
+                return Task.FromResult(false);
 
-            // Aqui implementaríamos validação com storage (Redis/Database)
-            // Por simplicidade, validamos formato básico
+            // Aqui implementarÃ­amos validaÃ§Ã£o com storage (Redis/Database)
+            // Por simplicidade, validamos formato bÃ¡sico
             var tokenBytes = Convert.FromBase64String(refreshToken);
-            return tokenBytes.Length == 32;
+            return Task.FromResult(tokenBytes.Length == 32);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error validating refresh token");
-            return false;
+            return Task.FromResult(false);
         }
     }
 
-    public async Task<bool> RevokeTokenAsync(string token)
+    public Task<bool> RevokeTokenAsync(string token)
     {
         try
         {
             if (string.IsNullOrWhiteSpace(token))
-                return false;
+                return Task.FromResult(false);
 
-            // Adicionar token à lista de revogados
+            // Adicionar token Ã  lista de revogados
             _revokedTokens.Add(token);
             
             _logger.LogInformation("Token revoked successfully");
-            return true;
+            return Task.FromResult(true);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error revoking token");
-            return false;
+            return Task.FromResult(false);
         }
     }
 
-    public async Task<string> GenerateAccessTokenAsync(User user)
+    public Task<string> GenerateAccessTokenAsync(User user)
     {
-        // Para esta implementação simples, vamos usar uma lista de roles vazia
-        // Em uma implementação completa, buscaríamos as roles do usuário
-        return await GenerateTokenAsync(user, Enumerable.Empty<string>());
+        // Para esta implementaÃ§Ã£o simples, vamos usar uma lista de roles vazia
+        // Em uma implementaÃ§Ã£o completa, buscarÃ­amos as roles do usuÃ¡rio
+        return GenerateTokenAsync(user, Enumerable.Empty<string>());
     }
 
-    public async Task<bool> ValidateTokenAsync(string token)
+    public Task<bool> ValidateTokenAsync(string token)
     {
-        var claims = await ValidateTokenAndGetClaimsAsync(token);
-        return claims != null;
+        var claims = ValidateTokenAndGetClaimsAsync(token).Result;
+        return Task.FromResult(claims != null);
     }
 
-    public async Task<string?> RefreshTokenAsync(string refreshToken)
+    public Task<string?> RefreshTokenAsync(string refreshToken)
     {
         try
         {
             if (string.IsNullOrWhiteSpace(refreshToken))
                 return null;
 
-            // Validar refresh token (implementação simplificada)
-            if (!await ValidateRefreshTokenAsync(refreshToken))
+            // Validar refresh token (implementaÃ§Ã£o simplificada)
+            if (!ValidateRefreshTokenAsync(refreshToken).Result)
                 return null;
 
             // Por simplicidade, retornamos o refresh token. 
             // Em uma implementação real, buscaríamos o usuário associado e geraríamos um novo token
             _logger.LogInformation("Refresh token processed");
-            return refreshToken;
+            return Task.FromResult<string?>(refreshToken);
         }
         catch (Exception ex)
         {
@@ -264,3 +264,5 @@ public class SimpleJwtTokenService : IJwtTokenService
         }
     }
 }
+
+

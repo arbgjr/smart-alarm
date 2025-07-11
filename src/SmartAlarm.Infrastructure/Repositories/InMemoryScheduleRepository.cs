@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -31,19 +31,19 @@ namespace SmartAlarm.Infrastructure.Repositories
         public Task<Schedule> GetByIdAsync(Guid id)
         {
             _schedules.TryGetValue(id, out var schedule);
-            return Task.FromResult(schedule);
+            return Task.FromResult(schedule!);
         }
 
         public Task<IEnumerable<Schedule>> GetByAlarmIdAsync(Guid alarmId)
         {
             var result = _schedules.Values.Where(s => s.AlarmId == alarmId);
-            return Task.FromResult(result);
+            return Task.FromResult(result!);
         }
 
         public Task<IEnumerable<Schedule>> GetActiveSchedulesAsync()
         {
             var result = _schedules.Values.Where(s => s.IsActive);
-            return Task.FromResult(result);
+            return Task.FromResult(result!);
         }
 
         public Task UpdateAsync(Schedule schedule)

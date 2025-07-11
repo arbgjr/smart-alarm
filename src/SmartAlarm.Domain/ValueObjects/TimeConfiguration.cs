@@ -1,11 +1,11 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace SmartAlarm.Domain.ValueObjects
 {
     /// <summary>
-    /// Value Object para representar configurações de tempo e timezone.
+    /// Value Object para representar configuraÃ§Ãµes de tempo e timezone.
     /// </summary>
     public class TimeConfiguration
     {
@@ -15,7 +15,7 @@ namespace SmartAlarm.Domain.ValueObjects
         public TimeConfiguration(TimeOnly time, string timeZone = "UTC")
         {
             if (string.IsNullOrWhiteSpace(timeZone))
-                throw new ArgumentException("TimeZone é obrigatório.", nameof(timeZone));
+                throw new ArgumentException("TimeZone Ã© obrigatÃ³rio.", nameof(timeZone));
 
             // Validate that the timezone is valid
             try
@@ -24,7 +24,7 @@ namespace SmartAlarm.Domain.ValueObjects
             }
             catch (TimeZoneNotFoundException)
             {
-                throw new ArgumentException($"TimeZone '{timeZone}' é inválido.", nameof(timeZone));
+                throw new ArgumentException($"TimeZone '{timeZone}' Ã© invÃ¡lido.", nameof(timeZone));
             }
 
             Time = time;
@@ -33,7 +33,7 @@ namespace SmartAlarm.Domain.ValueObjects
 
         public DateTime GetDateTimeForToday()
         {
-            // Cria DateTime com Kind=Unspecified para evitar erro de conversão
+            // Cria DateTime com Kind=Unspecified para evitar erro de conversÃ£o
             var today = DateTime.Today;
             var dateTime = new DateTime(today.Year, today.Month, today.Day, Time.Hour, Time.Minute, Time.Second, DateTimeKind.Unspecified);
             var timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(TimeZone);
@@ -41,7 +41,7 @@ namespace SmartAlarm.Domain.ValueObjects
         }
 
         public override string ToString() => $"{Time} ({TimeZone})";
-        public override bool Equals(object obj) => obj is TimeConfiguration other &&
+        public override bool Equals(object? obj) => obj is TimeConfiguration other &&
                                                    Time == other.Time &&
                                                    TimeZone == other.TimeZone;
         public override int GetHashCode() => HashCode.Combine(Time, TimeZone);

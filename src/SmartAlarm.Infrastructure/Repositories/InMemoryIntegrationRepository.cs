@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -30,13 +30,13 @@ namespace SmartAlarm.Infrastructure.Repositories
         public Task<Integration> GetByIdAsync(Guid id)
         {
             _integrations.TryGetValue(id, out var integration);
-            return Task.FromResult(integration);
+            return Task.FromResult(integration!);
         }
 
         public Task<IEnumerable<Integration>> GetByAlarmIdAsync(Guid alarmId)
         {
             var result = _integrations.Values.Where(i => i.AlarmId == alarmId);
-            return Task.FromResult(result);
+            return Task.FromResult(result!);
         }
 
         public Task UpdateAsync(Integration integration)
@@ -51,3 +51,4 @@ namespace SmartAlarm.Infrastructure.Repositories
         }
     }
 }
+

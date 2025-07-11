@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using SmartAlarm.Domain.ValueObjects;
@@ -6,7 +6,7 @@ using SmartAlarm.Domain.ValueObjects;
 namespace SmartAlarm.Domain.Entities
 {
     /// <summary>
-    /// Representa um alarme configurado pelo usuário.
+    /// Representa um alarme configurado pelo usuÃ¡rio.
     /// </summary>
     public class Alarm
     {
@@ -31,7 +31,7 @@ namespace SmartAlarm.Domain.Entities
         public Alarm(Guid id, Name name, DateTime time, bool enabled, Guid userId)
         {
             if (name == null) throw new ArgumentNullException(nameof(name));
-            if (userId == Guid.Empty) throw new ArgumentException("UserId é obrigatório.", nameof(userId));
+            if (userId == Guid.Empty) throw new ArgumentException("UserId Ã© obrigatÃ³rio.", nameof(userId));
 
             Id = id == Guid.Empty ? Guid.NewGuid() : id;
             Name = name;
@@ -64,7 +64,7 @@ namespace SmartAlarm.Domain.Entities
         {
             if (routine == null) throw new ArgumentNullException(nameof(routine));
             if (_routines.Any(r => r.Id == routine.Id))
-                throw new InvalidOperationException("Rotina já existe no alarme.");
+                throw new InvalidOperationException("Rotina jÃ¡ existe no alarme.");
 
             _routines.Add(routine);
         }
@@ -82,7 +82,7 @@ namespace SmartAlarm.Domain.Entities
         {
             if (integration == null) throw new ArgumentNullException(nameof(integration));
             if (_integrations.Any(i => i.Id == integration.Id))
-                throw new InvalidOperationException("Integração já existe no alarme.");
+                throw new InvalidOperationException("IntegraÃ§Ã£o jÃ¡ existe no alarme.");
 
             _integrations.Add(integration);
         }
@@ -100,9 +100,9 @@ namespace SmartAlarm.Domain.Entities
         {
             if (schedule == null) throw new ArgumentNullException(nameof(schedule));
             if (schedule.AlarmId != Id)
-                throw new InvalidOperationException("Schedule não pertence a este alarme.");
+                throw new InvalidOperationException("Schedule nÃ£o pertence a este alarme.");
             if (_schedules.Any(s => s.Id == schedule.Id))
-                throw new InvalidOperationException("Schedule já existe no alarme.");
+                throw new InvalidOperationException("Schedule jÃ¡ existe no alarme.");
 
             _schedules.Add(schedule);
         }
@@ -119,7 +119,7 @@ namespace SmartAlarm.Domain.Entities
         public void RecordTriggered()
         {
             if (!Enabled)
-                throw new InvalidOperationException("Não é possível disparar um alarme desabilitado.");
+                throw new InvalidOperationException("NÃ£o Ã© possÃ­vel disparar um alarme desabilitado.");
 
             LastTriggeredAt = DateTime.UtcNow;
         }
@@ -133,3 +133,4 @@ namespace SmartAlarm.Domain.Entities
         }
     }
 }
+

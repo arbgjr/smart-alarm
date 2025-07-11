@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -32,7 +32,7 @@ namespace SmartAlarm.Infrastructure.Repositories.EntityFramework
 
         public async Task<User> GetByEmailAsync(string email)
         {
-            // Filtra em memória para evitar problemas de conversão de Value Object
+            // Filtra em memÃ³ria para evitar problemas de conversÃ£o de Value Object
             return await Task.FromResult(
                 _context.Users
                     .AsEnumerable()

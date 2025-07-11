@@ -1,11 +1,11 @@
-using System;
+﻿using System;
 using System.Text.Json;
 using SmartAlarm.Domain.ValueObjects;
 
 namespace SmartAlarm.Domain.Entities
 {
     /// <summary>
-    /// Representa uma integração externa configurada para um alarme.
+    /// Representa uma integraÃ§Ã£o externa configurada para um alarme.
     /// </summary>
     public class Integration
     {
@@ -25,9 +25,9 @@ namespace SmartAlarm.Domain.Entities
         {
             if (name == null) throw new ArgumentNullException(nameof(name));
             if (string.IsNullOrWhiteSpace(provider))
-                throw new ArgumentException("Provedor da integração é obrigatório.", nameof(provider));
+                throw new ArgumentException("Provedor da integraÃ§Ã£o Ã© obrigatÃ³rio.", nameof(provider));
             if (alarmId == Guid.Empty)
-                throw new ArgumentException("AlarmId é obrigatório.", nameof(alarmId));
+                throw new ArgumentException("AlarmId Ã© obrigatÃ³rio.", nameof(alarmId));
             
             ValidateConfiguration(configuration);
             
@@ -77,7 +77,7 @@ namespace SmartAlarm.Domain.Entities
         public void RecordExecution()
         {
             if (!IsActive)
-                throw new InvalidOperationException("Não é possível executar uma integração inativa.");
+                throw new InvalidOperationException("NÃ£o Ã© possÃ­vel executar uma integraÃ§Ã£o inativa.");
             
             LastExecutedAt = DateTime.UtcNow;
         }
@@ -93,7 +93,7 @@ namespace SmartAlarm.Domain.Entities
             }
             catch (JsonException)
             {
-                throw new ArgumentException("Configuração deve ser um JSON válido.", nameof(configuration));
+                throw new ArgumentException("ConfiguraÃ§Ã£o deve ser um JSON vÃ¡lido.", nameof(configuration));
             }
         }
 
@@ -119,3 +119,4 @@ namespace SmartAlarm.Domain.Entities
         }
     }
 }
+

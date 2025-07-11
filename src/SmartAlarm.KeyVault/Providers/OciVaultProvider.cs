@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -27,7 +27,7 @@ namespace SmartAlarm.KeyVault.Providers
             _logger = logger;
         }
 
-        public async Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
+        public Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
         {
             try
             {
@@ -38,39 +38,39 @@ namespace SmartAlarm.KeyVault.Providers
                     string.IsNullOrEmpty(_options.CompartmentId))
                 {
                     _logger.LogDebug("OCI Vault provider not configured properly");
-                    return false;
+                    return Task.FromResult(false);
                 }
 
                 // TODO: Implement actual OCI SDK connectivity check
                 // For now, return false as OCI SDK integration requires more setup
                 _logger.LogDebug("OCI Vault provider configuration check - implementation pending");
-                return false;
+                return Task.FromResult(false);
             }
             catch (Exception ex)
             {
                 _logger.LogDebug(ex, "OCI Vault provider availability check failed");
-                return false;
+                return Task.FromResult(false);
             }
         }
 
-        public async Task<string?> GetSecretAsync(string secretKey, CancellationToken cancellationToken = default)
+        public Task<string?> GetSecretAsync(string secretKey, CancellationToken cancellationToken = default)
         {
             try
             {
                 if (string.IsNullOrWhiteSpace(secretKey))
                 {
                     _logger.LogWarning("Secret key cannot be null or empty");
-                    return null;
+                    return Task.FromResult<string?>(null);
                 }
 
                 // TODO: Implement OCI Vault secret retrieval
                 _logger.LogWarning("OCI Vault secret retrieval not yet implemented");
-                return null;
+                return Task.FromResult<string?>(null);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to retrieve secret '{SecretKey}' from OCI Vault", secretKey);
-                return null;
+                return Task.FromResult<string?>(null);
             }
         }
 
@@ -86,25 +86,26 @@ namespace SmartAlarm.KeyVault.Providers
             return results;
         }
 
-        public async Task<bool> SetSecretAsync(string secretKey, string secretValue, CancellationToken cancellationToken = default)
+        public Task<bool> SetSecretAsync(string secretKey, string secretValue, CancellationToken cancellationToken = default)
         {
             try
             {
                 if (string.IsNullOrWhiteSpace(secretKey) || secretValue == null)
                 {
                     _logger.LogWarning("Secret key and value cannot be null or empty");
-                    return false;
+                    return Task.FromResult(false);
                 }
 
                 // TODO: Implement OCI Vault secret setting
                 _logger.LogWarning("OCI Vault secret setting not yet implemented");
-                return false;
+                return Task.FromResult(false);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to set secret '{SecretKey}' in OCI Vault", secretKey);
-                return false;
+                return Task.FromResult(false);
             }
         }
     }
 }
+

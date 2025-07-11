@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -31,13 +31,13 @@ namespace SmartAlarm.Infrastructure.Repositories
         public Task<Alarm> GetByIdAsync(Guid id)
         {
             _alarms.TryGetValue(id, out var alarm);
-            return Task.FromResult(alarm);
+            return Task.FromResult(alarm!);
         }
 
         public Task<IEnumerable<Alarm>> GetByUserIdAsync(Guid userId)
         {
             var result = _alarms.Values.Where(a => a.UserId == userId);
-            return Task.FromResult(result);
+            return Task.FromResult(result!);
         }
 
         public Task UpdateAsync(Alarm alarm)
@@ -47,3 +47,4 @@ namespace SmartAlarm.Infrastructure.Repositories
         }
     }
 }
+

@@ -1,10 +1,10 @@
-using System;
+﻿using System;
 using System.Text.RegularExpressions;
 
 namespace SmartAlarm.Domain.ValueObjects
 {
     /// <summary>
-    /// Value Object para representar e validar e-mail de usuário.
+    /// Value Object para representar e validar e-mail de usuÃ¡rio.
     /// </summary>
     public class Email
     {
@@ -17,16 +17,17 @@ namespace SmartAlarm.Domain.ValueObjects
         public Email(string address)
         {
             if (string.IsNullOrWhiteSpace(address))
-                throw new ArgumentException("E-mail não pode ser vazio.", nameof(address));
+                throw new ArgumentException("E-mail nÃ£o pode ser vazio.", nameof(address));
             
             if (!EmailRegex.IsMatch(address))
-                throw new ArgumentException("E-mail inválido.", nameof(address));
+                throw new ArgumentException("E-mail invÃ¡lido.", nameof(address));
             
             Address = address;
         }
 
         public override string ToString() => Address;
-        public override bool Equals(object obj) => obj is Email other && Address == other.Address;
+        public override bool Equals(object? obj) => obj is Email other && Address == other.Address;
         public override int GetHashCode() => Address.GetHashCode();
     }
 }
+

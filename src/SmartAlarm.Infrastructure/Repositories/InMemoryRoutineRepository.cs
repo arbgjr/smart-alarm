@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -30,13 +30,13 @@ namespace SmartAlarm.Infrastructure.Repositories
         public Task<Routine> GetByIdAsync(Guid id)
         {
             _routines.TryGetValue(id, out var routine);
-            return Task.FromResult(routine);
+            return Task.FromResult(routine!);
         }
 
         public Task<IEnumerable<Routine>> GetByAlarmIdAsync(Guid alarmId)
         {
             var result = _routines.Values.Where(r => r.AlarmId == alarmId);
-            return Task.FromResult(result);
+            return Task.FromResult(result!);
         }
 
         public Task UpdateAsync(Routine routine)
@@ -51,3 +51,4 @@ namespace SmartAlarm.Infrastructure.Repositories
         }
     }
 }
+

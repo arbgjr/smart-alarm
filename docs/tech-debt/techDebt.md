@@ -1,3 +1,52 @@
+# 11/07/2025
+
+## 🚨 Warnings Críticos Detectados nos Testes
+
+- **Vulnerabilidades de Segurança (NU1902)**
+  - **Descrição**: Azure.Identity 1.10.4 possui vulnerabilidades conhecidas (GHSA-m5vv-6r4h-3vj9, GHSA-wvxc-855f-jvrv)
+  - **Impacto**: Exposição a potenciais ataques de segurança, não conformidade LGPD
+  - **Prioridade**: 🔴 **CRÍTICA**
+  - **Estimativa**: 1 dia para atualização imediata
+  - **Solução**: Atualizar para Azure.Identity 1.12.0+ usando `./fix-warnings.sh`
+
+- **Compatibilidade de Framework (NU1701)**
+  - **Descrição**: Oracle.ManagedDataAccess 12.1.21 usando .NET Framework ao invés de .NET 8.0
+  - **Impacto**: Possíveis incompatibilidades em runtime, performance reduzida
+  - **Prioridade**: 🟡 **ALTA**
+  - **Estimativa**: 2 dias para migração e testes
+  - **Solução**: Migrar para Oracle.ManagedDataAccess.Core 3.21.120
+
+- **Inconsistências de Versão (NU1603)**
+  - **Descrição**: Versões específicas não encontradas, usando aproximações
+    - AWSSDK.SecretsManager 3.7.300.29 → 3.7.301
+    - Microsoft.Extensions.* 8.0.8 → 9.0.0
+  - **Impacto**: Comportamentos inesperados, dependências inconsistentes
+  - **Prioridade**: 🟡 **MÉDIA**
+  - **Estimativa**: 1 dia para normalização
+  - **Solução**: Normalizar versões nos arquivos .csproj
+
+- **Warnings de Nullable Reference Types (CS8765, CS8618, CS8603)**
+  - **Descrição**: 15+ warnings de nullability em Value Objects e Entities
+  - **Impacto**: Possíveis NullReferenceException em runtime
+  - **Prioridade**: 🟢 **BAIXA**
+  - **Estimativa**: 3 dias para correção completa
+  - **Solução**: Ajustar anotações nullable nos Value Objects
+
+- **Métodos Async Desnecessários (CS1998)**
+  - **Descrição**: 8+ métodos async sem await em OciVaultProvider, JwtTokenService
+  - **Impacto**: Performance desnecessária, código confuso
+  - **Prioridade**: 🟢 **BAIXA**
+  - **Estimativa**: 2 dias para refatoração
+  - **Solução**: Remover async ou implementar await apropriado
+
+### Ferramentas de Correção
+
+- **Script Automatizado**: `./fix-warnings.sh` para correções de dependências
+- **Análise Detalhada**: `docs/tech-debt/warnings-analysis.md`
+- **Relatório**: Gerado automaticamente após execução do script
+
+---
+
 # 05/07/2025
 
 ## Pendências da Infrastructure Layer para Produção
