@@ -9,6 +9,23 @@ NC='\033[0m' # No Color
 
 echo -e "${BLUE}=== Smart Alarm - Encerrando Ambiente de Desenvolvimento ===${NC}"
 
+# Detectar ambiente WSL
+USING_WSL=false
+if [[ -f /proc/sys/fs/binfmt_misc/WSLInterop ]]; then
+    USING_WSL=true
+    echo -e "${YELLOW}Ambiente WSL detectado${NC}"
+fi
+
+# Detectar Docker Desktop
+if docker info 2>/dev/null | grep -q "Docker Desktop"; then
+    echo -e "${YELLOW}Docker Desktop detectado${NC}"
+    CONTAINER_PREFIX="smart-alarm-"
+    IS_DOCKER_DESKTOP=true
+else
+    CONTAINER_PREFIX=""
+    IS_DOCKER_DESKTOP=false
+fi
+
 # Verificar se o Docker está rodando
 if ! docker info > /dev/null 2>&1; then
     echo -e "${RED}Docker não está rodando. Por favor, inicie o Docker e tente novamente.${NC}"
@@ -91,29 +108,63 @@ if [ "$USE_COMPOSE" = false ]; then
         stop)
             # Parar cada container se estiver rodando
             for CONTAINER in "${CONTAINERS[@]}"; do
-                if docker ps | grep -q $CONTAINER; then
-                    echo -e "${YELLOW}Parando container $CONTAINER...${NC}"
-                    docker stop $CONTAINER
-                    echo -e "${GREEN}Container $CONTAINER parado.${NC}"
+                # Verificar com e sem prefixo para maior compatibilidade
+                if docker ps | grep -q -E "\b${CONTAINER_PREFIX}${CONTAINER}(-1|\b)"; then
+                    echo -e "${YELLOW}Parando container ${CONTAINER_PREFIX}${CONTAINER}...${NC}"
+                    docker stop $(docker ps -q --filter name="${CONTAINER_PREFIX}${CONTAINER}")
+                    echo -e "${GREEN}Container ${CONTAINER_PREFIX}${CONTAINER} parado.${NC}"
+                elif docker ps | grep -q -E "\b${CONTAINER}(-1|\b)"; then
+                    echo -e "${YELLOW}Parando container ${CONTAINER}...${NC}"
+                    docker stop $(docker ps -q --filter name="${CONTAINER}")
+                    echo -e "${GREEN}Container ${CONTAINER} parado.${NC}"
                 fi
             done
             ;;
         down|purge)
             # Parar e remover cada container
             for CONTAINER in "${CONTAINERS[@]}"; do
-                if docker ps -a | grep -q $CONTAINER; then
-                    echo -e "${YELLOW}Parando e removendo container $CONTAINER...${NC}"
-                    docker stop $CONTAINER 2>/dev/null || true
-                    docker rm $CONTAINER 2>/dev/null || true
-                    echo -e "${GREEN}Container $CONTAINER removido.${NC}"
+                # Verificar com e sem prefixo para maior compatibilidade
+                if docker ps -a | grep -q -E "\b${CONTAINER_PREFIX}${CONTAINER}(-1|\b)"; then
+                    echo -e "${YELLOW}Parando e removendo container ${CONTAINER_PREFIX}${CONTAINER}...${NC}"
+                    docker stop $(docker ps -a -q --filter name="${CONTAINER_PREFIX}${CONTAINER}") 2>/dev/null || true
+                    docker rm $(docker ps -a -q --filter name="${CONTAINER_PREFIX}${CONTAINER}") 2>/dev/null || true
+                    echo -e "${GREEN}Container ${CONTAINER_PREFIX}${CONTAINER} removido.${NC}"
+                elif docker ps -a | grep -q -E "\b${CONTAINER}(-1|\b)"; then
+                    echo -e "${YELLOW}Parando e removendo container ${CONTAINER}...${NC}"
+                    docker stop $(docker ps -a -q --filter name="${CONTAINER}") 2>/dev/null || true
+                    docker rm $(docker ps -a -q --filter name="${CONTAINER}") 2>/dev/null || true
+                    echo -e "${GREEN}Container ${CONTAINER} removido.${NC}"
                 fi
             done
             
             # Remover rede
-            if docker network ls | grep -q smart-alarm-network; then
+            if docker network ls | grep -q "smart-alarm-network"; then
                 echo -e "${YELLOW}Removendo rede smart-alarm-network...${NC}"
                 docker network rm smart-alarm-network 2>/dev/null || true
                 echo -e "${GREEN}Rede removida.${NC}"
+            fi
+            
+            # Verificar e remover redes de teste
+            if docker network ls | grep -q "smartalarm-test"; then
+                echo -e "${YELLOW}Removendo rede smartalarm-test...${NC}"
+                # Desconectar qualquer contêiner antes de tentar remover a rede
+                for container in $(docker network inspect -f '{{range .Containers}}{{.Name}} {{end}}' smartalarm-test 2>/dev/null); do
+                    echo -e "${YELLOW}Desconectando ${container} da rede smartalarm-test...${NC}"
+                    docker network disconnect -f smartalarm-test $container 2>/dev/null || true
+                done
+                docker network rm smartalarm-test 2>/dev/null || true
+                echo -e "${GREEN}Rede de teste removida.${NC}"
+            fi
+            
+            # Verificar e remover outras redes de teste que possam existir
+            if docker network ls | grep -q "smart-alarm-network"; then
+                echo -e "${YELLOW}Removendo rede smart-alarm-network...${NC}"
+                for container in $(docker network inspect -f '{{range .Containers}}{{.Name}} {{end}}' smart-alarm-network 2>/dev/null); do
+                    echo -e "${YELLOW}Desconectando ${container} da rede smart-alarm-network...${NC}"
+                    docker network disconnect -f smart-alarm-network $container 2>/dev/null || true
+                done
+                docker network rm smart-alarm-network 2>/dev/null || true
+                echo -e "${GREEN}Rede de teste removida.${NC}"
             fi
             
             # Se for modo purge, remover volumes
@@ -141,9 +192,37 @@ if [ "$USE_COMPOSE" = false ]; then
     esac
 fi
 
+# Função para exibir diagnóstico de redes Docker
+show_docker_network_diagnostics() {
+    echo -e "\n${BLUE}=== Diagnóstico de redes Docker ===${NC}"
+    
+    # Listar todas as redes
+    echo -e "${YELLOW}Redes Docker disponíveis:${NC}"
+    docker network ls
+    
+    # Verificar se existem redes relacionadas ao projeto
+    for network in "smartalarm-test" "smart-alarm-network" "smart-alarm_default"; do
+        if docker network ls | grep -q "$network"; then
+            echo -e "\n${YELLOW}Detalhes da rede $network:${NC}"
+            docker network inspect "$network" | grep -E '"Name"|"Driver"|"Containers"'
+            
+            # Listar contêineres conectados a esta rede
+            echo -e "${YELLOW}Contêineres conectados à rede $network:${NC}"
+            for container in $(docker network inspect -f '{{range .Containers}}{{.Name}} {{end}}' "$network" 2>/dev/null); do
+                echo "- $container"
+            done
+        fi
+    done
+}
+
 # Exibir informações sobre o estado atual
 echo -e "\n${BLUE}=== Estado atual dos containers ===${NC}"
 docker ps -a | grep -E "rabbitmq|postgres|minio|vault|prometheus|loki|jaeger|grafana|api" || echo -e "${YELLOW}Nenhum container relevante encontrado.${NC}"
+
+# Mostrar diagnóstico de rede se solicitado
+if [ "$1" = "debug" ]; then
+    show_docker_network_diagnostics
+fi
 
 # Exibir informações sobre opções disponíveis
 echo -e "\n${BLUE}=== Opções disponíveis ===${NC}"
