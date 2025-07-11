@@ -17,11 +17,24 @@ Todos os requisitos de observabilidade e segurança implementados, testados e va
 
 Critérios de pronto globais e específicos atendidos. Documentação e governança completas.
 
-## Ambiente de Desenvolvimento e Testes de Integração (concluído em 05/08/2025)
+## Ambiente de Desenvolvimento e Testes de Integração (Julho 2023)
+
+- Simplificados os testes de integração para MinIO e Vault (HTTP health check)
+- Corrigidos problemas de compilação em testes com APIs incompatíveis
+- Melhorado script docker-test.sh com verificação dinâmica de saúde dos serviços
+- Implementado sistema de execução seletiva de testes por categoria
+- Adicionado diagnóstico detalhado e sugestões de solução para falhas
+- Testes para serviços essenciais (MinIO, Vault, PostgreSQL, RabbitMQ) funcionando
+- Pendente: Resolver conectividade para serviços de observabilidade
 
 Ambiente de desenvolvimento completo implementado para testes de integração:
 
-- Scripts shell compatíveis com WSL para gerenciamento completo do ambiente (`start-dev-env.sh`, `stop-dev-env.sh`, `test-integration.sh`)
+- Scripts shell compatíveis com WSL para gerenciamento completo do ambiente (`start-dev-env.sh`, `stop-dev-env.sh`)
+- Script aprimorado para testes de integração (`docker-test.sh`) com:
+  - Verificação dinâmica de saúde dos serviços
+  - Execução seletiva de testes por categoria (essentials, observability)
+  - Diagnósticos detalhados e sugestões de solução
+  - Modo debug para verificação de ambiente
 - Integração com todos os serviços externos necessários (RabbitMQ, PostgreSQL, MinIO, HashiCorp Vault)
 - Stack completa de observabilidade (Prometheus, Loki, Jaeger, Grafana)
 - Suporte a Docker Compose para desenvolvimento rápido e consistente
@@ -33,7 +46,8 @@ Ambiente de desenvolvimento completo implementado para testes de integração:
 
 - Set up JWT/FIDO2 authentication
 - Implement automated tests for handlers, repositories, middleware, and API (min. 80% coverage)
-- Test the observability environment with `docker-compose up --build` e validar integração entre API, Loki, Jaeger, Prometheus, Grafana
+- Resolver problemas de conectividade nos testes de serviços de observabilidade
+- Integrar melhorias de testes de integração com pipeline CI/CD
 - Documentar endpoints e arquitetura (Swagger/OpenAPI, docs técnicas)
 - Set up CI/CD para build, testes, deploy e validação de observabilidade
 - Planejar e priorizar features de negócio (alarmes, rotinas, integrações)
@@ -43,11 +57,13 @@ Ambiente de desenvolvimento completo implementado para testes de integração:
 ## Current Status
 
 - Endpoints principais do AlarmService implementados e handlers funcionais
-- Projeto pronto para iniciar testes automatizados e integração de autenticação
+- Testes de integração para serviços essenciais (MinIO, Vault, PostgreSQL, RabbitMQ) funcionando
 - Infraestrutura de observabilidade e logging pronta para uso
+- Script de teste Docker aprimorado com verificação dinâmica e execução seletiva
 
 ## Known Issues
 
+- Testes de integração para serviços de observabilidade falhando com erro "Resource temporarily unavailable"
 - Integração com OCI Functions ainda não testada em produção
 - Definição dos contratos de integração externa pendente
 - Oracle.ManagedDataAccess com warnings de compatibilidade (aguardando versão oficial)

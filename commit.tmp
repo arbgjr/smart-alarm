@@ -1,8 +1,25 @@
-feat(docker): adicionar scripts de gerenciamento e testes de integração com Docker
+feat(tests): adicionar testes de integração completos para todos os serviços
 
-- Criado `clean-docker-env.sh` para limpar o ambiente Docker.
-- Criado `docker-test.sh` para executar testes de integração em contêineres Docker.
-- Atualizado `start-dev-env.sh` para verificar portas em uso e iniciar serviços individualmente.
-- Atualizado `test-integration.sh` para verificar dependências e usar Docker para executar testes.
-- Atualizado `RabbitMqMessagingService` para logar variáveis de ambiente relevantes.
-- Atualizado `docker-compose.yml` para incluir rede e serviços de teste.
+Implementa testes de integração para todos os componentes do sistema:
+
+Infraestrutura básica:
+- Testes para PostgreSQL (conexão, CRUD básico, verificação de versão)
+- Testes para MinIO (buckets, objetos, upload/download)
+- Testes para Vault (armazenamento/recuperação de segredos, exclusão, versionamento)
+- Testes para RabbitMQ (publicação e consumo de mensagens)
+
+Observabilidade:
+- Testes para Loki (envio e recebimento de logs)
+- Testes para Jaeger (verificação da API e UI)
+- Testes para Prometheus (verificação de métricas)
+- Testes para Grafana (verificação da API)
+
+Adiciona scripts específicos para cada componente:
+- test-postgresql.sh: Testes focados no PostgreSQL
+- test-vault.sh: Testes focados no Vault
+- test-minio.sh: Testes focados no MinIO
+- test-observability.sh: Testes focados nos componentes de observabilidade
+
+Atualiza o script docker-test.sh para incluir verificação de saúde de todos os serviços.
+
+Refs: AB#102

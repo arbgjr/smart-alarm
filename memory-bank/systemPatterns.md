@@ -42,6 +42,34 @@
 - Name tests descriptively (e.g., "should return error if...").
 - Follow the AAA pattern (Arrange, Act, Assert).
 - On the frontend, use Testing Library for React components, cover interactions, accessibility, and visual states.
+- Implement integration tests para serviços externos usando HTTP health checks para verificar disponibilidade.
+- Para testes de MinIO, Vault, e outros serviços, usar HttpClient para simplificar verificações de disponibilidade.
+- Organizar testes de integração por categoria para permitir execução seletiva (MinIO, Vault, Database, etc.).
+
+### Integration Tests
+
+- **Categorização**: Usar filtros Category e Trait para organizar e executar testes específicos
+  - Essential: MinIO, Vault, PostgreSQL, RabbitMQ
+  - Observability: Grafana, Loki, Jaeger, Prometheus
+  - Exemplo: `dotnet test --filter "Category=Integration&Trait=Essential"`
+- **Verificação de Saúde**: Preferir HTTP health endpoints para verificações de disponibilidade
+  - MinIO: `/minio/health/live`
+  - Vault: `/v1/sys/health` ou `/v1/sys/seal-status`
+  - PostgreSQL: Usar `pg_isready`
+  - RabbitMQ: Usar `rabbitmqctl status`
+  - Grafana: `/api/health`
+  - Prometheus: `/-/healthy`
+  - Loki: `/ready`
+- **Orquestração com Docker**:
+  - Usar script `docker-test.sh` com verificação dinâmica de serviços
+  - Inicializar serviços condicionalmente baseado nos testes a executar
+  - Implementar diagnósticos detalhados para falhas
+  - Oferecer modos seletivos de execução (essentials, observability, debug)
+- **Isolamento e Reprodutibilidade**:
+  - Criar rede Docker dedicada para testes (`smartalarm-test`)
+  - Reiniciar serviços entre execuções para garantir estado limpo
+  - Parametrizar testes para facilitar execução em CI/CD
+  - Fornecer logs detalhados para diagnóstico de falhas
 
 ### Error Handling
 

@@ -1,30 +1,49 @@
 # Smart Alarm — Active Context
 
 ## Current Focus
+
 - Implementação dos endpoints principais do AlarmService (CRUD)
 - Handlers e validação com FluentValidation
 - Estruturação de logging e métricas nos fluxos críticos
 - Preparação para testes automatizados e integração de autenticação JWT/FIDO2
-- Implementação dos endpoints principais do AlarmService (CRUD)
-- Handlers e validação com FluentValidation
-- Estruturação de logging e métricas nos fluxos críticos
-- Preparação para testes automatizados e integração de autenticação JWT/FIDO2
+- Correção e simplificação dos testes de integração para infraestrutura
 
 ## Recent Changes
+
 - AlarmController implementado com endpoints RESTful (Create, List, GetById, Update, Delete)
 - Handlers para criação, atualização, exclusão, listagem e consulta de alarmes
 - Validação com FluentValidation aplicada nos comandos e DTOs
 - Logging estruturado e métricas em todos os handlers principais
-- AlarmController implementado com endpoints RESTful (Create, List, GetById, Update, Delete)
-- Handlers para criação, atualização, exclusão, listagem e consulta de alarmes
-- Validação com FluentValidation aplicada nos comandos e DTOs
-- Logging estruturado e métricas em todos os handlers principais
+- Simplificados os testes de integração para MinIO e Vault para usar verificação HTTP de saúde
+- Corrigidos problemas de compilação relacionados a APIs incompatíveis em VaultSharp
+- Melhorado script docker-test.sh com verificação dinâmica de saúde dos serviços
+- Implementado sistema de execução seletiva de testes por categoria (essentials, observability)
+- Adicionado diagnóstico detalhado e sugestões de solução para falhas em testes
 
 ## Next Steps
+
 - Implementar autenticação JWT/FIDO2
-- Iniciar testes automatizados (xUnit, Moq, cobertura mínima 80%)
+- Continuar testes automatizados (xUnit, Moq, cobertura mínima 80%)
+- Resolver problemas de conectividade nos testes de serviços de observabilidade
 - Documentar endpoints e arquitetura (Swagger/OpenAPI)
 - Validar integração de observabilidade (Loki, Jaeger, Prometheus, Grafana)
+- Integrar melhorias de testes de integração com pipeline CI/CD
+
+## Infraestrutura de Testes
+
+### Abordagem de Testes de Integração
+
+- **Simplificação**: Uso de verificações HTTP de saúde em vez de APIs complexas
+- **Categorização**: Separação em testes essenciais (MinIO, Vault, PostgreSQL, RabbitMQ) e de observabilidade
+- **Resiliência**: Implementação de verificações de saúde com retentativas
+- **Execução Seletiva**: Possibilidade de executar categorias específicas de testes
+
+### Script de Teste Docker
+
+- **Verificação Dinâmica**: Substituição de sleeps fixos por checagens ativas de disponibilidade
+- **Inicialização Condicional**: Serviços de observabilidade inicializados apenas quando necessário
+- **Diagnóstico Aprimorado**: Informações detalhadas sobre o status dos serviços
+- **Modo Debug**: Opção para apenas verificar ambiente sem executar testes
 
 Este documento reflete o status real do backend do Smart Alarm, baseado em análise detalhada do código-fonte, corrigindo avaliações anteriores equivocadas e distinguindo entre pendências reais e comentários desatualizados.
 
