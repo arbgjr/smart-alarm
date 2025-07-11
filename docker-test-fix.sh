@@ -97,7 +97,60 @@ cleanup_previous_resources() {
     fi
 }
 
-# Função para verificar e criar rede compartilhada
+# Função para obter IP de um contêiner
+get_container_ip() {
+    local container_name=$1
+    local network_name=${2:-"smartalarm-test-net"}
+    
+    # Usar uma abordagem mais direta para obter o IP do contêiner na rede específica
+    docker inspect "$container_name" 2>/dev/null | grep -A 10 "\"$network_name\"" | grep '"IPAddress"' | head -1 | cut -d'"' -f4
+}
+
+# Função para gerar mapeamentos de host
+generate_host_mappings() {
+    local host_mappings=""
+    
+    print_message "${CYAN}" "Gerando mapeamentos de host para contêineres..." >&2
+    
+    # Detectar o prefixo dos contêineres
+    local prefix="smart-alarm"
+    if docker ps | grep -q "smart-alarm"; then
+        prefix="smart-alarm"
+    elif docker ps | grep -q "smartalarm"; then
+        prefix="smartalarm"
+    fi
+    
+    # Lista de serviços para mapear (ordem de prioridade)
+    local services=("postgres" "vault" "minio" "rabbitmq" "prometheus" "loki" "jaeger" "grafana")
+    
+    for service in "${services[@]}"; do
+        local container_name="${prefix}-${service}-1"
+        
+        # Verificar se o contêiner existe
+        if ! docker ps --format "{{.Names}}" | grep -q "^${container_name}$"; then
+            print_message "${YELLOW}" "  ⚠️  Contêiner $container_name não encontrado" >&2
+            continue
+        fi
+        
+        local ip=$(get_container_ip "$container_name")
+        
+        if [[ -n "$ip" && "$ip" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            host_mappings="$host_mappings --add-host $service:$ip"
+            print_message "${GREEN}" "  ✅ $service -> $container_name ($ip)" >&2
+        else
+            print_message "${RED}" "  ❌ $service -> $container_name (IP inválido: '$ip')" >&2
+        fi
+    done
+    
+    # Verificar se temos pelo menos os serviços essenciais
+    if [[ "$host_mappings" == *"postgres"* ]]; then
+        print_message "${GREEN}" "Mapeamentos essenciais detectados" >&2
+    else
+        print_message "${RED}" "ERRO: Postgres não mapeado! Host mappings: $host_mappings" >&2
+    fi
+    
+    echo "$host_mappings"
+}
 setup_shared_network() {
     print_message "${BLUE}" "Configurando rede compartilhada para testes..."
     
@@ -296,22 +349,8 @@ EOF
     if [[ "$1" != "debug" ]]; then
         print_message "${BLUE}" "Executando testes de integração..."
         
-        # Permitir que o contêiner modifique /etc/hosts se necessário
-        docker_opts="--cap-add=NET_ADMIN"
-        
-        # Executar os testes no contêiner conectado à rede compartilhada
-        # Configurando a resolução de hosts usando aliases de rede
-        local add_hosts=""
-        
-        # Obter IPs dos contêineres de forma segura
-        for service in postgres rabbitmq minio vault prometheus loki jaeger grafana; do
-            local container="${CONTAINER_PREFIX}_${service}_1"
-            local container_ip=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$container" 2>/dev/null)
-            
-            if [[ -n "$container_ip" && "$container_ip" != "" ]]; then
-                add_hosts="$add_hosts --add-host=${service}:${container_ip} "
-            fi
-        done
+        # Gerar mapeamentos de host dinamicamente
+        local host_mappings=$(generate_host_mappings)
         
         # Encontrar os projetos de teste de integração
         local test_projects=$(find "$(pwd)/tests" -name "*Integration*.csproj" | tr '\n' ' ')
@@ -319,13 +358,12 @@ EOF
         print_message "${YELLOW}" "Projetos de teste encontrados:"
         echo "$test_projects"
         
-        # Executar contêiner com hosts adicionados
+        # Executar contêiner com hosts mapeados
         docker run --rm \
             --name smartalarm-test-runner \
             --network=smartalarm-test-net \
             --hostname test-runner \
-            ${docker_opts} \
-            ${add_hosts} \
+            ${host_mappings} \
             ${env_vars} \
             -v "$(pwd):/app" \
             smartalarm-test-image:latest \
@@ -362,13 +400,15 @@ EOF
             fi
         done
         
-        # Executar contêiner com hosts adicionados e modo interativo
+        # Gerar mapeamentos de host dinamicamente
+        local host_mappings=$(generate_host_mappings)
+        
+        # Executar contêiner com hosts mapeados e modo interativo
         docker run --rm -it \
             --name smartalarm-test-runner \
             --network=smartalarm-test-net \
             --hostname test-runner \
-            ${docker_opts} \
-            ${add_hosts} \
+            ${host_mappings} \
             ${env_vars} \
             -v "$(pwd):/app" \
             smartalarm-test-image:latest \

@@ -68,5 +68,29 @@ namespace SmartAlarm.Infrastructure.Tests
             
             return $"{protocol}://{host}:{port}";
         }
+
+        /// <summary>
+        /// Resolve service hostname - wrapper method for compatibility
+        /// </summary>
+        /// <param name="serviceName">Service name (lowercase, e.g., "postgres", "minio")</param>
+        /// <param name="fallbackHost">Fallback host (default: localhost)</param>
+        /// <returns>Resolved hostname</returns>
+        public static string ResolveServiceHostname(string serviceName, string fallbackHost = "localhost")
+        {
+            // Convert to uppercase for environment variable lookup
+            return GetHost(serviceName.ToUpper());
+        }
+
+        /// <summary>
+        /// Resolve service port - wrapper method for compatibility
+        /// </summary>
+        /// <param name="serviceName">Service name (lowercase, e.g., "postgres", "minio")</param>
+        /// <param name="defaultPort">Default port</param>
+        /// <returns>Resolved port</returns>
+        public static int ResolveServicePort(string serviceName, int defaultPort)
+        {
+            // Convert to uppercase for environment variable lookup
+            return GetPort(serviceName.ToUpper(), defaultPort);
+        }
     }
 }

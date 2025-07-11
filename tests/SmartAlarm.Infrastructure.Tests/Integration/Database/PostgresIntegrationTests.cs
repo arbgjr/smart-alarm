@@ -13,20 +13,15 @@ namespace SmartAlarm.Infrastructure.Tests.Integration.Database
 
         public PostgresIntegrationTests()
         {
-            // Determinar o host do PostgreSQL com base no ambiente
-            var host = Environment.GetEnvironmentVariable("POSTGRES_HOST") ?? "localhost";
-            var port = 5432;
-            if (int.TryParse(Environment.GetEnvironmentVariable("POSTGRES_PORT"), out int envPort))
-            {
-                port = envPort;
-            }
+            // Usar DockerHelper para resolver as configurações do PostgreSQL
+            var host = DockerHelper.ResolveServiceHostname("postgres");
+            var port = DockerHelper.ResolveServicePort("postgres", 5432);
             var user = Environment.GetEnvironmentVariable("POSTGRES_USER") ?? "smartalarm";
             var password = Environment.GetEnvironmentVariable("POSTGRES_PASSWORD") ?? "smartalarm123";
             var database = Environment.GetEnvironmentVariable("POSTGRES_DB") ?? "smartalarm";
             
             _connectionString = $"Host={host};Port={port};Username={user};Password={password};Database={database}";
             _connection = new NpgsqlConnection(_connectionString);
-        }
         }
         
         public void Dispose()
@@ -48,6 +43,7 @@ namespace SmartAlarm.Infrastructure.Tests.Integration.Database
         
         [Fact]
         [Trait("Category", "Integration")]
+        [Trait("Category", "Integration")]
         [Trait("Category", "PostgreSQL")]
         public async Task PostgresDatabase_ShouldExecuteQueries()
         {
@@ -65,11 +61,14 @@ namespace SmartAlarm.Infrastructure.Tests.Integration.Database
             await createTableCmd.ExecuteNonQueryAsync();
             
             // Act - Inserir dados
-            var testName = $"Test_{Guid.NewGuid().ToString("N").Substring(0, 8)}";
+            var testName = $"Test_{Guid.NewGuid().ToString("N")[..8]}";
             using var insertCmd = new NpgsqlCommand(
                 "INSERT INTO test_integration (name) VALUES (@name) RETURNING id", _connection);
             insertCmd.Parameters.AddWithValue("name", testName);
-            var newId = await insertCmd.ExecuteScalarAsync();
+            var newIdResult = await insertCmd.ExecuteScalarAsync();
+            
+            Assert.NotNull(newIdResult);
+            var newId = Convert.ToInt32(newIdResult);
             
             // Recuperar dados
             using var selectCmd = new NpgsqlCommand(
