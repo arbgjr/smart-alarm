@@ -23,7 +23,7 @@ namespace SmartAlarm.Infrastructure.Tests.Observability
                 l => l.Log(
                     LogLevel.Information,
                     It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("TestMetric")),
+                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("TestMetric")),
                     null,
                     It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
                 Times.Once);

@@ -107,6 +107,7 @@ public class SimpleJwtTokenService : IJwtTokenService
 
     public async Task<IEnumerable<Claim>?> ValidateTokenAndGetClaimsAsync(string token)
     {
+        await Task.CompletedTask;
         try
         {
             if (string.IsNullOrWhiteSpace(token))
@@ -172,7 +173,7 @@ public class SimpleJwtTokenService : IJwtTokenService
         {
             var claims = ValidateTokenAndGetClaimsAsync(token).Result;
             if (claims == null)
-                return null;
+                return Task.FromResult<Guid?>(null);
 
             var userIdClaim = claims.FirstOrDefault(x => x.Type == ClaimTypes.NameIdentifier);
             if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out var userId))
@@ -180,12 +181,12 @@ public class SimpleJwtTokenService : IJwtTokenService
                 return Task.FromResult<Guid?>(userId);
             }
 
-            return null;
+            return Task.FromResult<Guid?>(null);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error extracting user ID from token");
-            return null;
+            return Task.FromResult<Guid?>(null);
         }
     }
 
@@ -246,11 +247,11 @@ public class SimpleJwtTokenService : IJwtTokenService
         try
         {
             if (string.IsNullOrWhiteSpace(refreshToken))
-                return null;
+                return Task.FromResult<string?>(null);
 
             // Validar refresh token (implementaÃ§Ã£o simplificada)
             if (!ValidateRefreshTokenAsync(refreshToken).Result)
-                return null;
+                return Task.FromResult<string?>(null);
 
             // Por simplicidade, retornamos o refresh token. 
             // Em uma implementação real, buscaríamos o usuário associado e geraríamos um novo token
@@ -260,7 +261,7 @@ public class SimpleJwtTokenService : IJwtTokenService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error processing refresh token");
-            return null;
+            return Task.FromResult<string?>(null);
         }
     }
 }

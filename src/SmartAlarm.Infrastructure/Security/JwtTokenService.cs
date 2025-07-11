@@ -84,6 +84,7 @@ public class JwtTokenService : IJwtTokenService
 
     public async Task<string> GenerateRefreshTokenAsync(User user)
     {
+        await Task.CompletedTask;
         try
         {
             if (user == null)
@@ -191,6 +192,7 @@ public class JwtTokenService : IJwtTokenService
 
     public async Task<bool> ValidateRefreshTokenAsync(string refreshToken)
     {
+        await Task.CompletedTask;
         try
         {
             if (string.IsNullOrWhiteSpace(refreshToken))
@@ -210,6 +212,7 @@ public class JwtTokenService : IJwtTokenService
 
     public async Task<bool> RevokeTokenAsync(string token)
     {
+        await Task.CompletedTask;
         try
         {
             if (string.IsNullOrWhiteSpace(token))

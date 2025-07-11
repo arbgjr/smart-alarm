@@ -27,16 +27,16 @@ namespace SmartAlarm.Infrastructure.Repositories
             return Task.CompletedTask;
         }
 
-        public Task<User> GetByEmailAsync(string email)
+        public Task<User?> GetByEmailAsync(string email)
         {
             var user = _users.Values.FirstOrDefault(u => u.Email.Address == email);
-            return Task.FromResult(user!);
+            return Task.FromResult(user);
         }
 
-        public Task<User> GetByIdAsync(Guid id)
+        public Task<User?> GetByIdAsync(Guid id)
         {
             _users.TryGetValue(id, out var user);
-            return Task.FromResult(user!);
+            return Task.FromResult(user);
         }
 
         public Task UpdateAsync(User user)

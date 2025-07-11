@@ -23,7 +23,7 @@ namespace SmartAlarm.Infrastructure.Tests.Messaging
                 l => l.Log(
                     LogLevel.Information,
                     It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("test-topic") && v.ToString().Contains("mensagem")),
+                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("test-topic") && v.ToString()!.Contains("mensagem")),
                     null,
                     It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
                 Times.Once);

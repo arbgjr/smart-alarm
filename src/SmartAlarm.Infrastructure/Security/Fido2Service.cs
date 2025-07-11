@@ -35,6 +35,7 @@ public class Fido2Service : IFido2Service
 
     public async Task<string> CreateCredentialRequestAsync(User user, string displayName)
     {
+        await Task.CompletedTask;
         try
         {
             if (user == null)
@@ -101,6 +102,7 @@ public class Fido2Service : IFido2Service
             // Validar resposta de atestado
             var result = await _fido2.MakeNewCredentialAsync(attestationResponse, options, async (args, cancellationToken) =>
             {
+                await Task.CompletedTask;
                 // Verificar se credencial já existe
                 var credentialIdBase64 = Convert.ToBase64String(args.CredentialId);
                 var existingCredential = user.Credentials?
@@ -233,6 +235,7 @@ public class Fido2Service : IFido2Service
             // Validar resposta de asserção
             var result = await _fido2.MakeAssertionAsync(assertionResponse, options, credential.PublicKey, credential.SignatureCounter, async (args, cancellationToken) =>
             {
+                await Task.CompletedTask;
                 // Verificar se a credencial ainda é válida
                 return credential.IsActive;
             });

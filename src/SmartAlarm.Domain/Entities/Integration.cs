@@ -10,9 +10,9 @@ namespace SmartAlarm.Domain.Entities
     public class Integration
     {
         public Guid Id { get; private set; }
-        public Name Name { get; private set; }
-        public string Provider { get; private set; }
-        public string Configuration { get; private set; }
+        public Name Name { get; private set; } = null!;
+        public string Provider { get; private set; } = null!;
+        public string Configuration { get; private set; } = null!;
         public bool IsActive { get; private set; }
         public Guid AlarmId { get; private set; }
         public DateTime CreatedAt { get; private set; }
@@ -97,7 +97,7 @@ namespace SmartAlarm.Domain.Entities
             }
         }
 
-        public T GetConfigurationValue<T>(string key)
+        public T? GetConfigurationValue<T>(string key)
         {
             if (string.IsNullOrWhiteSpace(Configuration))
                 return default(T);

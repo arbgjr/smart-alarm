@@ -10,7 +10,7 @@ namespace SmartAlarm.Domain.Repositories
     /// </summary>
     public interface IScheduleRepository
     {
-        Task<Schedule> GetByIdAsync(Guid id);
+        Task<Schedule?> GetByIdAsync(Guid id);
         Task<IEnumerable<Schedule>> GetByAlarmIdAsync(Guid alarmId);
         Task<IEnumerable<Schedule>> GetActiveSchedulesAsync();
         Task AddAsync(Schedule schedule);

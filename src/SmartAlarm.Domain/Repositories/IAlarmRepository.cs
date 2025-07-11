@@ -10,7 +10,7 @@ namespace SmartAlarm.Domain.Repositories
     /// </summary>
     public interface IAlarmRepository
     {
-        Task<Alarm> GetByIdAsync(Guid id);
+        Task<Alarm?> GetByIdAsync(Guid id);
         Task<IEnumerable<Alarm>> GetByUserIdAsync(Guid userId);
         Task AddAsync(Alarm alarm);
         Task UpdateAsync(Alarm alarm);

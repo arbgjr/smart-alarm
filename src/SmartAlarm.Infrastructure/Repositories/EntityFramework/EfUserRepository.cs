@@ -25,12 +25,12 @@ namespace SmartAlarm.Infrastructure.Repositories.EntityFramework
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public async Task<User> GetByIdAsync(Guid id)
+        public async Task<User?> GetByIdAsync(Guid id)
         {
             return await _context.Users.FindAsync(id);
         }
 
-        public async Task<User> GetByEmailAsync(string email)
+        public async Task<User?> GetByEmailAsync(string email)
         {
             // Filtra em memÃ³ria para evitar problemas de conversÃ£o de Value Object
             return await Task.FromResult(

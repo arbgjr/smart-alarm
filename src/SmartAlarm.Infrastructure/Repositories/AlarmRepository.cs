@@ -24,7 +24,7 @@ namespace SmartAlarm.Infrastructure.Repositories
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task<Alarm> GetByIdAsync(Guid id)
+        public async Task<Alarm?> GetByIdAsync(Guid id)
         {
             const string sql = @"SELECT * FROM Alarms WHERE Id = :Id";
             try

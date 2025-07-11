@@ -15,7 +15,7 @@ namespace SmartAlarm.Domain.Entities
         private readonly List<Schedule> _schedules = new();
 
         public Guid Id { get; private set; }
-        public Name Name { get; private set; }
+        public Name Name { get; private set; } = null!;
         public DateTime Time { get; private set; }
         public bool Enabled { get; private set; }
         public Guid UserId { get; private set; }

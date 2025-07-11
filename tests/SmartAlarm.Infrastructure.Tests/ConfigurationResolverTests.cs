@@ -41,7 +41,7 @@ namespace SmartAlarm.Infrastructure.Tests
         [Fact]
         public async Task GetConfigAsync_Returns_AppSettings_Value_If_No_Env_Or_Vault()
         {
-            var config = new ConfigurationBuilder().AddInMemoryCollection(new[] { new System.Collections.Generic.KeyValuePair<string, string>("TEST_KEY", "appsettings_value") }).Build();
+            var config = new ConfigurationBuilder().AddInMemoryCollection(new[] { new System.Collections.Generic.KeyValuePair<string, string?>("TEST_KEY", "appsettings_value") }).Build();
             var keyVaultMock = new Mock<IKeyVaultService>();
             keyVaultMock.Setup(x => x.GetSecretAsync("TEST_KEY", It.IsAny<CancellationToken>())).ReturnsAsync((string?)null);
             var loggerMock = new Mock<ILogger<ConfigurationResolver>>();

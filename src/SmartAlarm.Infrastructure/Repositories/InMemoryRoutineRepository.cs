@@ -27,10 +27,10 @@ namespace SmartAlarm.Infrastructure.Repositories
             return Task.CompletedTask;
         }
 
-        public Task<Routine> GetByIdAsync(Guid id)
+        public Task<Routine?> GetByIdAsync(Guid id)
         {
             _routines.TryGetValue(id, out var routine);
-            return Task.FromResult(routine!);
+            return Task.FromResult(routine);
         }
 
         public Task<IEnumerable<Routine>> GetByAlarmIdAsync(Guid alarmId)

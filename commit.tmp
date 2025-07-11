@@ -1,7 +1,1 @@
-Update package references and fix test cases
-
-- Updated Microsoft.Extensions.Logging.Abstractions to version 9.0.4 in multiple projects.
-- Adjusted test cases to accommodate changes in method signatures, specifically updating exception handling to use `Exception?` instead of `Exception`.
-- Added new test project for SmartAlarm.Api with necessary references and packages.
-- Created new project files for SmartAlarm.Api, SmartAlarm.Application, SmartAlarm.Domain, SmartAlarm.Infrastructure, SmartAlarm.KeyVault, and SmartAlarm.Observability targeting .NET 8.0.
-- Ensured all projects utilize the latest package versions for consistency and improved functionality.
+feat: adicionar suporte a valores nulos em métodos de repositório e ajustar testes de configuração

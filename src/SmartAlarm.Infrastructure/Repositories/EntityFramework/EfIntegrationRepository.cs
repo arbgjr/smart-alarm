@@ -25,7 +25,7 @@ namespace SmartAlarm.Infrastructure.Repositories.EntityFramework
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public async Task<Integration> GetByIdAsync(Guid id)
+        public async Task<Integration?> GetByIdAsync(Guid id)
         {
             return await _context.Integrations.FindAsync(id);
         }

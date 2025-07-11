@@ -24,7 +24,7 @@ namespace SmartAlarm.Infrastructure.Tests.Storage
                 l => l.Log(
                     LogLevel.Information,
                     It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("/test.txt")),
+                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("/test.txt")),
                     null,
                     It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
                 Times.Once);
