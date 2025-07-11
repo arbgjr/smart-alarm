@@ -33,16 +33,16 @@ if [[ "$1" == "essentials" ]]; then
     TEST_FILTER="Trait=Essential&Category=Integration"
     print_message "${YELLOW}" "Executando testes essenciais"
 elif [[ "$1" == "minio" ]]; then
-    TEST_FILTER="FullyQualifiedName~MinioIntegrationTests"
+    TEST_FILTER="FullyQualifiedName~MinioIntegrationTests|FullyQualifiedName~Minio|Category=Integration"
     print_message "${YELLOW}" "Executando testes do MinIO"
 elif [[ "$1" == "postgres" ]]; then
-    TEST_FILTER="FullyQualifiedName~PostgresIntegrationTests"
+    TEST_FILTER="FullyQualifiedName~PostgresIntegrationTests|FullyQualifiedName~Postgres|Category=Integration"
     print_message "${YELLOW}" "Executando testes do Postgres"
 elif [[ "$1" == "vault" ]]; then
-    TEST_FILTER="FullyQualifiedName~VaultIntegrationTests"
+    TEST_FILTER="FullyQualifiedName~VaultIntegrationTests|FullyQualifiedName~Vault|Category=Integration"
     print_message "${YELLOW}" "Executando testes do Vault"
 elif [[ "$1" == "rabbitmq" ]]; then
-    TEST_FILTER="FullyQualifiedName~RabbitMqIntegrationTests"
+    TEST_FILTER="FullyQualifiedName~RabbitMqIntegrationTests|FullyQualifiedName~RabbitMq|Category=Integration"
     print_message "${YELLOW}" "Executando testes do RabbitMQ"
 elif [[ "$1" == "debug" ]]; then
     print_message "${YELLOW}" "Modo de depuração - apenas preparação do ambiente"
@@ -375,26 +375,45 @@ for service in "\${services[@]}"; do
     echo ""
 done
 
-# Verificar se temos argumentos válidos para dotnet test
+# Verificar argumentos
+echo "=== Argumentos recebidos ==="
+echo "Total de argumentos: \$#"
+echo "Argumentos: \$@"
+
+# Lógica para executar testes ou entrar no modo interativo
 if [ \$# -eq 0 ]; then
-    echo "⚠️ Nenhum argumento fornecido para dotnet test"
+    echo "⚠️ Nenhum argumento fornecido"
     echo "Modo interativo - iniciando bash..."
     exec /bin/bash
+elif [ "\$1" = "/bin/bash" ]; then
+    echo "Modo interativo solicitado - iniciando bash..."
+    exec /bin/bash
 else
-    # Executar testes apenas se temos projetos válidos
-    echo "=== Executando testes ==="
-    echo "Argumentos recebidos: \$*"
+    # Executar testes
+    echo "=== Executando testes de integração ==="
     
     # Verificar se o primeiro argumento é um arquivo de projeto válido
     first_arg="\$1"
     if [[ "\$first_arg" == *.csproj ]]; then
-        echo "Executando testes com dotnet test..."
-        dotnet test \$*
-        exit \$?
+        echo "✅ Arquivo de projeto detectado: \$first_arg"
+        if [ -f "\$first_arg" ]; then
+            echo "✅ Arquivo de projeto existe"
+            echo "Executando: dotnet test \$@"
+            dotnet test "\$@"
+            exit_code=\$?
+            echo "Código de saída dos testes: \$exit_code"
+            exit \$exit_code
+        else
+            echo "❌ Arquivo de projeto não existe: \$first_arg"
+            exit 1
+        fi
     else
-        echo "⚠️ Primeiro argumento não é um arquivo .csproj válido: \$first_arg"
-        echo "Modo interativo - iniciando bash..."
-        exec /bin/bash
+        echo "❌ Primeiro argumento não é um arquivo .csproj válido: \$first_arg"
+        echo "Tentando executar como comando dotnet..."
+        dotnet "\$@"
+        exit_code=\$?
+        echo "Código de saída: \$exit_code"
+        exit \$exit_code
     fi
 fi
 EOF
@@ -445,12 +464,33 @@ EOF
         
         # Encontrar os projetos de teste de integração
         local test_projects=""
-        if [[ -d "$(pwd)/tests" ]]; then
+        
+        # Se estamos executando testes específicos, buscar o projeto correspondente
+        if [[ "$1" == "postgres" ]]; then
+            test_projects=$(find "$(pwd)/tests" -name "*Infrastructure*.csproj" 2>/dev/null | head -1)
+            print_message "${YELLOW}" "Buscando testes de infraestrutura para PostgreSQL..."
+        elif [[ "$1" == "vault" ]]; then
+            test_projects=$(find "$(pwd)/tests" -name "*KeyVault*.csproj" 2>/dev/null | head -1)
+            print_message "${YELLOW}" "Buscando testes de KeyVault para Vault..."
+        elif [[ "$1" == "minio" || "$1" == "rabbitmq" ]]; then
+            test_projects=$(find "$(pwd)/tests" -name "*Infrastructure*.csproj" 2>/dev/null | head -1)
+            print_message "${YELLOW}" "Buscando testes de infraestrutura para $1..."
+        fi
+        
+        # Se não encontrou projeto específico, buscar por projetos com "Integration" no nome
+        if [[ -z "$test_projects" && -d "$(pwd)/tests" ]]; then
             test_projects=$(find "$(pwd)/tests" -name "*Integration*.csproj" 2>/dev/null | head -1)
         fi
         
+        # Se ainda não encontrou, buscar o SmartAlarm.Infrastructure.Tests como fallback
         if [[ -z "$test_projects" ]]; then
-            print_message "${RED}" "Nenhum projeto de teste de integração encontrado!"
+            test_projects=$(find "$(pwd)/tests" -name "*Infrastructure*.csproj" 2>/dev/null | head -1)
+            print_message "${YELLOW}" "Usando SmartAlarm.Infrastructure.Tests como fallback..."
+        fi
+        
+        # Se ainda não encontrou, buscar qualquer projeto de teste
+        if [[ -z "$test_projects" ]]; then
+            print_message "${RED}" "Nenhum projeto de teste específico encontrado!"
             print_message "${YELLOW}" "Buscando qualquer projeto de teste..."
             test_projects=$(find "$(pwd)/tests" -name "*.csproj" 2>/dev/null | head -1)
         fi
@@ -460,7 +500,19 @@ EOF
             return 1
         fi
         
+        # Converter caminho absoluto para relativo dentro do contêiner
+        local container_project_path=$(echo "$test_projects" | sed "s|$(pwd)|/app|")
+        
         print_message "${YELLOW}" "Projeto de teste selecionado: $test_projects"
+        print_message "${YELLOW}" "Caminho no contêiner: $container_project_path"
+        
+        # Preparar argumentos para dotnet test
+        local dotnet_args="$container_project_path --filter $TEST_FILTER"
+        if [[ -n "$VERBOSE" ]]; then
+            dotnet_args="$dotnet_args $VERBOSE"
+        fi
+        
+        print_message "${YELLOW}" "Comando que será executado: dotnet test $dotnet_args"
         
         # Executar contêiner com hosts mapeados
         docker run --rm \
@@ -471,9 +523,7 @@ EOF
             ${env_vars} \
             -v "$(pwd):/app" \
             smartalarm-test-image:latest \
-            "$test_projects" \
-            "--filter" "${TEST_FILTER}" \
-            ${VERBOSE}
+            $dotnet_args
         
         local test_exit_code=$?
         

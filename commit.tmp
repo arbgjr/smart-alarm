@@ -1,1 +1,1 @@
-fix(tests): melhorar a resolução de IPs e conectividade entre contêineres Docker
+feat(tests): aprimorar filtros de execução de testes de integração e melhorar mensagens de log
