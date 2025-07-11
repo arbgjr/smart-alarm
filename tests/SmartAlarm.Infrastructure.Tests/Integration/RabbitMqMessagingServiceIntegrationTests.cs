@@ -10,8 +10,25 @@ namespace SmartAlarm.Infrastructure.Tests.Integration
 
         public RabbitMqMessagingServiceIntegrationTests()
         {
-            // If RabbitMqMessagingService requires a logger, provide a mock or a NullLogger
-            _service = new RabbitMqMessagingService(new LoggerFactory().CreateLogger<RabbitMqMessagingService>());
+            // Define variáveis de ambiente necessárias para testes
+            Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Testing");
+            Environment.SetEnvironmentVariable("DOTNET_ENVIRONMENT", "Testing");
+            
+            // Em Docker, a variável DOTNET_RUNNING_IN_CONTAINER já deve estar definida como "true"
+            // e RABBITMQ_HOST já deve estar definido como "rabbitmq" no docker-compose
+            
+            // Verificar se estamos em ambiente de teste em contêiner
+            bool inContainer = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
+            
+            // Se não estiver em um contêiner (execução local), usar localhost
+            if (!inContainer && string.IsNullOrEmpty(Environment.GetEnvironmentVariable("RABBITMQ_HOST")))
+            {
+                Environment.SetEnvironmentVariable("RABBITMQ_HOST", "localhost");
+            }
+            
+            // Criar serviço com logger
+            var loggerFactory = new LoggerFactory();
+            _service = new RabbitMqMessagingService(loggerFactory.CreateLogger<RabbitMqMessagingService>());
         }
 
         [Fact]

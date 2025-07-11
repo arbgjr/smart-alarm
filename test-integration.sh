@@ -7,6 +7,45 @@ BLUE='\033[0;34m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
+# Verificar dependências para testes de integração
+check_dependencies() {
+    echo -e "${YELLOW}Verificando dependências necessárias...${NC}"
+    
+    # Verificar se o Docker está instalado
+    if ! command -v docker &> /dev/null; then
+        echo -e "${RED}⚠ Docker não está instalado ou não está disponível no PATH.${NC}"
+        echo -e "${YELLOW}Instale o Docker e tente novamente.${NC}"
+        return 1
+    fi
+    
+    # Variável global para indicar se devemos usar Docker para executar os testes
+    USE_DOCKER=false
+    
+    # Verificar se o dotnet CLI está instalado
+    if ! command -v dotnet &> /dev/null; then
+        echo -e "${YELLOW}⚠ O .NET SDK não está instalado ou não está disponível no PATH.${NC}"
+        echo -e "${YELLOW}Para instalar o .NET SDK:${NC}"
+        echo -e "  - ${BLUE}Windows:${NC} Visite https://dotnet.microsoft.com/download"
+        echo -e "  - ${BLUE}Linux (Ubuntu/Debian):${NC} sudo apt-get update && sudo apt-get install -y dotnet-sdk-8.0"
+        echo -e "  - ${BLUE}macOS:${NC} brew install dotnet-sdk"
+        
+        # Verificar se podemos usar Docker para executar os testes
+        echo -e "${YELLOW}Verificando se podemos usar Docker para executar os testes...${NC}"
+        if docker info > /dev/null 2>&1; then
+            echo -e "${GREEN}✓ Docker está disponível, vamos usar um container .NET para executar os testes.${NC}"
+            USE_DOCKER=true
+        else
+            echo -e "${RED}⚠ Docker não está em execução ou não está configurado corretamente.${NC}"
+            echo -e "${YELLOW}Inicie o Docker e tente novamente ou instale o .NET SDK.${NC}"
+            return 1
+        fi
+    else
+        echo -e "${GREEN}✓ .NET SDK encontrado: $(dotnet --version)${NC}"
+    fi
+    
+    return 0
+}
+
 usage() {
   echo -e "${BLUE}Uso:${NC} $0 [serviço]"
   echo -e "Serviços disponíveis:"
@@ -103,20 +142,49 @@ run_tests() {
     
     echo -e "\n${BLUE}=== Executando testes: ${test_description} ===${NC}"
     echo -e "${YELLOW}Filtro: ${test_filter}${NC}"
-    echo -e "${BLUE}Comando: dotnet test --filter \"${test_filter}\" --logger \"console;verbosity=detailed\" ${additional_args}${NC}"
     
-    # Executar testes com o comando dotnet test
-    dotnet test --filter "${test_filter}" --logger "console;verbosity=detailed" ${additional_args} || true
+    # Determinar se devemos usar Docker ou dotnet diretamente
+    if [ "$USE_DOCKER" = true ]; then
+        echo -e "${BLUE}Usando Docker para executar os testes...${NC}"
+        # Obter o caminho completo do diretório atual
+        local project_dir=$(pwd)
+        
+        echo -e "${BLUE}Comando: docker run --rm -v \"${project_dir}:/app\" -w /app mcr.microsoft.com/dotnet/sdk:8.0 dotnet test --filter \"${test_filter}\" --logger \"console;verbosity=detailed\" ${additional_args}${NC}"
+        
+        # Executar os testes usando Docker
+        set +e  # Desativar saída automática em erro
+        docker run --rm -v "${project_dir}:/app" -w /app mcr.microsoft.com/dotnet/sdk:8.0 dotnet test --filter "${test_filter}" --logger "console;verbosity=detailed" ${additional_args}
+        local result=$?
+        set -e  # Reativar saída automática em erro
+    else
+        echo -e "${BLUE}Comando: dotnet test --filter \"${test_filter}\" --logger \"console;verbosity=detailed\" ${additional_args}${NC}"
+        
+        # Executar testes com o comando dotnet test diretamente
+        set +e  # Desativar saída automática em erro
+        dotnet test --filter "${test_filter}" --logger "console;verbosity=detailed" ${additional_args}
+        local result=$?
+        set -e  # Reativar saída automática em erro
+    fi
     
     # Verificar resultado
-    if [ $? -eq 0 ]; then
+    if [ $result -eq 0 ]; then
         echo -e "${GREEN}✓ Testes executados com sucesso!${NC}"
+        return 0
+    elif [ $result -eq 127 ]; then
+        # Código de erro 127 geralmente significa "comando não encontrado"
+        echo -e "${RED}⚠ Erro ao executar o comando. Verifique as mensagens de erro acima.${NC}"
+        return 1
     else
         echo -e "${YELLOW}⚠ Alguns testes falharam. Verifique o log acima para mais detalhes.${NC}"
+        return 0  # Continuamos mesmo com falhas nos testes
     fi
 }
 
 echo -e "${BLUE}=== Smart Alarm - Testes de Integração ===${NC}"
+
+# Verificar dependências antes de continuar
+check_dependencies || exit 1
+
 echo -e "${YELLOW}Verificando ambiente para testes de $SERVICE...${NC}"
 
 case $SERVICE in

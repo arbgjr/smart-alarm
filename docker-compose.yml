@@ -1,8 +1,8 @@
-version: '3.8'
-
 services:
   vault:
     image: hashicorp/vault:1.15
+    networks:
+      - smart-alarm-network
     ports:
       - "8200:8200"
     environment:
@@ -79,6 +79,8 @@ services:
 
   rabbitmq:
     image: rabbitmq:3-management
+    networks:
+      - smart-alarm-network
     ports:
       - "5672:5672"
       - "15672:15672"
@@ -93,6 +95,8 @@ services:
 
   minio:
     image: minio/minio:latest
+    networks:
+      - smart-alarm-network
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -110,6 +114,8 @@ services:
 
   postgres:
     image: postgres:16
+    networks:
+      - smart-alarm-network
     ports:
       - "5432:5432"
     environment:
@@ -124,9 +130,41 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
 
+  test:
+    build:
+      context: .
+      dockerfile: tests/Dockerfile.tests
+    volumes:
+      - .:/app
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Testing
+      - DOTNET_ENVIRONMENT=Testing
+      - DOTNET_RUNNING_IN_CONTAINER=true
+      - RABBITMQ_HOST=rabbitmq
+      - POSTGRES_HOST=postgres
+      - MINIO_HOST=minio
+      - VAULT_HOST=vault
+    networks:
+      - smart-alarm-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
 volumes:
   grafana-data:
 
   minio-data:
 
   postgres-data:
+
+networks:
+  smart-alarm-network:
+    driver: bridge

@@ -19,17 +19,36 @@ namespace SmartAlarm.Infrastructure.Messaging
         public RabbitMqMessagingService(ILogger<RabbitMqMessagingService> logger)
         {
             _logger = logger;
+            
+            // Log das variáveis de ambiente para depuração
+            _logger.LogInformation("ASPNETCORE_ENVIRONMENT: {Env}", 
+                Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "não definido");
+            _logger.LogInformation("DOTNET_ENVIRONMENT: {Env}", 
+                Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? "não definido");
+            _logger.LogInformation("DOTNET_RUNNING_IN_CONTAINER: {InContainer}", 
+                Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") ?? "não definido");
+            _logger.LogInformation("RABBITMQ_HOST: {Host}", 
+                Environment.GetEnvironmentVariable("RABBITMQ_HOST") ?? "não definido");
+                
+            // Determinar o host do RabbitMQ
+            string host = "localhost"; // valor padrão
+            
+            // Se RABBITMQ_HOST estiver definido, usar esse valor
             var envHost = Environment.GetEnvironmentVariable("RABBITMQ_HOST");
-            string host;
             if (!string.IsNullOrWhiteSpace(envHost))
             {
                 host = envHost;
+                _logger.LogInformation("Usando host RabbitMQ da variável de ambiente: {Host}", host);
+            }
+            // Se estiver em contêiner e sem variável de ambiente específica, usar o nome do serviço
+            else if (Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true")
+            {
+                host = "rabbitmq";
+                _logger.LogInformation("Em contêiner: usando nome do serviço como host: {Host}", host);
             }
             else
             {
-                // Detecta se está rodando em container (variável DOTNET_RUNNING_IN_CONTAINER)
-                var inContainer = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
-                host = inContainer ? "rabbitmq" : "localhost";
+                _logger.LogInformation("Usando host local para RabbitMQ: {Host}", host);
             }
             var user = Environment.GetEnvironmentVariable("RABBITMQ_USER") ?? "guest";
             var pass = Environment.GetEnvironmentVariable("RABBITMQ_PASS") ?? "guest";

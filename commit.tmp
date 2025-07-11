@@ -1,8 +1,8 @@
-Add development environment setup and integration testing documentation
+feat(docker): adicionar scripts de gerenciamento e testes de integração com Docker
 
-- Created `dev-environment-docs.md` to outline the setup and management of the Smart Alarm development environment using Docker.
-- Added scripts for starting, stopping, and testing the development environment (`start-dev-env.sh`, `stop-dev-env.sh`, `test-integration.sh`).
-- Implemented health checks for services in the development environment.
-- Documented integration testing standards and organization in `integration-testing.md`.
-- Included examples of integration tests for RabbitMQ, PostgreSQL, MinIO, HashiCorp Vault, and observability services.
-- Enhanced user experience with colored output messages in scripts for better readability.
+- Criado `clean-docker-env.sh` para limpar o ambiente Docker.
+- Criado `docker-test.sh` para executar testes de integração em contêineres Docker.
+- Atualizado `start-dev-env.sh` para verificar portas em uso e iniciar serviços individualmente.
+- Atualizado `test-integration.sh` para verificar dependências e usar Docker para executar testes.
+- Atualizado `RabbitMqMessagingService` para logar variáveis de ambiente relevantes.
+- Atualizado `docker-compose.yml` para incluir rede e serviços de teste.

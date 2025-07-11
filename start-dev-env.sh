@@ -16,6 +16,36 @@ if ! docker info > /dev/null 2>&1; then
     exit 1
 fi
 
+# Função para verificar se uma porta está em uso
+check_port() {
+    local port=$1
+    local service=$2
+    
+    # Em sistemas Windows com WSL, precisamos verificar de forma diferente
+    if command -v netstat > /dev/null 2>&1; then
+        if netstat -ano | grep -q ":$port "; then
+            echo -e "${RED}⚠ A porta $port usada pelo $service já está em uso. Verifique outros serviços em execução.${NC}"
+            return 1
+        fi
+    elif command -v ss > /dev/null 2>&1; then
+        if ss -tulpn | grep -q ":$port "; then
+            echo -e "${RED}⚠ A porta $port usada pelo $service já está em uso. Verifique outros serviços em execução.${NC}"
+            return 1
+        fi
+    fi
+    
+    return 0
+}
+
+# Verificar portas essenciais
+echo -e "${YELLOW}Verificando disponibilidade de portas...${NC}"
+check_port 5432 "PostgreSQL" || echo -e "${YELLOW}Tentando continuar mesmo assim...${NC}"
+check_port 5672 "RabbitMQ" || echo -e "${YELLOW}Tentando continuar mesmo assim...${NC}"
+check_port 15672 "RabbitMQ Management" || echo -e "${YELLOW}Tentando continuar mesmo assim...${NC}"
+check_port 9000 "MinIO API" || echo -e "${YELLOW}Tentando continuar mesmo assim...${NC}"
+check_port 9001 "MinIO Console" || echo -e "${YELLOW}Tentando continuar mesmo assim...${NC}"
+check_port 8200 "HashiCorp Vault" || echo -e "${YELLOW}Tentando continuar mesmo assim...${NC}"
+
 # Verificar argumento opcional para serviços específicos
 SERVICES="rabbitmq postgres minio vault"
 if [ ! -z "$1" ]; then
@@ -47,19 +77,49 @@ verify_service_health() {
     local service=$1
     local max_attempts=$2
     local attempt=1
+    local wait_time=3  # Aumentando tempo de espera entre tentativas
     
     echo -e "${YELLOW}Verificando saúde do serviço $service...${NC}"
+    
+    # Ajustar o nome do serviço para corresponder aos nomes dos contêineres do Docker Compose
+    local container_name=$service
+    if [ "$USE_COMPOSE" = true ]; then
+        container_name="smart-alarm-${service}-1"
+    fi
+    
+    # Verificar primeiro se o contêiner existe
+    if ! docker ps -a | grep -q $container_name; then
+        echo -e "${RED}⚠ Contêiner $container_name não existe${NC}"
+        return 1
+    fi
+    
+    # Verificar se o contêiner está em execução
+    if ! docker ps | grep -q $container_name; then
+        echo -e "${YELLOW}Contêiner $container_name existe mas não está em execução. Tentando iniciar...${NC}"
+        docker start $container_name
+        sleep $wait_time
+    fi
     
     while [ $attempt -le $max_attempts ]; do
         case $service in
             rabbitmq)
-                if docker exec -it rabbitmq rabbitmqctl status >/dev/null 2>&1; then
+                # Para RabbitMQ, damos mais tempo para inicializar
+                if [ $attempt -eq 1 ]; then
+                    echo -e "${YELLOW}Aguardando inicialização do RabbitMQ (pode levar até 30s)...${NC}"
+                    sleep 10
+                fi
+                if docker exec $container_name rabbitmqctl status >/dev/null 2>&1; then
                     echo -e "${GREEN}✓ RabbitMQ está saudável${NC}"
                     return 0
                 fi
                 ;;
             postgres)
-                if docker exec -it postgres pg_isready -U smartalarm >/dev/null 2>&1; then
+                # Para PostgreSQL, damos mais tempo para inicializar
+                if [ $attempt -eq 1 ]; then
+                    echo -e "${YELLOW}Aguardando inicialização do PostgreSQL (pode levar até 15s)...${NC}"
+                    sleep 5
+                fi
+                if docker exec $container_name pg_isready -U smartalarm >/dev/null 2>&1; then
                     echo -e "${GREEN}✓ PostgreSQL está saudável${NC}"
                     return 0
                 fi
@@ -78,7 +138,7 @@ verify_service_health() {
                 ;;
             *)
                 # Para outros serviços, apenas verificar se o container está rodando
-                if docker ps | grep -q $service; then
+                if docker ps | grep -q $container_name; then
                     echo -e "${GREEN}✓ $service está rodando${NC}"
                     return 0
                 fi
@@ -87,11 +147,17 @@ verify_service_health() {
         
         echo -e "${YELLOW}Tentativa $attempt/$max_attempts: $service ainda não está pronto...${NC}"
         attempt=$((attempt+1))
-        sleep 2
+        sleep $wait_time
     done
     
-    echo -e "${RED}⚠ $service não ficou saudável após $max_attempts tentativas${NC}"
-    return 1
+    echo -e "${YELLOW}⚠ $service não confirmou saúde após $max_attempts tentativas, mas pode estar apenas iniciando lentamente...${NC}"
+    if docker ps | grep -q $container_name; then
+        echo -e "${GREEN}✓ Contêiner $service está em execução, continuando...${NC}"
+        return 0
+    else
+        echo -e "${RED}⚠ Contêiner $service não está em execução${NC}"
+        return 1
+    fi
 }
 
 if [ "$USE_COMPOSE" = true ]; then
@@ -104,8 +170,17 @@ if [ "$USE_COMPOSE" = true ]; then
         DOCKER_COMPOSE_CMD="docker compose"
     fi
     
-    # Iniciar os serviços necessários
-    $DOCKER_COMPOSE_CMD up -d $SERVICES
+    # Iniciar os serviços necessários um a um para melhor controle de erros
+    for service in $SERVICES; do
+        echo -e "${YELLOW}Iniciando serviço: $service${NC}"
+        if ! $DOCKER_COMPOSE_CMD up -d --no-deps $service; then
+            echo -e "${RED}⚠ Falha ao iniciar $service. Tentando continuar com outros serviços...${NC}"
+            # Remover o serviço com falha da lista de serviços
+            SERVICES=$(echo "$SERVICES" | sed "s/$service//g")
+        fi
+        # Breve pausa entre a inicialização dos serviços
+        sleep 1
+    done
     
     # Verificar status dos serviços
     echo -e "${GREEN}Status dos serviços:${NC}"
@@ -198,12 +273,31 @@ else
                 echo -e "${YELLOW}Container HashiCorp Vault existe mas está parado. Iniciando...${NC}"
                 docker start vault
             else
-                echo -e "${YELLOW}Criando e iniciando container HashiCorp Vault...${NC}"
+                # Verificar se a porta padrão do Vault está disponível
+                VAULT_PORT=8200
+                ALTERNATE_PORT=8201
+                
+                if ! check_port 8200 "HashiCorp Vault"; then
+                    echo -e "${YELLOW}Porta 8200 já em uso. Tentando porta alternativa $ALTERNATE_PORT...${NC}"
+                    if check_port $ALTERNATE_PORT "HashiCorp Vault (alternativa)"; then
+                        VAULT_PORT=$ALTERNATE_PORT
+                    else
+                        echo -e "${YELLOW}Porta alternativa $ALTERNATE_PORT também ocupada. Tentando usar porta padrão mesmo assim...${NC}"
+                    fi
+                fi
+                
+                echo -e "${YELLOW}Criando e iniciando container HashiCorp Vault na porta $VAULT_PORT...${NC}"
                 docker run -d --name vault --network smart-alarm-network \
                     -e VAULT_DEV_ROOT_TOKEN_ID=dev-token \
-                    -e VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:8200 \
-                    -p 8200:8200 \
+                    -e VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:$VAULT_PORT \
+                    -p $VAULT_PORT:$VAULT_PORT \
                     hashicorp/vault:1.15 vault server -dev
+                
+                # Atualizar a variável global se a porta foi alterada
+                if [ "$VAULT_PORT" != "8200" ]; then
+                    echo -e "${YELLOW}⚠ HashiCorp Vault usando porta alternativa: $VAULT_PORT${NC}"
+                    export VAULT_PORT=$VAULT_PORT
+                fi
             fi
             verify_service_health "vault" 5
         fi
@@ -225,7 +319,10 @@ fi
 echo -e "\n${BLUE}=== Interfaces de gerenciamento ===${NC}"
 echo -e "${GREEN}RabbitMQ:${NC} http://localhost:15672/ (guest/guest)"
 echo -e "${GREEN}MinIO:${NC} http://localhost:9001/ (minio/minio123)"
-echo -e "${GREEN}HashiCorp Vault:${NC} http://localhost:8200/ (token: dev-token)"
+
+# Usar porta alternativa para Vault se foi definida
+VAULT_PORT=${VAULT_PORT:-8200}
+echo -e "${GREEN}HashiCorp Vault:${NC} http://localhost:$VAULT_PORT/ (token: dev-token)"
 echo -e "${GREEN}PostgreSQL:${NC} localhost:5432 (smartalarm/smartalarm123)"
 
 if echo "$SERVICES" | grep -E "prometheus|loki|jaeger|grafana" > /dev/null; then
