@@ -19,6 +19,12 @@ Critérios de pronto globais e específicos atendidos. Documentação e governan
 
 ## Ambiente de Desenvolvimento e Testes de Integração (Julho 2023)
 
+- Script docker-test-fix.sh implementado para resolver problemas de conectividade em testes
+- Estabelecida abordagem de redes compartilhadas para contêineres Docker
+- Documentação detalhada sobre resolução de problemas em testes de integração
+- Implementada estratégia de resolução dinâmica de nomes de serviços
+- DockerHelper criado para padronizar acesso a serviços em testes de integração
+
 - Simplificados os testes de integração para MinIO e Vault (HTTP health check)
 - Corrigidos problemas de compilação em testes com APIs incompatíveis
 - Melhorado script docker-test.sh com verificação dinâmica de saúde dos serviços

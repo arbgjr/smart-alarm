@@ -1,31 +1,27 @@
-fix(test): melhorar execução de testes de integração em ambientes Docker
+fix(tests): resolver problema de resolução DNS em testes de integração
 
-Implementa um script robusto para execução de testes de integração em ambiente Docker,
-corrigindo problemas de resolução de nomes e conectividade entre contêineres.
+Identifica e corrige problemas de conectividade em testes de integração em Docker,
+especificamente falhas na resolução de nomes de serviço entre contêineres.
 
 Problema:
-- Testes falham com "Connection refused" quando tentam acessar serviços via localhost
-- Resolução de nomes entre contêineres falha com "Temporary failure in name resolution"
-- Contêineres na mesma rede Docker não conseguem resolver nomes uns dos outros
-- Configuração inadequada de rede impede a comunicação direta entre serviços
-- Falta de diagnóstico adequado dificulta a identificação da causa raiz
+- Contêiner de teste não consegue resolver nomes de serviços (ex: 'vault')
+- DNS não funciona corretamente apesar dos contêineres estarem na mesma rede
+- Testes falham com erro "DNS não consegue resolver {serviço}"
+- Arquivo resolv.conf configurado para 127.0.0.11 (DNS interno do Docker) mas resolução falha
 
 Solução:
-- Criação de script docker-test-fix.sh com tratamento robusto de erros
-- Estabelecimento de rede Docker compartilhada para todos os contêineres
-- Inclusão de mapeamentos explícitos de nomes para IPs de contêineres
-- Adição de diagnóstico de rede e ferramentas de troubleshooting
-- Tratamento de falhas na resolução DNS com estratégia de fallback
+- Adicionar mapeamentos explícitos de host no contêiner de teste
+- Configurar aliases de host para cada serviço na rede compartilhada
+- Implementar retry com fallback para resolução de hostname
+- Melhorar diagnóstico DNS com ferramentas específicas (dig, host)
 
-O script garante que:
-1. Todos os contêineres estejam na mesma rede Docker
-2. Nomes curtos de serviços (postgres, minio, etc.) sejam resolvidos corretamente
-3. Testes possam usar nomes de serviços em vez de hardcoded localhost
-4. A execução seja consistente entre ambientes diferentes
+O script agora:
+1. Verifica configuração DNS do contêiner de teste
+2. Configura entradas no /etc/hosts para mapear serviços
+3. Adiciona aliases de host explícitos ao conectar contêineres na rede
+4. Implementa diagnóstico detalhado para identificar problemas de DNS
 
 Próximos passos:
 - Corrigir erro de compilação em PostgresIntegrationTests.cs
-- Verificar atributos Category=Integration em todos os testes
-- Melhorar a configuração de hostname e DNS nos contêineres
-
-Refs: Issue #42
+- Implementar método de resolução de hostname resiliente no DockerHelper
+- Adicionar documentação sobre estratégias de resolução DNS em Docker
