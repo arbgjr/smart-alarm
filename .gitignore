@@ -283,3 +283,5 @@ config/development/
 # Temporary uploads
 uploads/temp/
 temp-files/
+
+coverage-report/
