@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
+using SmartAlarm.Tests.Factories;
 using Xunit;
 using FluentAssertions;
 using System.Net.Http;
@@ -14,12 +15,12 @@ namespace SmartAlarm.Tests.Integration
     /// Testes básicos de integração para autenticação JWT/FIDO2
     /// Versão simplificada para garantir compilação
     /// </summary>
-    public class BasicJwtFido2Tests : IClassFixture<WebApplicationFactory<SmartAlarm.Api.Program>>
+    public class BasicJwtFido2Tests : IClassFixture<TestWebApplicationFactory>
     {
-        private readonly WebApplicationFactory<SmartAlarm.Api.Program> _factory;
+        private readonly TestWebApplicationFactory _factory;
         private readonly HttpClient _client;
 
-        public BasicJwtFido2Tests(WebApplicationFactory<SmartAlarm.Api.Program> factory)
+        public BasicJwtFido2Tests(TestWebApplicationFactory factory)
         {
             _factory = factory;
             _client = _factory.CreateClient();
@@ -29,7 +30,7 @@ namespace SmartAlarm.Tests.Integration
         public async Task HealthCheck_ShouldReturnOk()
         {
             // Act
-            var response = await _client.GetAsync("/health");
+            var response = await _client.GetAsync("/api/v1/health");
 
             // Assert
             response.Should().NotBeNull();
@@ -40,11 +41,12 @@ namespace SmartAlarm.Tests.Integration
         public async Task AuthEndpoint_ShouldBeAvailable()
         {
             // Act
-            var response = await _client.GetAsync("/api/auth");
+            var response = await _client.GetAsync("/api/v1/auth/ping");
 
             // Assert
             response.Should().NotBeNull();
-            // Pode retornar 401 (não autorizado) mas o endpoint deve existir
+            // Deve retornar 200 para o endpoint de ping
+            response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
         }
 
         [Fact]
@@ -66,7 +68,7 @@ namespace SmartAlarm.Tests.Integration
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "invalid-token");
 
             // Act
-            var response = await _client.GetAsync("/api/alarms");
+            var response = await _client.GetAsync("/api/v1/alarms");
 
             // Assert
             response.StatusCode.Should().Be(System.Net.HttpStatusCode.Unauthorized);

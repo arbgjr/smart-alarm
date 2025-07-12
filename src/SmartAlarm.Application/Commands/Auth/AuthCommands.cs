@@ -58,7 +58,8 @@ public record Fido2RegisterCompleteCommand(
 /// Command para iniciar autenticação FIDO2
 /// </summary>
 public record Fido2AuthStartCommand(
-    Guid? UserId = null
+    Guid? UserId = null,
+    string? Email = null
 ) : IRequest<Fido2AuthStartResponseDto>;
 
 /// <summary>

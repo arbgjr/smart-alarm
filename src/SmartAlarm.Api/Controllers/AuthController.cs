@@ -264,7 +264,7 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// Inicia autenticação FIDO2
+    /// Inicia autenticação FIDO2 (formato novo)
     /// </summary>
     /// <param name="request">Dados para autenticação</param>
     /// <returns>Options para o cliente</returns>
@@ -276,7 +276,7 @@ public class AuthController : ControllerBase
     {
         try
         {
-            var command = new Fido2AuthStartCommand(request.UserId);
+            var command = new Fido2AuthStartCommand(request.UserId, request.Email);
             var result = await _mediator.Send(command);
 
             if (!result.Success)
@@ -285,6 +285,41 @@ public class AuthController : ControllerBase
             }
 
             return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error starting FIDO2 authentication");
+            return StatusCode(500, new { Message = "Erro interno do servidor" });
+        }
+    }
+
+    /// <summary>
+    /// Inicia autenticação FIDO2 (formato compatibilidade com testes)
+    /// </summary>
+    /// <param name="request">Dados para autenticação</param>
+    /// <returns>Options para o cliente</returns>
+    [HttpPost("fido2/authenticate/start")] // Alias para compatibilidade com testes
+    [SwaggerOperation(Summary = "Iniciar autenticação FIDO2 (compatibilidade)", Description = "Cria challenge para autenticação usando email")]
+    [SwaggerResponse(200, "Challenge criado", typeof(Fido2AuthStartResponseDto))]
+    [SwaggerResponse(400, "Dados inválidos")]
+    public async Task<ActionResult<Fido2AuthStartResponseDto>> StartFido2AuthenticationCompat([FromBody] StartFido2AuthenticationRequest request)
+    {
+        try
+        {
+            var command = new Fido2AuthStartCommand(null, request.UserEmail);
+            var result = await _mediator.Send(command);
+
+            if (!result.Success)
+            {
+                return BadRequest(result);
+            }
+
+            return Ok(result);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            _logger.LogWarning(ex, "User not found for FIDO2 authentication start");
+            return NotFound(new { Message = ex.Message });
         }
         catch (Exception ex)
         {

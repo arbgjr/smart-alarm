@@ -18,22 +18,22 @@ namespace SmartAlarm.Tests.Mocks
             
             // Configurações padrão para testes
             _mock.Setup(x => x.GenerateAccessTokenAsync(It.IsAny<User>()))
-                .ReturnsAsync("valid_test_token");
+                .ReturnsAsync(() => $"valid_test_token_{DateTime.Now.Ticks}"); // Generate unique tokens
                 
             _mock.Setup(x => x.GenerateRefreshTokenAsync(It.IsAny<User>()))
-                .ReturnsAsync("valid_refresh_token");
+                .ReturnsAsync("valid_refresh_token_with_minimum_32_characters_required_by_validator");
                 
             _mock.Setup(x => x.ValidateTokenAsync(It.IsAny<string>()))
                 .ReturnsAsync(true);
                 
             _mock.Setup(x => x.GetUserIdFromTokenAsync(It.IsAny<string>()))
-                .ReturnsAsync(Guid.Parse("00000000-0000-0000-0000-000000000001"));
+                .ReturnsAsync(Guid.Parse("12345678-1234-1234-1234-123456789012")); // Test user ID
                 
             _mock.Setup(x => x.RevokeTokenAsync(It.IsAny<string>()))
                 .ReturnsAsync(true);
                 
             _mock.Setup(x => x.RefreshTokenAsync(It.IsAny<string>()))
-                .ReturnsAsync("new_valid_test_token");
+                .ReturnsAsync(() => $"new_valid_test_token_with_minimum_32_characters_for_validation_{DateTime.Now.Ticks}");
         }
 
         public Task<string> GenerateAccessTokenAsync(User user)

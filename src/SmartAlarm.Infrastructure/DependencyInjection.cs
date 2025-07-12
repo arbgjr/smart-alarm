@@ -44,6 +44,7 @@ namespace SmartAlarm.Infrastructure
                 services.AddScoped<IScheduleRepository, EfScheduleRepositoryPostgres>();
                 services.AddScoped<IRoutineRepository, EfRoutineRepositoryPostgres>();
                 services.AddScoped<IIntegrationRepository, EfIntegrationRepositoryPostgres>();
+                services.AddScoped<IHolidayRepository, EfHolidayRepository>();
             }
             else
             {
@@ -62,11 +63,15 @@ namespace SmartAlarm.Infrastructure
                 services.AddScoped<IScheduleRepository, EfScheduleRepository>();
                 services.AddScoped<IRoutineRepository, EfRoutineRepository>();
                 services.AddScoped<IIntegrationRepository, EfIntegrationRepository>();
+                services.AddScoped<IHolidayRepository, EfHolidayRepository>();
             }
 
             // Register infrastructure services
             services.AddScoped<IEmailService, LoggingEmailService>();
             services.AddScoped<INotificationService, LoggingNotificationService>();
+            
+            // Register security services
+            services.AddScoped<IJwtTokenService, SimpleJwtTokenService>();
 
             return services;
         }
@@ -86,6 +91,9 @@ namespace SmartAlarm.Infrastructure
             // Register infrastructure services
             services.AddScoped<IEmailService, LoggingEmailService>();
             services.AddScoped<INotificationService, LoggingNotificationService>();
+            
+            // Register security services
+            services.AddScoped<IJwtTokenService, SimpleJwtTokenService>();
 
             // Register messaging, storage, tracing, metrics (mock for now)
             services.AddSingleton<Messaging.IMessagingService, Messaging.MockMessagingService>();
@@ -119,6 +127,9 @@ namespace SmartAlarm.Infrastructure
             // Register infrastructure services
             services.AddScoped<IEmailService, LoggingEmailService>();
             services.AddScoped<INotificationService, LoggingNotificationService>();
+            
+            // Register security services
+            services.AddScoped<IJwtTokenService, SimpleJwtTokenService>();
 
             // Register messaging, storage, tracing, metrics (mock for now)
             services.AddSingleton<Messaging.IMessagingService, Messaging.MockMessagingService>();

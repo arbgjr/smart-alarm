@@ -55,6 +55,7 @@ public class AuthResponseDto
     public string? AccessToken { get; set; }
     public string? RefreshToken { get; set; }
     public DateTime ExpiresAt { get; set; }
+    public int ExpiresIn => (int)(ExpiresAt - DateTime.UtcNow).TotalSeconds;
     public UserDto? User { get; set; }
     public string? Message { get; set; }
     public IEnumerable<string>? Errors { get; set; }

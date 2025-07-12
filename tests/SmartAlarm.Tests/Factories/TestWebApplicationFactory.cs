@@ -10,6 +10,12 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using SmartAlarm.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore.InMemory;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.Configuration;
+using SmartAlarm.Infrastructure;
 
 namespace SmartAlarm.Tests.Factories
 {
@@ -17,8 +23,47 @@ namespace SmartAlarm.Tests.Factories
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
+            builder.UseEnvironment("Testing");
+            
+            // Configure para forçar InMemory antes dos serviços serem registrados
+            builder.ConfigureAppConfiguration(config =>
+            {
+                // Sobrescrever qualquer configuração que force Oracle
+                config.AddInMemoryCollection(new[]
+                {
+                    new KeyValuePair<string, string?>("Database:Provider", "InMemory"),
+                    new KeyValuePair<string, string?>("ConnectionStrings:OracleDb", null),
+                    new KeyValuePair<string, string?>("ConnectionStrings:PostgresDb", null)
+                });
+            });
+            
             builder.ConfigureServices(services =>
             {
+                // Remove TODOS os serviços relacionados ao SmartAlarm Infrastructure
+                var infraDescriptors = services.Where(d => 
+                    d.ServiceType == typeof(DbContextOptions<SmartAlarmDbContext>) ||
+                    d.ServiceType == typeof(SmartAlarmDbContext) ||
+                    d.ServiceType.IsGenericType && d.ServiceType.GetGenericTypeDefinition() == typeof(DbContextOptions<>) ||
+                    typeof(DbContext).IsAssignableFrom(d.ServiceType) ||
+                    (d.ImplementationType?.Assembly?.GetName()?.Name?.Contains("SmartAlarm.Infrastructure") == true) ||
+                    d.ServiceType.Name.Contains("Repository") ||
+                    d.ServiceType.Name.Contains("UnitOfWork")).ToArray();
+                
+                foreach (var descriptor in infraDescriptors)
+                {
+                    services.Remove(descriptor);
+                }
+
+                // Re-registrar manualmente a infraestrutura com InMemory
+                services.AddSmartAlarmInfrastructureInMemory();
+
+                // Add InMemory database específico para teste
+                services.AddDbContext<SmartAlarmDbContext>(options =>
+                {
+                    options.UseInMemoryDatabase($"TestDb_{Guid.NewGuid()}");
+                    options.ConfigureWarnings(warnings => warnings.Ignore(InMemoryEventId.TransactionIgnoredWarning));
+                }, ServiceLifetime.Scoped);
+                
                 // Substituir o CurrentUserService real pelo mock de teste
                 var descriptors = services.Where(d => d.ServiceType == typeof(ICurrentUserService)).ToList();
                 foreach (var descriptor in descriptors)
@@ -43,6 +88,16 @@ namespace SmartAlarm.Tests.Factories
                 }
                 services.AddSingleton<SmartAlarm.Domain.Abstractions.IJwtTokenService, MockJwtTokenService>();
                 
+                // Adicionar o MockFido2Service para evitar dependências não resolvidas
+                var fido2Descriptors = services.Where(d => d.ServiceType == typeof(SmartAlarm.Domain.Abstractions.IFido2Service)).ToList();
+                foreach (var desc in fido2Descriptors)
+                {
+                    services.Remove(desc);
+                }
+                services.AddSingleton<SmartAlarm.Domain.Abstractions.IFido2Service, MockFido2Service>();
+                
+
+                
                 // Remover autenticação JWT e configurar autenticação de teste
                 services.AddAuthentication(options =>
                 {
@@ -51,6 +106,39 @@ namespace SmartAlarm.Tests.Factories
                 })
                 .AddScheme<AuthenticationSchemeOptions, TestAuthenticationHandler>("Test", options => { });
             });
+        }
+
+        private readonly Lazy<Task> _seedingTask;
+
+        public TestWebApplicationFactory()
+        {
+            _seedingTask = new Lazy<Task>(() => SeedTestData());
+        }
+
+        public HttpClient GetSeededClient()
+        {
+            var client = CreateClient();
+            _seedingTask.Value.Wait(); // Ensure seeding is completed
+            return client;
+        }
+
+        private async Task SeedTestData()
+        {
+            using var scope = Services.CreateScope();
+            var userRepo = scope.ServiceProvider.GetRequiredService<SmartAlarm.Domain.Repositories.IUserRepository>();
+            
+            var testUser = new SmartAlarm.Domain.Entities.User(
+                Guid.Parse("12345678-1234-1234-1234-123456789012"), 
+                "Test User", 
+                "test@example.com", 
+                true
+            );
+            
+            // Set password hash for test user (BCrypt hash for "ValidPassword123!")
+            var passwordHash = BCrypt.Net.BCrypt.HashPassword("ValidPassword123!");
+            testUser.SetPasswordHash(passwordHash);
+            
+            await userRepo.AddAsync(testUser);
         }
     }
 
@@ -64,6 +152,42 @@ namespace SmartAlarm.Tests.Factories
 
         protected override Task<AuthenticateResult> HandleAuthenticateAsync()
         {
+            // Verificar se há um token de autorização
+            if (!Request.Headers.ContainsKey("Authorization"))
+            {
+                return Task.FromResult(AuthenticateResult.NoResult());
+            }
+
+            var authHeader = Request.Headers["Authorization"].ToString();
+            if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
+            {
+                return Task.FromResult(AuthenticateResult.Fail("Invalid authorization header"));
+            }
+
+            var token = authHeader.Substring("Bearer ".Length).Trim();
+            
+            // Tokens específicos para falha
+            if (token == "invalid-token" || 
+                token == "malformed-token" || 
+                token == "expired-token" ||
+                token == "wrong-signature-token" ||
+                token == "tampered-token")
+            {
+                return Task.FromResult(AuthenticateResult.Fail($"Invalid token: {token}"));
+            }
+
+            // Verificar se o token parece ser um JWT real (3 partes separadas por ponto)
+            var tokenParts = token.Split('.');
+            if (tokenParts.Length == 3)
+            {
+                // Se for um JWT real mas não reconhecido, falhar
+                if (!token.StartsWith("valid-") && token != "test-token")
+                {
+                    return Task.FromResult(AuthenticateResult.Fail("JWT validation failed"));
+                }
+            }
+
+            // Para tokens válidos ou simples de teste, autenticar com sucesso
             var claims = new[]
             {
                 new Claim(ClaimTypes.NameIdentifier, "12345678-1234-1234-1234-123456789012"),

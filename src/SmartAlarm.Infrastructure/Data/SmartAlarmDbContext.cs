@@ -20,6 +20,7 @@ namespace SmartAlarm.Infrastructure.Data
         public DbSet<Integration> Integrations { get; set; }
         public DbSet<Role> Roles { get; set; }
         public DbSet<UserRole> UserRoles { get; set; }
+        public DbSet<Holiday> Holidays { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

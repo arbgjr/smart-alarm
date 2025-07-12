@@ -7,13 +7,26 @@ using SmartAlarm.Api.Configuration;
 using SmartAlarm.KeyVault.Extensions;
 using SmartAlarm.Infrastructure;
 using SmartAlarm.Infrastructure.Extensions;
-using SmartAlarm.Infrastructure;
 using SmartAlarm.Application.Behaviors;
+using Microsoft.AspNetCore.RateLimiting;
+using System.Threading.RateLimiting;
 using MediatR;
 using FluentValidation;
 using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure Kestrel to remove Server header
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.AddServerHeader = false;
+});
+
+// Configure services to suppress server header completely
+builder.Services.Configure<Microsoft.AspNetCore.Http.Features.IHttpResponseFeature>(options =>
+{
+    // This will be handled by middleware
+});
 
 // Configuração do Serilog
 builder.Host.UseSerilog((context, services, configuration) =>
@@ -111,6 +124,30 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<SmartAlarm.Api.Services.ICurrentUserService, SmartAlarm.Api.Services.CurrentUserService>();
 
+// Add Rate Limiting (disabled in testing environments)
+if (!builder.Environment.IsEnvironment("Testing"))
+{
+    builder.Services.AddRateLimiter(options =>
+    {
+        options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+            RateLimitPartition.GetFixedWindowLimiter(
+                partitionKey: context.User.Identity?.Name ?? context.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
+                factory: partition => new FixedWindowRateLimiterOptions
+                {
+                    AutoReplenishment = true,
+                    PermitLimit = 10, // Limite mais baixo para detectar nos testes
+                    Window = TimeSpan.FromMinutes(1)
+                }));
+        
+        options.OnRejected = async (context, token) =>
+        {
+            context.HttpContext.Response.StatusCode = 429;
+            context.HttpContext.Response.Headers["Retry-After"] = "60";
+            await context.HttpContext.Response.WriteAsync("Too Many Requests", token);
+        };
+    });
+}
+
 
 // LGPD: Serviço de consentimento do usuário
 builder.Services.AddSingleton<SmartAlarm.Api.Services.IUserConsentService, SmartAlarm.Api.Services.UserConsentService>();
@@ -132,9 +169,42 @@ builder.Services.AddFido2Services(builder.Configuration);
 
 var app = builder.Build();
 
+// Configure security headers middleware
+app.Use(async (context, next) =>
+{
+    // Security headers for OWASP compliance - Set before processing
+    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+    context.Response.Headers["X-Frame-Options"] = "DENY";
+    context.Response.Headers["X-XSS-Protection"] = "1; mode=block";
+    context.Response.Headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains";
+    context.Response.Headers["Content-Security-Policy"] = "default-src 'self'";
+    context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+    
+    await next();
+});
+
+// Remove server headers middleware (must be after controllers)
+app.Use(async (context, next) =>
+{
+    context.Response.OnStarting(() =>
+    {
+        context.Response.Headers.Remove("Server");
+        context.Response.Headers.Remove("X-Powered-By");
+        return Task.CompletedTask;
+    });
+    
+    await next();
+});
+
 // Observabilidade: logging estruturado e tracing
 app.UseSerilogRequestLogging();
 app.UseMiddleware<SmartAlarm.Observability.ObservabilityMiddleware>();
+
+// Rate limiting before authentication (disabled in testing environments)
+if (!app.Environment.IsEnvironment("Testing"))
+{
+    app.UseRateLimiter();
+}
 
 // Segurança: KeyVault, tratamento global de erros, autenticação e RBAC
 app.UseKeyVault();

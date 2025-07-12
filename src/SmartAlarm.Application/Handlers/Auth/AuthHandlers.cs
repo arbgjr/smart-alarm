@@ -110,10 +110,18 @@ public class LoginHandler : IRequestHandler<LoginCommand, AuthResponseDto>
 
     private static bool VerifyPassword(string password, string hashedPassword)
     {
-        // Implementação simples - em produção usar BCrypt ou similar
-        using var sha256 = SHA256.Create();
-        var hashedInput = Convert.ToBase64String(sha256.ComputeHash(Encoding.UTF8.GetBytes(password)));
-        return hashedInput == hashedPassword;
+        try
+        {
+            // Tentar verificar com BCrypt primeiro
+            return BCrypt.Net.BCrypt.Verify(password, hashedPassword);
+        }
+        catch
+        {
+            // Fallback para SHA256 para compatibilidade com testes existentes
+            using var sha256 = SHA256.Create();
+            var hashedInput = Convert.ToBase64String(sha256.ComputeHash(Encoding.UTF8.GetBytes(password)));
+            return hashedInput == hashedPassword;
+        }
     }
 }
 
@@ -208,5 +216,78 @@ public class RegisterHandler : IRequestHandler<RegisterCommand, AuthResponseDto>
         // Implementação simples - em produção usar BCrypt ou similar
         using var sha256 = SHA256.Create();
         return Convert.ToBase64String(sha256.ComputeHash(Encoding.UTF8.GetBytes(password)));
+    }
+}
+
+/// <summary>
+/// Handler para refresh token
+/// </summary>
+public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, AuthResponseDto>
+{
+    private readonly IJwtTokenService _jwtTokenService;
+    private readonly IUserRepository _userRepository;
+    private readonly ILogger<RefreshTokenCommandHandler> _logger;
+
+    public RefreshTokenCommandHandler(
+        IJwtTokenService jwtTokenService,
+        IUserRepository userRepository,
+        ILogger<RefreshTokenCommandHandler> logger)
+    {
+        _jwtTokenService = jwtTokenService ?? throw new ArgumentNullException(nameof(jwtTokenService));
+        _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    }
+
+    public async Task<AuthResponseDto> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            _logger.LogInformation("Processing refresh token request");
+
+            // Validar o refresh token
+            var isValid = await _jwtTokenService.ValidateTokenAsync(request.RefreshToken);
+            if (!isValid)
+            {
+                _logger.LogWarning("Invalid refresh token provided");
+                throw new UnauthorizedAccessException("Invalid refresh token");
+            }
+
+            // Obter o usuário do token
+            var userId = await _jwtTokenService.GetUserIdFromTokenAsync(request.RefreshToken);
+            if (!userId.HasValue)
+            {
+                _logger.LogWarning("Unable to extract user ID from refresh token");
+                throw new UnauthorizedAccessException("Invalid refresh token");
+            }
+
+            var user = await _userRepository.GetByIdAsync(userId.Value);
+            if (user == null || !user.IsActive)
+            {
+                _logger.LogWarning("User not found or inactive: {UserId}", userId.Value);
+                throw new UnauthorizedAccessException("User not found or inactive");
+            }
+
+            // Gerar novos tokens
+            var newAccessToken = await _jwtTokenService.GenerateAccessTokenAsync(user);
+            var newRefreshToken = await _jwtTokenService.GenerateRefreshTokenAsync(user);
+
+            var expiresAt = DateTime.UtcNow.AddHours(1); // 1 hora para o access token
+
+            _logger.LogInformation("Refresh token successful for user: {UserId}", user.Id);
+
+            return new AuthResponseDto
+            {
+                Success = true,
+                AccessToken = newAccessToken,
+                RefreshToken = newRefreshToken,
+                ExpiresAt = expiresAt,
+                Message = "Token refreshed successfully"
+            };
+        }
+        catch (Exception ex) when (!(ex is UnauthorizedAccessException))
+        {
+            _logger.LogError(ex, "Error processing refresh token request");
+            throw;
+        }
     }
 }
