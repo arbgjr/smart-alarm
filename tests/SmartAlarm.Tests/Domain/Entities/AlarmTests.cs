@@ -4,6 +4,7 @@ using FluentAssertions;
 using SmartAlarm.Domain.Entities;
 using SmartAlarm.Domain.ValueObjects;
 using Xunit;
+using IntegrationEntity = SmartAlarm.Domain.Entities.Integration;
 
 namespace SmartAlarm.Tests.Domain.Entities
 {
@@ -147,7 +148,7 @@ namespace SmartAlarm.Tests.Domain.Entities
         {
             // Arrange
             var alarm = CreateValidAlarm();
-            var integration = new Integration(Guid.NewGuid(), new Name("Int 1"), "provider", "{}", alarm.Id);
+            var integration = new IntegrationEntity(Guid.NewGuid(), new Name("Int 1"), "provider", "{}", alarm.Id);
 
             // Act
             alarm.AddIntegration(integration);
@@ -161,11 +162,12 @@ namespace SmartAlarm.Tests.Domain.Entities
         {
             // Arrange
             var alarm = CreateValidAlarm();
-            var integration = new Integration(Guid.NewGuid(), new Name("Int 1"), "provider", "{}", alarm.Id);
+            var integration = new IntegrationEntity(Guid.NewGuid(), new Name("Int 1"), "provider", "{}", alarm.Id);
             alarm.AddIntegration(integration);
 
             // Act & Assert
-            Assert.Throws<InvalidOperationException>(() => alarm.AddIntegration(integration));
+            Action act = () => alarm.AddIntegration(integration);
+            act.Should().Throw<InvalidOperationException>();
         }
 
         [Fact]
@@ -173,7 +175,7 @@ namespace SmartAlarm.Tests.Domain.Entities
         {
             // Arrange
             var alarm = CreateValidAlarm();
-            var integration = new Integration(Guid.NewGuid(), new Name("Int 1"), "provider", "{}", alarm.Id);
+            var integration = new IntegrationEntity(Guid.NewGuid(), new Name("Int 1"), "provider", "{}", alarm.Id);
             alarm.AddIntegration(integration);
 
             // Act

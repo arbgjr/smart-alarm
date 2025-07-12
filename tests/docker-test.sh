@@ -1,5 +1,7 @@
 #!/bin/bash
 
+clear
+
 # Script para execução de testes de integração com solução de problemas de rede
 # Este script resolve problemas de conectividade entre contêineres Docker
 
@@ -17,7 +19,66 @@ print_message() {
     echo -e "${color}${message}${NC}"
 }
 
+# Função para mostrar ajuda
+show_help() {
+    print_message "${BLUE}" "=== Smart Alarm - Testes de Integração ==="
+    echo ""
+    print_message "${YELLOW}" "Uso: $0 [opção] [-v|--verbose]"
+    echo ""
+    print_message "${GREEN}" "📋 Opções disponíveis:"
+    echo ""
+    print_message "${CYAN}" "🧪 Testes Básicos (sem containers):"
+    echo "  basic       - Todos os testes básicos (OWASP + Security)"
+    echo "  owasp       - Testes de segurança OWASP Top 10"
+    echo "  security    - Testes de componentes de segurança"
+    echo "  all-security- Todos os testes de segurança"
+    echo ""
+    print_message "${CYAN}" "🐳 Testes de Integração (com containers):"
+    echo "  postgres    - Testes do PostgreSQL"
+    echo "  vault       - Testes do HashiCorp Vault"
+    echo "  minio       - Testes do MinIO"
+    echo "  rabbitmq    - Testes do RabbitMQ"
+    echo "  jwt-fido2   - Testes de autenticação JWT/FIDO2"
+    echo "  essentials  - Testes essenciais marcados"
+    echo ""
+    print_message "${CYAN}" "📊 Análise e Depuração:"
+    echo "  coverage    - Testes com análise de cobertura"
+    echo "  debug       - Modo interativo para depuração"
+    echo ""
+    print_message "${CYAN}" "🆘 Ajuda:"
+    echo "  help, -h, --help - Mostra esta ajuda"
+    echo ""
+    print_message "${YELLOW}" "Exemplos:"
+    echo "  $0 basic              # Testes rápidos sem containers"
+    echo "  $0 postgres -v        # Testes PostgreSQL com saída detalhada"
+    echo "  $0 coverage           # Análise de cobertura completa"
+    echo "  $0 debug              # Modo interativo para diagnóstico"
+    echo ""
+    print_message "${GREEN}" "💡 Dica: Use 'basic' para validação rápida durante desenvolvimento!"
+}
+
 print_message "${BLUE}" "=== Smart Alarm - Testes de Integração com Resolução de Rede ==="
+
+# Detectar diretório raiz do projeto
+if [[ -f "docker-compose.yml" ]]; then
+    # Já estamos no diretório raiz
+    PROJECT_ROOT="$(pwd)"
+elif [[ -f "../docker-compose.yml" ]]; then
+    # Estamos no diretório tests
+    PROJECT_ROOT="$(dirname "$(pwd)")"
+else
+    # Tentar encontrar o diretório raiz
+    PROJECT_ROOT="$(pwd)"
+    while [[ ! -f "$PROJECT_ROOT/docker-compose.yml" && "$PROJECT_ROOT" != "/" ]]; do
+        PROJECT_ROOT="$(dirname "$PROJECT_ROOT")"
+    done
+    if [[ ! -f "$PROJECT_ROOT/docker-compose.yml" ]]; then
+        print_message "${RED}" "❌ Não foi possível encontrar o diretório raiz do projeto (docker-compose.yml)"
+        exit 1
+    fi
+fi
+
+print_message "${YELLOW}" "📍 Diretório do projeto: $PROJECT_ROOT"
 
 # Detectar ambiente WSL
 if [[ -f /proc/sys/fs/binfmt_misc/WSLInterop ]]; then
@@ -44,6 +105,28 @@ elif [[ "$1" == "vault" ]]; then
 elif [[ "$1" == "rabbitmq" ]]; then
     TEST_FILTER="FullyQualifiedName~RabbitMqIntegrationTests|FullyQualifiedName~RabbitMq|Category=Integration"
     print_message "${YELLOW}" "Executando testes do RabbitMQ"
+elif [[ "$1" == "jwt-fido2" ]]; then
+    TEST_FILTER="FullyQualifiedName~JwtFido2|FullyQualifiedName~BasicJwtFido2Tests|Category=Integration"
+    print_message "${YELLOW}" "Executando testes de autenticação JWT/FIDO2"
+elif [[ "$1" == "owasp" ]]; then
+    TEST_FILTER="FullyQualifiedName~Owasp|FullyQualifiedName~BasicOwaspSecurityTests|Category=Security"
+    print_message "${YELLOW}" "Executando testes de segurança OWASP"
+elif [[ "$1" == "security" ]]; then
+    TEST_FILTER="FullyQualifiedName~Security|FullyQualifiedName~BasicSecurityComponentsTests|Category=Security"
+    print_message "${YELLOW}" "Executando testes de componentes de segurança"
+elif [[ "$1" == "basic" ]]; then
+    TEST_FILTER="FullyQualifiedName~Basic|Category=Integration|Category=Security"
+    print_message "${YELLOW}" "Executando testes básicos (sem containers)"
+elif [[ "$1" == "all-security" ]]; then
+    TEST_FILTER="Category=Security|FullyQualifiedName~Owasp|FullyQualifiedName~Security"
+    print_message "${YELLOW}" "Executando todos os testes de segurança"
+elif [[ "$1" == "coverage" ]]; then
+    TEST_FILTER="FullyQualifiedName~BasicOwaspSecurityTests|FullyQualifiedName~BasicSecurityComponentsTests|FullyQualifiedName~CreateAlarmDtoValidatorTests|FullyQualifiedName~ErrorMessageServiceTests"
+    VERBOSE="--logger console;verbosity=detailed --collect XPlat Code Coverage --settings tests/coverlet.runsettings"
+    print_message "${YELLOW}" "Executando análise de cobertura em testes básicos funcionais"
+elif [[ "$1" == "help" || "$1" == "-h" || "$1" == "--help" ]]; then
+    show_help
+    exit 0
 elif [[ "$1" == "debug" ]]; then
     print_message "${YELLOW}" "Modo de depuração - apenas preparação do ambiente"
 fi
@@ -315,6 +398,61 @@ setup_shared_network() {
     wait_for_service "minio" 9000 30 || print_message "${YELLOW}" "  ⚠️  MinIO pode não estar totalmente pronto"
     wait_for_service "rabbitmq" 5672 30 || print_message "${YELLOW}" "  ⚠️  RabbitMQ pode não estar totalmente pronto"
     
+    # Função adicional para verificação detalhada da conectividade (baseada no PowerShell)
+    verify_service_connectivity() {
+        print_message "${BLUE}" "🔗 Testando conectividade detalhada..."
+        
+        # Vault
+        local container_name="${CONTAINER_PREFIX}-vault-1"
+        if docker ps --format "{{.Names}}" | grep -q "^${container_name}$"; then
+            local vault_ip=$(get_container_ip "$container_name")
+            if [[ -n "$vault_ip" ]]; then
+                if curl -s "http://${vault_ip}:8200/v1/sys/health" >/dev/null 2>&1; then
+                    print_message "${GREEN}" "✅ Vault: OK (${vault_ip}:8200)"
+                else
+                    print_message "${RED}" "❌ Vault: Falha na conectividade HTTP"
+                fi
+            fi
+        fi
+        
+        # PostgreSQL
+        container_name="${CONTAINER_PREFIX}-postgres-1"
+        if docker ps --format "{{.Names}}" | grep -q "^${container_name}$"; then
+            if docker exec "$container_name" pg_isready -h localhost -p 5432 >/dev/null 2>&1; then
+                print_message "${GREEN}" "✅ PostgreSQL: OK"
+            else
+                print_message "${RED}" "❌ PostgreSQL: Falha na conectividade"
+            fi
+        fi
+        
+        # RabbitMQ
+        container_name="${CONTAINER_PREFIX}-rabbitmq-1"
+        if docker ps --format "{{.Names}}" | grep -q "^${container_name}$"; then
+            local rabbit_ip=$(get_container_ip "$container_name")
+            if [[ -n "$rabbit_ip" ]]; then
+                # Verificar API de management do RabbitMQ
+                if curl -s -u guest:guest "http://${rabbit_ip}:15672/api/overview" >/dev/null 2>&1; then
+                    print_message "${GREEN}" "✅ RabbitMQ: OK (${rabbit_ip}:15672)"
+                else
+                    print_message "${YELLOW}" "⚠️  RabbitMQ: API management pode não estar pronta"
+                fi
+            fi
+        fi
+        
+        # MinIO
+        container_name="${CONTAINER_PREFIX}-minio-1"
+        if docker ps --format "{{.Names}}" | grep -q "^${container_name}$"; then
+            local minio_ip=$(get_container_ip "$container_name")
+            if [[ -n "$minio_ip" ]]; then
+                if curl -s "http://${minio_ip}:9000/minio/health/live" >/dev/null 2>&1; then
+                    print_message "${GREEN}" "✅ MinIO: OK (${minio_ip}:9000)"
+                else
+                    print_message "${RED}" "❌ MinIO: Falha na conectividade"
+                fi
+            fi
+        fi
+    }
+    
     print_message "${GREEN}" "Verificação de serviços concluída. Prosseguindo com a configuração de rede..."
     
     # Lista de serviços para conectar
@@ -354,6 +492,9 @@ setup_shared_network() {
             echo "  $service -> $container_name -> $ip"
         fi
     done
+    
+    # Executar verificação detalhada de conectividade
+    verify_service_connectivity
 }
 
 # Função para preparar e executar contêiner de teste
@@ -509,8 +650,20 @@ else
         echo "✅ Arquivo de projeto detectado: \$first_arg"
         if [ -f "\$first_arg" ]; then
             echo "✅ Arquivo de projeto existe"
-            echo "Executando: dotnet test \$@"
-            dotnet test "\$@"
+            
+            # Construir comando dotnet test cuidadosamente para argumentos com espaços
+            cmd="dotnet test"
+            for arg in "\$@"; do
+                # Se o argumento contém espaços e não está entre aspas, adicionar aspas
+                if [[ "\$arg" =~ [[:space:]] && ! "\$arg" =~ ^[\'\"].*[\'\"]$ ]]; then
+                    cmd="\$cmd \"\$arg\""
+                else
+                    cmd="\$cmd \$arg"
+                fi
+            done
+            
+            echo "Executando: \$cmd"
+            eval "\$cmd"
             exit_code=\$?
             echo "Código de saída dos testes: \$exit_code"
             exit \$exit_code
@@ -568,6 +721,85 @@ EOF
     
     # Se não for modo debug, executar testes
     if [[ "$1" != "debug" ]]; then
+        # Verificar se é teste básico (sem containers)
+        if [[ "$1" == "basic" || "$1" == "owasp" || "$1" == "security" || "$1" == "all-security" ]]; then
+            print_message "${BLUE}" "🧪 Executando testes básicos (sem containers)..."
+            
+            # Definir caminhos dos arquivos de teste usando PROJECT_ROOT
+            local owasp_test_file="$PROJECT_ROOT/tests/SmartAlarm.Tests/Security/BasicOwaspSecurityTests.cs"
+            local security_test_file="$PROJECT_ROOT/tests/SmartAlarm.Tests/Unit/BasicSecurityComponentsTests.cs"
+            local smartalarm_tests_project="$PROJECT_ROOT/tests/SmartAlarm.Tests/SmartAlarm.Tests.csproj"
+            
+            # Verificar se o projeto principal existe
+            if [[ ! -f "$smartalarm_tests_project" ]]; then
+                print_message "${RED}" "❌ Projeto SmartAlarm.Tests não encontrado em: $smartalarm_tests_project"
+                return 1
+            fi
+            
+            # Função para executar teste (com ou sem container)
+            run_basic_test() {
+                local test_filter="$1"
+                local test_description="$2"
+                
+                print_message "${CYAN}" "$test_description"
+                
+                # Verificar se dotnet está disponível no host
+                if command -v dotnet &> /dev/null; then
+                    print_message "${YELLOW}" "Usando dotnet do host..."
+                    dotnet test "$smartalarm_tests_project" --filter "$test_filter" --logger "console;verbosity=detailed"
+                    local test_exit_code=$?
+                else
+                    print_message "${YELLOW}" "dotnet não encontrado no host, usando container Docker..."
+                    
+                    # Converter caminho para o container
+                    local container_project_path="/app/tests/SmartAlarm.Tests/SmartAlarm.Tests.csproj"
+                    
+                    # Executar no container Docker
+                    docker run --rm \
+                        -v "$PROJECT_ROOT:/app" \
+                        mcr.microsoft.com/dotnet/sdk:8.0 \
+                        dotnet test "$container_project_path" --filter "$test_filter" --logger "console;verbosity=detailed"
+                    local test_exit_code=$?
+                fi
+                
+                if [[ $test_exit_code -eq 0 ]]; then
+                    print_message "${GREEN}" "✅ Testes concluídos com sucesso!"
+                else
+                    print_message "${RED}" "❌ Alguns testes falharam (código: ${test_exit_code})"
+                fi
+                
+                return $test_exit_code
+            }
+            
+            if [[ "$1" == "owasp" ]]; then
+                if [[ -f "$owasp_test_file" ]]; then
+                    run_basic_test "FullyQualifiedName~BasicOwaspSecurityTests" "🔒 Executando testes de segurança OWASP..."
+                    local test_exit_code=$?
+                else
+                    print_message "${RED}" "❌ Arquivo BasicOwaspSecurityTests.cs não encontrado em: $owasp_test_file"
+                    local test_exit_code=1
+                fi
+            elif [[ "$1" == "security" ]]; then
+                if [[ -f "$security_test_file" ]]; then
+                    run_basic_test "FullyQualifiedName~BasicSecurityComponentsTests" "🧩 Executando testes de componentes unitários..."
+                    local test_exit_code=$?
+                else
+                    print_message "${RED}" "❌ Arquivo BasicSecurityComponentsTests.cs não encontrado em: $security_test_file"
+                    local test_exit_code=1
+                fi
+            elif [[ "$1" == "all-security" ]]; then
+                run_basic_test "FullyQualifiedName~BasicOwaspSecurityTests|FullyQualifiedName~BasicSecurityComponentsTests" "� Executando todos os testes de segurança..."
+            elif [[ "$1" == "basic" ]]; then
+                run_basic_test "FullyQualifiedName~BasicOwaspSecurityTests|FullyQualifiedName~BasicSecurityComponentsTests" "📊 Executando todos os testes básicos..."
+            fi
+            
+            print_message "${GREEN}" "✅ Testes básicos concluídos!"
+            print_message "${YELLOW}" "📋 Estes testes rodam sem dependências externas."
+            print_message "${CYAN}" "🐳 Para testes completos de integração, execute: ./tests/docker-test.sh [postgres|vault|minio|rabbitmq]"
+            # O código de retorno já foi definido na função run_basic_test
+            return $test_exit_code
+        fi
+        
         print_message "${BLUE}" "Executando testes de integração..."
         
         # Gerar mapeamentos de host dinamicamente
@@ -578,24 +810,43 @@ EOF
         
         # Se estamos executando testes específicos, buscar o projeto correspondente
         if [[ "$1" == "postgres" ]]; then
-            test_projects=$(find "$(pwd)/tests" -name "*Infrastructure*.csproj" 2>/dev/null | head -1)
+            test_projects=$(find "$PROJECT_ROOT/tests" -name "*Infrastructure*.csproj" 2>/dev/null | head -1)
             print_message "${YELLOW}" "Buscando testes de infraestrutura para PostgreSQL..."
         elif [[ "$1" == "vault" ]]; then
-            test_projects=$(find "$(pwd)/tests" -name "*KeyVault*.csproj" 2>/dev/null | head -1)
+            test_projects=$(find "$PROJECT_ROOT/tests" -name "*KeyVault*.csproj" 2>/dev/null | head -1)
             print_message "${YELLOW}" "Buscando testes de KeyVault para Vault..."
         elif [[ "$1" == "minio" || "$1" == "rabbitmq" ]]; then
-            test_projects=$(find "$(pwd)/tests" -name "*Infrastructure*.csproj" 2>/dev/null | head -1)
+            test_projects=$(find "$PROJECT_ROOT/tests" -name "*Infrastructure*.csproj" 2>/dev/null | head -1)
             print_message "${YELLOW}" "Buscando testes de infraestrutura para $1..."
+        elif [[ "$1" == "jwt-fido2" ]]; then
+            # Para JWT/FIDO2, usar o projeto SmartAlarm.Tests que contém os testes de autenticação
+            test_projects="$PROJECT_ROOT/tests/SmartAlarm.Tests/SmartAlarm.Tests.csproj"
+            if [[ -f "$test_projects" ]]; then
+                print_message "${YELLOW}" "Usando projeto SmartAlarm.Tests para JWT/FIDO2..."
+            else
+                test_projects=$(find "$PROJECT_ROOT/tests" -name "*Tests*.csproj" 2>/dev/null | head -1)
+                print_message "${YELLOW}" "Buscando projeto de testes para JWT/FIDO2..."
+            fi
+        elif [[ "$1" == "coverage" ]]; then
+            # Para cobertura, usar o projeto SmartAlarm.Tests que sabemos que funciona
+            test_projects="$PROJECT_ROOT/tests/SmartAlarm.Tests/SmartAlarm.Tests.csproj"
+            if [[ -f "$test_projects" ]]; then
+                print_message "${YELLOW}" "Executando análise de cobertura no projeto SmartAlarm.Tests..."
+            else
+                # Fallback para buscar qualquer projeto de teste
+                test_projects=$(find "$PROJECT_ROOT/tests" -name "*Tests*.csproj" 2>/dev/null | head -1)
+                print_message "${YELLOW}" "Executando análise de cobertura em projeto de testes..."
+            fi
         fi
         
         # Se não encontrou projeto específico, buscar por projetos com "Integration" no nome
-        if [[ -z "$test_projects" && -d "$(pwd)/tests" ]]; then
-            test_projects=$(find "$(pwd)/tests" -name "*Integration*.csproj" 2>/dev/null | head -1)
+        if [[ -z "$test_projects" && -d "$PROJECT_ROOT/tests" ]]; then
+            test_projects=$(find "$PROJECT_ROOT/tests" -name "*Integration*.csproj" 2>/dev/null | head -1)
         fi
         
         # Se ainda não encontrou, buscar o SmartAlarm.Infrastructure.Tests como fallback
         if [[ -z "$test_projects" ]]; then
-            test_projects=$(find "$(pwd)/tests" -name "*Infrastructure*.csproj" 2>/dev/null | head -1)
+            test_projects=$(find "$PROJECT_ROOT/tests" -name "*Infrastructure*.csproj" 2>/dev/null | head -1)
             print_message "${YELLOW}" "Usando SmartAlarm.Infrastructure.Tests como fallback..."
         fi
         
@@ -603,7 +854,7 @@ EOF
         if [[ -z "$test_projects" ]]; then
             print_message "${RED}" "Nenhum projeto de teste específico encontrado!"
             print_message "${YELLOW}" "Buscando qualquer projeto de teste..."
-            test_projects=$(find "$(pwd)/tests" -name "*.csproj" 2>/dev/null | head -1)
+            test_projects=$(find "$PROJECT_ROOT/tests" -name "*.csproj" 2>/dev/null | head -1)
         fi
         
         if [[ -z "$test_projects" ]]; then
@@ -612,29 +863,53 @@ EOF
         fi
         
         # Converter caminho absoluto para relativo dentro do contêiner
-        local container_project_path=$(echo "$test_projects" | sed "s|$(pwd)|/app|")
+        local container_project_path=$(echo "$test_projects" | sed "s|$PROJECT_ROOT|/app|")
         
         print_message "${YELLOW}" "Projeto de teste selecionado: $test_projects"
         print_message "${YELLOW}" "Caminho no contêiner: $container_project_path"
         
         # Preparar argumentos para dotnet test
-        local dotnet_args="$container_project_path --filter $TEST_FILTER"
-        if [[ -n "$VERBOSE" ]]; then
-            dotnet_args="$dotnet_args $VERBOSE"
+        if [[ "$1" == "coverage" ]]; then
+            # Para coverage, usar array para evitar problemas com espaços
+            local dotnet_cmd=(
+                "dotnet" "test" "$container_project_path"
+                "--filter" "$TEST_FILTER"
+                "--logger" "console;verbosity=detailed"
+                "--collect" "XPlat Code Coverage"
+                "--settings" "/app/tests/coverlet.runsettings"
+            )
+            
+            print_message "${YELLOW}" "Comando que será executado: ${dotnet_cmd[*]}"
+            
+            # Executar diretamente no container sem usar o entrypoint complexo
+            docker run --rm \
+                --name smartalarm-test-runner \
+                --network=smartalarm-test-net \
+                --hostname test-runner \
+                ${host_mappings} \
+                ${env_vars} \
+                -v "$PROJECT_ROOT:/app" \
+                mcr.microsoft.com/dotnet/sdk:8.0 \
+                "${dotnet_cmd[@]}"
+        else
+            local dotnet_args="$container_project_path --filter $TEST_FILTER"
+            if [[ -n "$VERBOSE" ]]; then
+                dotnet_args="$dotnet_args $VERBOSE"
+            fi
+            
+            print_message "${YELLOW}" "Comando que será executado: dotnet test $dotnet_args"
+            
+            # Executar contêiner com hosts mapeados
+            docker run --rm \
+                --name smartalarm-test-runner \
+                --network=smartalarm-test-net \
+                --hostname test-runner \
+                ${host_mappings} \
+                ${env_vars} \
+                -v "$PROJECT_ROOT:/app" \
+                smartalarm-test-image:latest \
+                $dotnet_args
         fi
-        
-        print_message "${YELLOW}" "Comando que será executado: dotnet test $dotnet_args"
-        
-        # Executar contêiner com hosts mapeados
-        docker run --rm \
-            --name smartalarm-test-runner \
-            --network=smartalarm-test-net \
-            --hostname test-runner \
-            ${host_mappings} \
-            ${env_vars} \
-            -v "$(pwd):/app" \
-            smartalarm-test-image:latest \
-            $dotnet_args
         
         local test_exit_code=$?
         
@@ -665,7 +940,7 @@ EOF
             --hostname test-runner \
             ${host_mappings} \
             ${env_vars} \
-            -v "$(pwd):/app" \
+            -v "$PROJECT_ROOT:/app" \
             smartalarm-test-image:latest \
             "/bin/bash"
         
@@ -675,6 +950,14 @@ EOF
 
 # Função principal
 main() {
+    # Se nenhum argumento for fornecido, mostrar ajuda
+    if [[ $# -eq 0 ]]; then
+        print_message "${YELLOW}" "⚠️  Nenhum argumento fornecido"
+        echo ""
+        show_help
+        exit 1
+    fi
+    
     # Limpar recursos anteriores
     cleanup_previous_resources
     
@@ -689,12 +972,23 @@ main() {
     run_integration_tests "$1"
     
     # Mostrar instruções finais
-    print_message "${BLUE}" "=== Instruções ==="
-    print_message "${YELLOW}" "- Para encerrar o ambiente: ./stop-dev-env.sh"
-    print_message "${YELLOW}" "- Para depurar a rede: ./docker-test-fix.sh debug"
-    print_message "${YELLOW}" "- Para executar testes específicos: ./docker-test-fix.sh [essentials|minio|postgres|vault|rabbitmq]"
+    print_message "${BLUE}" "=== Instruções Finais ==="
+    print_message "${YELLOW}" "🐳 Gerenciamento de Containers:"
+    print_message "${CYAN}" "  - Para encerrar o ambiente: docker-compose down"
+    print_message "${CYAN}" "  - Para limpar completamente: docker-compose down --volumes --remove-orphans"
+    echo ""
+    print_message "${YELLOW}" "🧪 Execução de Testes:"
+    print_message "${CYAN}" "  - Testes básicos (rápidos): ./tests/docker-test.sh basic"
+    print_message "${CYAN}" "  - Testes específicos: ./tests/docker-test.sh [postgres|vault|minio|rabbitmq]"
+    print_message "${CYAN}" "  - Análise de cobertura: ./tests/docker-test.sh coverage"
+    print_message "${CYAN}" "  - Depuração de rede: ./tests/docker-test.sh debug"
+    echo ""
+    print_message "${YELLOW}" "📚 Ajuda:"
+    print_message "${CYAN}" "  - Ver todas as opções: ./tests/docker-test.sh help"
+    echo ""
+    print_message "${GREEN}" "✅ Script concluído com sucesso!"
 }
 
 # Executar o script
-main "$1"
+main "$@"
 exit $?
