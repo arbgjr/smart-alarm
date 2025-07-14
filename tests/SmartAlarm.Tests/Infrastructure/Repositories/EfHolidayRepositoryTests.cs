@@ -20,12 +20,48 @@ public class EfHolidayRepositoryTests : IDisposable
     public EfHolidayRepositoryTests()
     {
         _databaseName = $"TestDb_{Guid.NewGuid()}";
-        var options = new DbContextOptionsBuilder<SmartAlarmDbContext>()
-            .UseInMemoryDatabase(_databaseName)
-            .Options;
+        
+        // Verificar se deve usar PostgreSQL real (quando rodando em container)
+        var useRealDatabase = Environment.GetEnvironmentVariable("POSTGRES_HOST") == "postgres" &&
+                             !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("POSTGRES_USER"));
+        
+        // Log para debug - mostrar qual banco está sendo usado
+        var logMessage = useRealDatabase ? "🐘 Usando PostgreSQL REAL do container" : "💾 Usando InMemory database (fallback)";
+        Console.WriteLine($"[REPO TEST] {logMessage}");
+        
+        DbContextOptions<SmartAlarmDbContext> options;
+        
+        if (useRealDatabase)
+        {
+            // Usar PostgreSQL real do container para testes de integração
+            var postgresHost = Environment.GetEnvironmentVariable("POSTGRES_HOST") ?? "localhost";
+            var postgresPort = Environment.GetEnvironmentVariable("POSTGRES_PORT") ?? "5432";
+            var postgresUser = Environment.GetEnvironmentVariable("POSTGRES_USER") ?? "smartalarm";
+            var postgresPassword = Environment.GetEnvironmentVariable("POSTGRES_PASSWORD") ?? "smartalarm123";
+            var postgresDb = $"{Environment.GetEnvironmentVariable("POSTGRES_DB") ?? "smartalarm"}_repo_test_{Guid.NewGuid():N}";
+            
+            var connectionString = $"Host={postgresHost};Port={postgresPort};Database={postgresDb};Username={postgresUser};Password={postgresPassword}";
+            Console.WriteLine($"[REPO TEST] 🔗 Connection: Host={postgresHost}, Database={postgresDb}");
+            
+            options = new DbContextOptionsBuilder<SmartAlarmDbContext>()
+                .UseNpgsql(connectionString)
+                .Options;
+        }
+        else
+        {
+            // Fallback para InMemory quando PostgreSQL não está disponível
+            Console.WriteLine($"[REPO TEST] 💾 InMemory Database: {_databaseName}");
+            
+            options = new DbContextOptionsBuilder<SmartAlarmDbContext>()
+                .UseInMemoryDatabase(_databaseName)
+                .Options;
+        }
 
         _context = new SmartAlarmDbContext(options);
         _repository = new EfHolidayRepository(_context);
+        
+        // Garantir que o banco está criado
+        _context.Database.EnsureCreated();
     }
 
     #region Add Tests

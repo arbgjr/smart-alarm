@@ -1,0 +1,289 @@
+### Holiday API Advanced Integration Tests
+### Follows RFC 9110 HTTP Semantics
+### SmartAlarm - Holiday Edge Cases and Performance Tests
+
+@baseUrl = https://localhost:5001/api/v1
+@contentType = application/json
+
+### Get Auth Token
+# @name loginAdvanced
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "admin@smartalarm.com",
+  "password": "Admin123!"
+}
+
+@token = {{loginAdvanced.response.body.token}}
+
+### Test Case 1: Boundary Date Values
+# @name createMinDate
+POST {{baseUrl}}/holidays
+Content-Type: {{contentType}}
+Authorization: Bearer {{token}}
+
+{
+  "description": "Minimum Date Test",
+  "date": "0001-01-01T00:00:00.000Z"
+}
+
+### Test Case 2: Maximum Date Value
+# @name createMaxDate
+POST {{baseUrl}}/holidays
+Content-Type: {{contentType}}
+Authorization: Bearer {{token}}
+
+{
+  "description": "Maximum Date Test",
+  "date": "9999-12-31T23:59:59.999Z"
+}
+
+### Test Case 3: Unicode Description
+# @name createUnicodeHoliday
+POST {{baseUrl}}/holidays
+Content-Type: {{contentType}}
+Authorization: Bearer {{token}}
+
+{
+  "description": "春节 🏮 Chinese New Year 🐉 Año Nuevo Chino ñáéíóú",
+  "date": "2024-02-10T00:00:00.000Z"
+}
+
+### Test Case 4: Very Long Description (255 characters)
+# @name createLongDescription
+POST {{baseUrl}}/holidays
+Content-Type: {{contentType}}
+Authorization: Bearer {{token}}
+
+{
+  "description": "This is a very long description that contains exactly two hundred and fifty-five characters to test the maximum length validation rule implemented in the Holiday entity and ensure that the system properly handles edge cases with maximum field lengths correctly",
+  "date": "2024-06-15T00:00:00.000Z"
+}
+
+### Test Case 5: Pagination Test - Create Multiple Holidays
+# @name createHoliday1
+POST {{baseUrl}}/holidays
+Content-Type: {{contentType}}
+Authorization: Bearer {{token}}
+
+{
+  "description": "Holiday 1",
+  "date": "2024-01-15T00:00:00.000Z"
+}
+
+### 
+# @name createHoliday2
+POST {{baseUrl}}/holidays
+Content-Type: {{contentType}}
+Authorization: Bearer {{token}}
+
+{
+  "description": "Holiday 2",
+  "date": "2024-02-15T00:00:00.000Z"
+}
+
+###
+# @name createHoliday3
+POST {{baseUrl}}/holidays
+Content-Type: {{contentType}}
+Authorization: Bearer {{token}}
+
+{
+  "description": "Holiday 3",
+  "date": "2024-03-15T00:00:00.000Z"
+}
+
+### Test Case 6: Get Holidays with Pagination
+# @name getHolidaysPaginated
+GET {{baseUrl}}/holidays?page=1&pageSize=2
+Accept: {{contentType}}
+Authorization: Bearer {{token}}
+
+### Test Case 7: Test Concurrent Updates (Optimistic Concurrency)
+# @name getConcurrentHoliday
+GET {{baseUrl}}/holidays/{{createHoliday1.response.body.id}}
+Accept: {{contentType}}
+Authorization: Bearer {{token}}
+
+### Concurrent Update 1
+# @name concurrentUpdate1
+PUT {{baseUrl}}/holidays/{{createHoliday1.response.body.id}}
+Content-Type: {{contentType}}
+Authorization: Bearer {{token}}
+
+{
+  "description": "Updated by Process 1"
+}
+
+### Concurrent Update 2 (Should handle concurrency)
+# @name concurrentUpdate2
+PUT {{baseUrl}}/holidays/{{createHoliday1.response.body.id}}
+Content-Type: {{contentType}}
+Authorization: Bearer {{token}}
+
+{
+  "description": "Updated by Process 2"
+}
+
+### Test Case 8: Cross-Site Scripting (XSS) Protection
+# @name xssProtectionTest
+POST {{baseUrl}}/holidays
+Content-Type: {{contentType}}
+Authorization: Bearer {{token}}
+
+{
+  "description": "<script>alert('XSS')</script>",
+  "date": "2024-04-01T00:00:00.000Z"
+}
+
+### Test Case 9: HTTP Methods Validation
+# @name invalidMethod
+PATCH {{baseUrl}}/holidays/{{createHoliday1.response.body.id}}
+Content-Type: {{contentType}}
+Authorization: Bearer {{token}}
+
+{
+  "description": "PATCH method test"
+}
+
+### Test Case 10: Large Payload Test
+# @name largePayloadTest
+POST {{baseUrl}}/holidays
+Content-Type: {{contentType}}
+Authorization: Bearer {{token}}
+
+{
+  "description": "A".repeat(10000),
+  "date": "2024-05-01T00:00:00.000Z"
+}
+
+### Test Case 11: Timezone Handling
+# @name timezoneTest
+POST {{baseUrl}}/holidays
+Content-Type: {{contentType}}
+Authorization: Bearer {{token}}
+
+{
+  "description": "Timezone Test",
+  "date": "2024-07-04T14:30:00.000-07:00"
+}
+
+### Test Case 12: Leap Year Test
+# @name leapYearTest
+POST {{baseUrl}}/holidays
+Content-Type: {{contentType}}
+Authorization: Bearer {{token}}
+
+{
+  "description": "Leap Year Day",
+  "date": "2024-02-29T00:00:00.000Z"
+}
+
+### Test Case 13: Non-Leap Year February 29 (Should be valid as recurring)
+# @name nonLeapYearTest
+POST {{baseUrl}}/holidays
+Content-Type: {{contentType}}
+Authorization: Bearer {{token}}
+
+{
+  "description": "Non-Leap Year Feb 29",
+  "date": "0001-02-29T00:00:00.000Z"
+}
+
+### Test Case 14: Performance Test - Bulk Operations
+### Create 50 holidays rapidly
+# @name bulkCreate1
+POST {{baseUrl}}/holidays
+Content-Type: {{contentType}}
+Authorization: Bearer {{token}}
+
+{
+  "description": "Bulk Holiday 1",
+  "date": "2024-08-01T00:00:00.000Z"
+}
+
+### ... (Add more bulk creates as needed)
+
+### Test Case 15: CORS Headers Test
+# @name corsTest
+OPTIONS {{baseUrl}}/holidays
+Origin: https://app.smartalarm.com
+Access-Control-Request-Method: GET
+Access-Control-Request-Headers: authorization,content-type
+
+### Test Case 16: Accept Header Validation
+# @name acceptHeaderTest
+GET {{baseUrl}}/holidays
+Accept: application/xml
+Authorization: Bearer {{token}}
+
+### Test Case 17: Cache Control Test
+# @name cacheControlTest
+GET {{baseUrl}}/holidays/{{createHoliday1.response.body.id}}
+Accept: {{contentType}}
+Authorization: Bearer {{token}}
+If-None-Match: "test-etag"
+
+### Test Case 18: Malformed JSON
+# @name malformedJson
+POST {{baseUrl}}/holidays
+Content-Type: {{contentType}}
+Authorization: Bearer {{token}}
+
+{
+  "description": "Malformed JSON",
+  "date": "2024-09-01T00:00:00.000Z",
+}
+
+### Test Case 19: Empty Request Body
+# @name emptyBody
+POST {{baseUrl}}/holidays
+Content-Type: {{contentType}}
+Authorization: Bearer {{token}}
+
+### Test Case 20: Null Values Test
+# @name nullValuesTest
+POST {{baseUrl}}/holidays
+Content-Type: {{contentType}}
+Authorization: Bearer {{token}}
+
+{
+  "description": null,
+  "date": null
+}
+
+### Cleanup Advanced Tests
+# @name cleanupAdvanced1
+DELETE {{baseUrl}}/holidays/{{createMinDate.response.body.id}}
+Authorization: Bearer {{token}}
+
+###
+# @name cleanupAdvanced2
+DELETE {{baseUrl}}/holidays/{{createMaxDate.response.body.id}}
+Authorization: Bearer {{token}}
+
+###
+# @name cleanupAdvanced3
+DELETE {{baseUrl}}/holidays/{{createUnicodeHoliday.response.body.id}}
+Authorization: Bearer {{token}}
+
+###
+# @name cleanupAdvanced4
+DELETE {{baseUrl}}/holidays/{{createLongDescription.response.body.id}}
+Authorization: Bearer {{token}}
+
+###
+# @name cleanupAdvanced5
+DELETE {{baseUrl}}/holidays/{{createHoliday1.response.body.id}}
+Authorization: Bearer {{token}}
+
+###
+# @name cleanupAdvanced6
+DELETE {{baseUrl}}/holidays/{{createHoliday2.response.body.id}}
+Authorization: Bearer {{token}}
+
+###
+# @name cleanupAdvanced7
+DELETE {{baseUrl}}/holidays/{{createHoliday3.response.body.id}}
+Authorization: Bearer {{token}}

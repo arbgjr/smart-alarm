@@ -41,8 +41,11 @@ builder.Host.UseSerilog((context, services, configuration) =>
 // Registrar MediatR apontando para a Application Layer
 builder.Services.AddMediatR(typeof(SmartAlarm.Application.Commands.CreateAlarmCommand).Assembly);
 
-// Registrar infraestrutura (repositories e serviços)
-builder.Services.AddSmartAlarmInfrastructure(builder.Configuration);
+// Registrar infraestrutura (repositories e serviços) - evitar em ambiente de teste
+if (!builder.Environment.IsEnvironment("Testing"))
+{
+    builder.Services.AddSmartAlarmInfrastructure(builder.Configuration);
+}
 
 // Configuração do OpenTelemetry (Tracing e Métricas)
 builder.Services.AddOpenTelemetry()
@@ -159,7 +162,10 @@ builder.Services.AddScoped<SmartAlarm.Infrastructure.Configuration.IConfiguratio
 builder.Services.AddKeyVault(builder.Configuration);
 
 // Configure Infrastructure services
-builder.Services.AddSmartAlarmInfrastructure(builder.Configuration);
+if (!builder.Environment.IsEnvironment("Testing"))
+{
+    builder.Services.AddSmartAlarmInfrastructure(builder.Configuration);
+}
 
 // Configurar MediatR
 builder.Services.AddMediatR(typeof(SmartAlarm.Application.Handlers.Auth.LoginHandler).Assembly);

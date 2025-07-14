@@ -1,0 +1,194 @@
+### Holiday API Integration Tests
+### Follows RFC 9110 HTTP Semantics
+### SmartAlarm - Holiday Management Endpoints
+
+@baseUrl = https://localhost:5001/api/v1
+@contentType = application/json
+
+### Authentication - Get JWT Token
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "admin@smartalarm.com",
+  "password": "Admin123!"
+}
+
+### Extract Token from login response
+@token = {{login.response.body.token}}
+
+### Health Check
+# @name healthCheck
+GET {{baseUrl}}/health
+Accept: {{contentType}}
+
+### 1. Create Holiday - Christmas (Recurring)
+# @name createChristmas
+POST {{baseUrl}}/holidays
+Content-Type: {{contentType}}
+Authorization: Bearer {{token}}
+
+{
+  "description": "Christmas Day",
+  "date": "2024-12-25T00:00:00.000Z"
+}
+
+### 2. Create Holiday - New Year (Recurring)
+# @name createNewYear
+POST {{baseUrl}}/holidays
+Content-Type: {{contentType}}
+Authorization: Bearer {{token}}
+
+{
+  "description": "New Year's Day",
+  "date": "0001-01-01T00:00:00.000Z"
+}
+
+### 3. Create Holiday - Independence Day Brazil 2024 (Specific)
+# @name createIndependenceDay
+POST {{baseUrl}}/holidays
+Content-Type: {{contentType}}
+Authorization: Bearer {{token}}
+
+{
+  "description": "Independence Day Brazil 2024",
+  "date": "2024-09-07T00:00:00.000Z"
+}
+
+### 4. Get All Holidays
+# @name getAllHolidays
+GET {{baseUrl}}/holidays
+Accept: {{contentType}}
+Authorization: Bearer {{token}}
+
+### 5. Get Holiday by ID
+# @name getHolidayById
+GET {{baseUrl}}/holidays/{{createChristmas.response.body.id}}
+Accept: {{contentType}}
+Authorization: Bearer {{token}}
+
+### 6. Get Holidays by Date (Christmas)
+# @name getHolidaysByDate
+GET {{baseUrl}}/holidays/by-date?date=2024-12-25
+Accept: {{contentType}}
+Authorization: Bearer {{token}}
+
+### 7. Get Holidays by Date (New Year)
+# @name getNewYearByDate
+GET {{baseUrl}}/holidays/by-date?date=2025-01-01
+Accept: {{contentType}}
+Authorization: Bearer {{token}}
+
+### 8. Update Holiday Description
+# @name updateHoliday
+PUT {{baseUrl}}/holidays/{{createChristmas.response.body.id}}
+Content-Type: {{contentType}}
+Authorization: Bearer {{token}}
+
+{
+  "description": "Christmas Day - Updated Description"
+}
+
+### 9. Get Updated Holiday
+# @name getUpdatedHoliday
+GET {{baseUrl}}/holidays/{{createChristmas.response.body.id}}
+Accept: {{contentType}}
+Authorization: Bearer {{token}}
+
+### 10. Delete Holiday (Independence Day)
+# @name deleteHoliday
+DELETE {{baseUrl}}/holidays/{{createIndependenceDay.response.body.id}}
+Authorization: Bearer {{token}}
+
+### 11. Verify Holiday Deleted (Should return 404)
+# @name verifyDeleted
+GET {{baseUrl}}/holidays/{{createIndependenceDay.response.body.id}}
+Accept: {{contentType}}
+Authorization: Bearer {{token}}
+
+### 12. Create Holiday with Invalid Data (Should return 400)
+# @name createInvalidHoliday
+POST {{baseUrl}}/holidays
+Content-Type: {{contentType}}
+Authorization: Bearer {{token}}
+
+{
+  "description": "",
+  "date": "invalid-date"
+}
+
+### 13. Get Holiday with Non-Existing ID (Should return 404)
+# @name getNonExistingHoliday
+GET {{baseUrl}}/holidays/99999999-9999-9999-9999-999999999999
+Accept: {{contentType}}
+Authorization: Bearer {{token}}
+
+### 14. Update Non-Existing Holiday (Should return 404)
+# @name updateNonExistingHoliday
+PUT {{baseUrl}}/holidays/99999999-9999-9999-9999-999999999999
+Content-Type: {{contentType}}
+Authorization: Bearer {{token}}
+
+{
+  "description": "Non-existing holiday"
+}
+
+### 15. Delete Non-Existing Holiday (Should return 404)
+# @name deleteNonExistingHoliday
+DELETE {{baseUrl}}/holidays/99999999-9999-9999-9999-999999999999
+Authorization: Bearer {{token}}
+
+### 16. Access Without Authentication (Should return 401)
+# @name unauthorizedAccess
+GET {{baseUrl}}/holidays
+
+### 17. Create Holiday Without Admin Role (Should return 403)
+# @name createWithoutAdminRole
+POST {{baseUrl}}/holidays
+Content-Type: {{contentType}}
+Authorization: Bearer invalid-token
+
+{
+  "description": "Test Holiday",
+  "date": "2024-01-01T00:00:00.000Z"
+}
+
+### 18. Test Rate Limiting (Multiple rapid requests)
+# @name rateLimitTest1
+GET {{baseUrl}}/holidays
+Authorization: Bearer {{token}}
+
+###
+# @name rateLimitTest2
+GET {{baseUrl}}/holidays
+Authorization: Bearer {{token}}
+
+###
+# @name rateLimitTest3
+GET {{baseUrl}}/holidays
+Authorization: Bearer {{token}}
+
+### 19. Test Content-Type Validation
+# @name invalidContentType
+POST {{baseUrl}}/holidays
+Content-Type: text/plain
+Authorization: Bearer {{token}}
+
+This is not JSON
+
+### 20. Test SQL Injection Protection
+# @name sqlInjectionTest
+GET {{baseUrl}}/holidays/by-date?date='; DROP TABLE Holidays; --
+Accept: {{contentType}}
+Authorization: Bearer {{token}}
+
+### Cleanup - Delete created holidays
+# @name cleanup1
+DELETE {{baseUrl}}/holidays/{{createChristmas.response.body.id}}
+Authorization: Bearer {{token}}
+
+###
+# @name cleanup2
+DELETE {{baseUrl}}/holidays/{{createNewYear.response.body.id}}
+Authorization: Bearer {{token}}

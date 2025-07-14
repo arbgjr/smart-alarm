@@ -16,6 +16,8 @@
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.6" />
     <PackageReference Include="FluentAssertions" Version="7.0.0" />
     <PackageReference Include="Moq" Version="4.20.70" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.7" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -24,6 +26,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\SmartAlarm.Api\SmartAlarm.Api.csproj" />
+    <ProjectReference Include="..\..\src\SmartAlarm.Application\SmartAlarm.Application.csproj" />
+    <ProjectReference Include="..\..\src\SmartAlarm.Domain\SmartAlarm.Domain.csproj" />
+    <ProjectReference Include="..\..\src\SmartAlarm.Infrastructure\SmartAlarm.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

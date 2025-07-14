@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using SmartAlarm.Application.DTOs.Holiday;
 using SmartAlarm.Domain.Abstractions;
@@ -14,6 +15,13 @@ using Xunit;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using SmartAlarm.Infrastructure.Data;
+using SmartAlarm.Infrastructure.Repositories.EntityFramework;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using System.Security.Claims;
+using System.Text.Encodings.Web;
 
 namespace SmartAlarm.Api.Tests.Controllers
 {
@@ -31,15 +39,69 @@ namespace SmartAlarm.Api.Tests.Controllers
         {
             _factory = factory.WithWebHostBuilder(builder =>
             {
+                // Configurar ambiente de teste
+                builder.UseEnvironment("Testing");
+                
                 builder.ConfigureServices(services =>
                 {
-                    // Usar banco em memória para testes
-                    var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<SmartAlarmDbContext>));
-                    if (descriptor != null)
-                        services.Remove(descriptor);
-
-                    services.AddDbContext<SmartAlarmDbContext>(options =>
-                        options.UseInMemoryDatabase("TestDb"));
+                    // Como o Program.cs já evita registrar infraestrutura em "Testing",
+                    // vamos apenas adicionar os serviços necessários para os testes
+                    
+                    // Verificar se deve usar PostgreSQL real (quando rodando em container)
+                    var useRealDatabase = Environment.GetEnvironmentVariable("POSTGRES_HOST") == "postgres" &&
+                                         !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("POSTGRES_USER"));
+                    
+                    // Log para debug - mostrar qual banco está sendo usado
+                    var logMessage = useRealDatabase ? "🐘 Usando PostgreSQL REAL do container" : "💾 Usando InMemory database (fallback)";
+                    Console.WriteLine($"[TEST CONFIG] {logMessage}");
+                    
+                    if (useRealDatabase)
+                    {
+                        // Usar PostgreSQL real do container para testes de integração
+                        var postgresHost = Environment.GetEnvironmentVariable("POSTGRES_HOST") ?? "localhost";
+                        var postgresPort = Environment.GetEnvironmentVariable("POSTGRES_PORT") ?? "5432";
+                        var postgresUser = Environment.GetEnvironmentVariable("POSTGRES_USER") ?? "smartalarm";
+                        var postgresPassword = Environment.GetEnvironmentVariable("POSTGRES_PASSWORD") ?? "smartalarm123";
+                        var postgresDb = $"{Environment.GetEnvironmentVariable("POSTGRES_DB") ?? "smartalarm"}_test_{Guid.NewGuid():N}";
+                        
+                        var connectionString = $"Host={postgresHost};Port={postgresPort};Database={postgresDb};Username={postgresUser};Password={postgresPassword}";
+                        Console.WriteLine($"[TEST CONFIG] 🔗 Connection: Host={postgresHost}, Database={postgresDb}");
+                        
+                        services.AddDbContext<SmartAlarmDbContext>(options =>
+                        {
+                            options.UseNpgsql(connectionString);
+                            options.EnableSensitiveDataLogging();
+                            options.EnableDetailedErrors();
+                        });
+                    }
+                    else
+                    {
+                        // Fallback para InMemory quando PostgreSQL não está disponível
+                        var dbName = $"HolidayTestDb_{Guid.NewGuid()}";
+                        Console.WriteLine($"[TEST CONFIG] 💾 InMemory Database: {dbName}");
+                        
+                        services.AddDbContext<SmartAlarmDbContext>(options =>
+                        {
+                            options.UseInMemoryDatabase(dbName);
+                            options.EnableSensitiveDataLogging();
+                            options.EnableDetailedErrors();
+                        });
+                    }
+                    
+                    // Registrar os serviços necessários
+                    services.AddScoped<IHolidayRepository, EfHolidayRepository>();
+                    services.AddScoped<IUnitOfWork, EfUnitOfWork>();
+                    
+                    // Desabilitar autenticação para testes
+                    services.AddAuthentication("Test")
+                        .AddScheme<AuthenticationSchemeOptions, TestAuthenticationSchemeHandler>(
+                            "Test", options => { });
+                    services.AddAuthorization(options =>
+                    {
+                        options.DefaultPolicy = new AuthorizationPolicyBuilder("Test")
+                            .RequireAssertion(_ => true)
+                            .Build();
+                    });
                 });
             });
 
@@ -49,6 +111,19 @@ namespace SmartAlarm.Api.Tests.Controllers
 
             // Garantir que o banco está criado
             _context.Database.EnsureCreated();
+            
+            // Limpar dados existentes para garantir isolamento entre testes
+            await CleanDatabase();
+        }
+
+        private async Task CleanDatabase()
+        {
+            // Limpar todas as tabelas para garantir isolamento entre testes
+            if (_context.Holidays.Any())
+            {
+                _context.Holidays.RemoveRange(_context.Holidays);
+                await _context.SaveChangesAsync();
+            }
         }
 
         [Fact]
@@ -264,6 +339,34 @@ namespace SmartAlarm.Api.Tests.Controllers
             _context?.Dispose();
             _scope?.Dispose();
             _client?.Dispose();
+        }
+    }
+
+    /// <summary>
+    /// Handler de autenticação para testes que sempre permite acesso.
+    /// </summary>
+    public class TestAuthenticationSchemeHandler : AuthenticationHandler<AuthenticationSchemeOptions>
+    {
+        public TestAuthenticationSchemeHandler(IOptionsMonitor<AuthenticationSchemeOptions> options,
+            ILoggerFactory logger, UrlEncoder encoder, ISystemClock clock)
+            : base(options, logger, encoder, clock)
+        {
+        }
+
+        protected override Task<AuthenticateResult> HandleAuthenticateAsync()
+        {
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.Name, "TestUser"),
+                new Claim(ClaimTypes.NameIdentifier, "123"),
+                new Claim(ClaimTypes.Role, "Admin")
+            };
+
+            var identity = new ClaimsIdentity(claims, "Test");
+            var principal = new ClaimsPrincipal(identity);
+            var ticket = new AuthenticationTicket(principal, "Test");
+            
+            return Task.FromResult(AuthenticateResult.Success(ticket));
         }
     }
 }

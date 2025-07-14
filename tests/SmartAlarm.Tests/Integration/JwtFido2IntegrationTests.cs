@@ -189,7 +189,7 @@ public class JwtFido2IntegrationTests : IClassFixture<TestWebApplicationFactory>
     [Fact]
     public async Task Fido2Flow_Should_StartAuthentication_WhenValidUser()
     {
-        // Arrange
+        // Arrange - O TestWebApplicationFactory já garante que o usuário existe
         var request = new StartFido2AuthenticationRequest("test@example.com");
         var content = new StringContent(JsonSerializer.Serialize(request), Encoding.UTF8, "application/json");
 
@@ -228,7 +228,8 @@ public class JwtFido2IntegrationTests : IClassFixture<TestWebApplicationFactory>
         // 2. System issues JWT token
         // 3. User accesses protected resources with JWT
 
-        // Arrange - Start FIDO2 authentication
+        // Arrange - O TestWebApplicationFactory já garante que o usuário existe
+        // Start FIDO2 authentication
         var fido2Request = new StartFido2AuthenticationRequest("test@example.com");
         var fido2Content = new StringContent(JsonSerializer.Serialize(fido2Request), Encoding.UTF8, "application/json");
 

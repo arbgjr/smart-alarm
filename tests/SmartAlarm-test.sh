@@ -39,6 +39,7 @@ show_help() {
     echo "  minio       - Testes do MinIO"
     echo "  rabbitmq    - Testes do RabbitMQ"
     echo "  jwt-fido2   - Testes de autenticação JWT/FIDO2"
+    echo "  holiday     - Testes da API de Holidays (HTTP/REST)"
     echo "  essentials  - Testes essenciais marcados"
     echo ""
     print_message "${CYAN}" "📊 Análise e Depuração:"
@@ -51,6 +52,7 @@ show_help() {
     print_message "${YELLOW}" "Exemplos:"
     echo "  $0 basic              # Testes rápidos sem containers"
     echo "  $0 postgres -v        # Testes PostgreSQL com saída detalhada"
+    echo "  $0 holiday            # Testes da API Holiday com arquivos .http"
     echo "  $0 coverage           # Análise de cobertura completa"
     echo "  $0 debug              # Modo interativo para diagnóstico"
     echo ""
@@ -108,6 +110,9 @@ elif [[ "$1" == "rabbitmq" ]]; then
 elif [[ "$1" == "jwt-fido2" ]]; then
     TEST_FILTER="FullyQualifiedName~JwtFido2|FullyQualifiedName~BasicJwtFido2Tests|Category=Integration"
     print_message "${YELLOW}" "Executando testes de autenticação JWT/FIDO2"
+elif [[ "$1" == "holiday" ]]; then
+    TEST_FILTER="FullyQualifiedName~Holiday|FullyQualifiedName~HolidayIntegrationTests|Category=Integration"
+    print_message "${YELLOW}" "Executando testes da API Holiday (HTTP/REST)"
 elif [[ "$1" == "owasp" ]]; then
     TEST_FILTER="FullyQualifiedName~Owasp|FullyQualifiedName~BasicOwaspSecurityTests|Category=Security"
     print_message "${YELLOW}" "Executando testes de segurança OWASP"
@@ -802,6 +807,53 @@ EOF
         
         print_message "${BLUE}" "Executando testes de integração..."
         
+        # Tratamento especial para testes Holiday
+        if [[ "$1" == "holiday" ]]; then
+            print_message "${CYAN}" "🎯 Executando testes específicos da Holiday API..."
+            
+            # Verificar se os scripts específicos existem
+            local holiday_http_script="$PROJECT_ROOT/tests/run-holiday-tests.sh"
+            local holiday_dotnet_script="$PROJECT_ROOT/tests/run-holiday-dotnet-tests.sh"
+            
+            # Executar testes .http
+            if [[ -f "$holiday_http_script" ]]; then
+                print_message "${BLUE}" "📋 Executando testes HTTP (.http files)..."
+                chmod +x "$holiday_http_script"
+                "$holiday_http_script"
+                local http_exit_code=$?
+            else
+                print_message "${YELLOW}" "⚠️  Script de testes HTTP não encontrado: $holiday_http_script"
+                local http_exit_code=0
+            fi
+            
+            # Executar testes dotnet
+            if [[ -f "$holiday_dotnet_script" ]]; then
+                print_message "${BLUE}" "🧪 Executando testes dotnet específicos Holiday..."
+                chmod +x "$holiday_dotnet_script"
+                "$holiday_dotnet_script"
+                local dotnet_exit_code=$?
+            else
+                print_message "${YELLOW}" "⚠️  Script de testes dotnet Holiday não encontrado: $holiday_dotnet_script"
+                local dotnet_exit_code=0
+            fi
+            
+            # Resultado final
+            local total_exit_code=$((http_exit_code + dotnet_exit_code))
+            
+            if [[ $total_exit_code -eq 0 ]]; then
+                print_message "${GREEN}" "✅ Todos os testes Holiday concluídos com sucesso!"
+                print_message "${BLUE}" "📊 Resumo dos testes Holiday:"
+                print_message "${BLUE}" "   - Testes HTTP (.http): $([ $http_exit_code -eq 0 ] && echo "✅ SUCESSO" || echo "❌ FALHA")"
+                print_message "${BLUE}" "   - Testes dotnet: $([ $dotnet_exit_code -eq 0 ] && echo "✅ SUCESSO" || echo "❌ FALHA")"
+            else
+                print_message "${RED}" "❌ Alguns testes Holiday falharam"
+                print_message "${RED}" "   - Testes HTTP (.http): $([ $http_exit_code -eq 0 ] && echo "✅ SUCESSO" || echo "❌ FALHA")"
+                print_message "${RED}" "   - Testes dotnet: $([ $dotnet_exit_code -eq 0 ] && echo "✅ SUCESSO" || echo "❌ FALHA")"
+            fi
+            
+            return $total_exit_code
+        fi
+        
         # Gerar mapeamentos de host dinamicamente
         local host_mappings=$(generate_host_mappings)
         
@@ -826,6 +878,21 @@ EOF
             else
                 test_projects=$(find "$PROJECT_ROOT/tests" -name "*Tests*.csproj" 2>/dev/null | head -1)
                 print_message "${YELLOW}" "Buscando projeto de testes para JWT/FIDO2..."
+            fi
+        elif [[ "$1" == "holiday" ]]; then
+            # Para Holiday API, usar projeto que contém os testes de integração da API
+            test_projects="$PROJECT_ROOT/tests/SmartAlarm.Api.Tests/SmartAlarm.Api.Tests.csproj"
+            if [[ -f "$test_projects" ]]; then
+                print_message "${YELLOW}" "Usando projeto SmartAlarm.Api.Tests para Holiday API..."
+            else
+                # Fallback para SmartAlarm.Tests se SmartAlarm.Api.Tests não existir
+                test_projects="$PROJECT_ROOT/tests/SmartAlarm.Tests/SmartAlarm.Tests.csproj"
+                if [[ -f "$test_projects" ]]; then
+                    print_message "${YELLOW}" "Usando projeto SmartAlarm.Tests como fallback para Holiday API..."
+                else
+                    test_projects=$(find "$PROJECT_ROOT/tests" -name "*Tests*.csproj" 2>/dev/null | head -1)
+                    print_message "${YELLOW}" "Buscando projeto de testes para Holiday API..."
+                fi
             fi
         elif [[ "$1" == "coverage" ]]; then
             # Para cobertura, usar o projeto SmartAlarm.Tests que sabemos que funciona

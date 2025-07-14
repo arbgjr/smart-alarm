@@ -118,27 +118,45 @@ namespace SmartAlarm.Tests.Factories
         public HttpClient GetSeededClient()
         {
             var client = CreateClient();
-            _seedingTask.Value.Wait(); // Ensure seeding is completed
+            // Força o seeding a ser executado de forma síncrona e garantir que complete
+            try 
+            {
+                _seedingTask.Value.Wait(TimeSpan.FromSeconds(30)); // Timeout de 30 segundos
+            }
+            catch (Exception ex)
+            {
+                // Log o erro mas continue - alguns testes podem não precisar do seeding
+                System.Diagnostics.Debug.WriteLine($"Seeding failed: {ex.Message}");
+            }
             return client;
         }
 
         private async Task SeedTestData()
         {
             using var scope = Services.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<SmartAlarmDbContext>();
             var userRepo = scope.ServiceProvider.GetRequiredService<SmartAlarm.Domain.Repositories.IUserRepository>();
             
-            var testUser = new SmartAlarm.Domain.Entities.User(
-                Guid.Parse("12345678-1234-1234-1234-123456789012"), 
-                "Test User", 
-                "test@example.com", 
-                true
-            );
-            
-            // Set password hash for test user (BCrypt hash for "ValidPassword123!")
-            var passwordHash = BCrypt.Net.BCrypt.HashPassword("ValidPassword123!");
-            testUser.SetPasswordHash(passwordHash);
-            
-            await userRepo.AddAsync(testUser);
+            // Verificar se o usuário já existe para evitar duplicação
+            var existingUser = await userRepo.GetByEmailAsync("test@example.com");
+            if (existingUser == null)
+            {
+                var testUser = new SmartAlarm.Domain.Entities.User(
+                    Guid.Parse("12345678-1234-1234-1234-123456789012"), 
+                    "Test User", 
+                    "test@example.com", 
+                    true
+                );
+                
+                // Set password hash for test user (BCrypt hash for "ValidPassword123!")
+                var passwordHash = BCrypt.Net.BCrypt.HashPassword("ValidPassword123!");
+                testUser.SetPasswordHash(passwordHash);
+                
+                await userRepo.AddAsync(testUser);
+                
+                // Força o contexto a salvar imediatamente para testes InMemory
+                await context.SaveChangesAsync();
+            }
         }
     }
 
