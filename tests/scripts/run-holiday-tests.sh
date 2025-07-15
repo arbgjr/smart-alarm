@@ -1,46 +1,25 @@
 #!/bin/bash
 
-# Holiday API Integration Tests with dotnet test
-# Complementa os testes .http com execução de testes C# específicos
+# Script especializado para execução de testes Holiday API
+# Este script assume que o SmartAlarm-test.sh já preparou o ambiente
 
-# Cores para output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-NC='\033[0m' # No Color
+# Importar cores e funções básicas do script principal
+source "$(dirname "$0")/../test-common.sh"
 
-print_message() {
-    local color=$1
-    local message=$2
-    echo -e "${color}${message}${NC}"
-}
-
-# Detectar diretório raiz do projeto
-PROJECT_ROOT="$(pwd)"
-while [[ ! -f "$PROJECT_ROOT/docker-compose.yml" && "$PROJECT_ROOT" != "/" ]]; do
-    PROJECT_ROOT="$(dirname "$PROJECT_ROOT")"
-done
-
-if [[ ! -f "$PROJECT_ROOT/docker-compose.yml" ]]; then
-    print_message "${RED}" "❌ Não foi possível encontrar o diretório raiz do projeto"
-    exit 1
-fi
+# Detectar diretório raiz do projeto (usar função comum)
+detect_project_root
 
 print_message "${BLUE}" "=== Holiday API dotnet test Integration ==="
 print_message "${YELLOW}" "📍 Diretório do projeto: $PROJECT_ROOT"
 
-# Função para configurar rede compartilhada (seguindo padrão do SmartAlarm-test.sh)
+# Função para configurar rede compartilhada (usar verificação comum)
 setup_shared_network() {
-    print_message "${BLUE}" "Configurando rede compartilhada para testes Holiday..."
+    print_message "${BLUE}" "Verificando rede compartilhada para testes Holiday..."
     
-    # Criar rede compartilhada se não existir
-    if ! docker network ls | grep -q "smartalarm-test-net"; then
-        docker network create smartalarm-test-net
-        print_message "${GREEN}" "Rede smartalarm-test-net criada"
-    else
-        print_message "${YELLOW}" "Rede smartalarm-test-net já existe"
+    # Verificar se a rede já existe (deve ter sido criada pelo script principal)
+    if ! check_shared_network; then
+        print_message "${RED}" "❌ Execute o script principal (SmartAlarm-test.sh) primeiro para configurar o ambiente"
+        return 1
     fi
     
     # Identificar contêineres de serviço
@@ -422,6 +401,7 @@ main() {
             print_message "${YELLOW}" "Uso: $0 [comando]"
             echo ""
             print_message "${GREEN}" "Comandos disponíveis:"
+            echo "  holiday     - Todos os testes Holiday (padrão)"
             echo "  build       - Build + testes Holiday"
             echo "  coverage    - Testes Holiday com cobertura"
             echo "  unit        - Apenas testes unitários Holiday"
@@ -432,6 +412,7 @@ main() {
             echo "  help        - Mostra esta ajuda"
             echo ""
             print_message "${BLUE}" "Exemplos:"
+            echo "  $0 holiday        # Todos os testes Holiday (padrão)"
             echo "  $0 build          # Build + todos os testes Holiday"
             echo "  $0 coverage       # Testes com análise de cobertura"
             echo "  $0 api            # Apenas testes de Controller"
@@ -444,8 +425,8 @@ main() {
             echo ""
             exit 0
             ;;
-        "")
-            # Sem argumentos - executar todos os testes Holiday
+        "holiday"|"")
+            # Comando "holiday" ou sem argumentos - executar todos os testes Holiday
             run_holiday_dotnet_tests
             ;;
         *)
@@ -456,11 +437,8 @@ main() {
     esac
 }
 
-# Verificar se Docker está disponível
-if ! command -v docker &> /dev/null; then
-    print_message "${RED}" "❌ Docker não encontrado. Instale o Docker e tente novamente."
-    exit 1
-fi
+# Verificar se Docker está disponível (usar função comum)
+check_docker_availability
 
 # Executar função principal
 main "$@"

@@ -19,10 +19,20 @@ namespace SmartAlarm.Infrastructure.Tests.Integration.Security
             _output = output;
             
             // Determinar o host do Vault com base no ambiente
-            string vaultHost = Environment.GetEnvironmentVariable("VAULT_HOST") ?? "localhost";
-            string portStr = Environment.GetEnvironmentVariable("VAULT_PORT") ?? "8200";
+            // Se VaultConfig__Address estiver definida (ambiente Docker), use ela
+            string vaultAddress = Environment.GetEnvironmentVariable("VaultConfig__Address");
+            if (!string.IsNullOrEmpty(vaultAddress))
+            {
+                _vaultEndpoint = vaultAddress;
+            }
+            else
+            {
+                // Fallback para localhost (desenvolvimento local)
+                string vaultHost = Environment.GetEnvironmentVariable("VAULT_HOST") ?? "localhost";
+                string portStr = Environment.GetEnvironmentVariable("VAULT_PORT") ?? "8200";
+                _vaultEndpoint = $"http://{vaultHost}:{portStr}";
+            }
             
-            _vaultEndpoint = $"http://{vaultHost}:{portStr}";
             _httpClient = new HttpClient();
             
             _output.WriteLine($"Configurado para testar Vault em {_vaultEndpoint}");

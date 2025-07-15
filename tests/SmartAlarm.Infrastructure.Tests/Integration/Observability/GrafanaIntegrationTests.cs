@@ -8,21 +8,12 @@ namespace SmartAlarm.Infrastructure.Tests.Integration.Observability
     public class GrafanaIntegrationTests
     {
         private readonly HttpClient _client;
-        private readonly string _grafanaHost;
-        private readonly int _grafanaPort;
+        private readonly string _grafanaBaseUrl;
 
         public GrafanaIntegrationTests()
         {
-            // Determinar o host do Grafana com base no ambiente
-            _grafanaHost = Environment.GetEnvironmentVariable("GRAFANA_HOST") ?? "localhost";
-            
-            // Tentar obter a porta do Grafana do ambiente, ou usar o padrão 3000
-            // Observação: no docker-compose está mapeado para 3001:3000
-            if (!int.TryParse(Environment.GetEnvironmentVariable("GRAFANA_PORT"), out _grafanaPort))
-            {
-                _grafanaPort = 3001;
-            }
-            
+            // Usar DockerHelper para resolver configurações do Grafana
+            _grafanaBaseUrl = DockerHelper.GetObservabilityUrl("grafana", 3001);
             _client = new HttpClient();
         }
 
@@ -32,7 +23,7 @@ namespace SmartAlarm.Infrastructure.Tests.Integration.Observability
         public async Task Grafana_ShouldBeHealthy()
         {
             // Arrange
-            var endpoint = $"http://{_grafanaHost}:{_grafanaPort}/api/health";
+            var endpoint = $"{_grafanaBaseUrl}/api/health";
             
             // Act
             var response = await _client.GetAsync(endpoint);
@@ -49,7 +40,7 @@ namespace SmartAlarm.Infrastructure.Tests.Integration.Observability
         public async Task Grafana_ShouldHaveAPIAccessible()
         {
             // Arrange
-            var endpoint = $"http://{_grafanaHost}:{_grafanaPort}/api/datasources";
+            var endpoint = $"{_grafanaBaseUrl}/api/datasources";
             var request = new HttpRequestMessage(HttpMethod.Get, endpoint);
             
             // Adicionar a autenticação básica (admin/admin é o padrão)

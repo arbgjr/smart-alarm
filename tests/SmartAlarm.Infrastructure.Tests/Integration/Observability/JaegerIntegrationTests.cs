@@ -9,17 +9,12 @@ namespace SmartAlarm.Infrastructure.Tests.Integration.Observability
     public class JaegerIntegrationTests
     {
         private readonly HttpClient _client;
-        private readonly string _jaegerHost;
-        private readonly int _jaegerQueryPort;
+        private readonly string _jaegerBaseUrl;
 
         public JaegerIntegrationTests()
         {
-            // Determinar o host do Jaeger com base no ambiente
-            _jaegerHost = Environment.GetEnvironmentVariable("JAEGER_HOST") ?? "localhost";
-            
-            // Porta da UI do Jaeger
-            _jaegerQueryPort = 16686;
-            
+            // Usar DockerHelper para resolver configurações do Jaeger
+            _jaegerBaseUrl = DockerHelper.GetObservabilityUrl("jaeger", 16686);
             _client = new HttpClient();
         }
 
@@ -29,7 +24,7 @@ namespace SmartAlarm.Infrastructure.Tests.Integration.Observability
         public async Task Jaeger_ShouldBeHealthy()
         {
             // Arrange
-            var endpoint = $"http://{_jaegerHost}:{_jaegerQueryPort}/";
+            var endpoint = $"{_jaegerBaseUrl}/";
             
             // Act
             var response = await _client.GetAsync(endpoint);
@@ -44,7 +39,7 @@ namespace SmartAlarm.Infrastructure.Tests.Integration.Observability
         public async Task Jaeger_ShouldHaveApiEndpointAvailable()
         {
             // Arrange
-            var endpoint = $"http://{_jaegerHost}:{_jaegerQueryPort}/api/services";
+            var endpoint = $"{_jaegerBaseUrl}/api/services";
             
             // Act
             var response = await _client.GetAsync(endpoint);

@@ -19,12 +19,21 @@ namespace SmartAlarm.Infrastructure.Tests.Integration.Storage
             _output = output;
             
             // Determinar o host do MinIO com base no ambiente
-            string minioHost = Environment.GetEnvironmentVariable("MINIO_HOST") ?? "localhost";
-            string portStr = Environment.GetEnvironmentVariable("MINIO_PORT") ?? "9000";
+            // Se MinIOConfig__Endpoint estiver definida (ambiente Docker), use ela
+            string minioEndpoint = Environment.GetEnvironmentVariable("MinIOConfig__Endpoint");
+            if (!string.IsNullOrEmpty(minioEndpoint))
+            {
+                _minioEndpoint = $"http://{minioEndpoint}";
+            }
+            else
+            {
+                // Fallback para localhost (desenvolvimento local)
+                string minioHost = Environment.GetEnvironmentVariable("MINIO_HOST") ?? "localhost";
+                string portStr = Environment.GetEnvironmentVariable("MINIO_PORT") ?? "9000";
+                _minioEndpoint = $"http://{minioHost}:{portStr}";
+            }
             
-            _output.WriteLine($"Tentando conectar ao MinIO em {minioHost}:{portStr}");
-            
-            _minioEndpoint = $"http://{minioHost}:{portStr}";
+            _output.WriteLine($"Tentando conectar ao MinIO em {_minioEndpoint}");
             _httpClient = new HttpClient();
             
             _output.WriteLine($"Configurado para testar MinIO em {_minioEndpoint}");

@@ -15,13 +15,23 @@ namespace SmartAlarm.KeyVault.Tests.Providers
         {
             var services = new ServiceCollection();
             services.AddLogging(builder => builder.AddConsole());
+            
+            // Usar variável de ambiente para o endereço do Vault
+            var vaultAddress = System.Environment.GetEnvironmentVariable("HashiCorpVault__ServerAddress") 
+                              ?? "http://localhost:8200";
+            
             services.AddHttpClient<HashiCorpVaultProvider>(client =>
             {
-                client.BaseAddress = new System.Uri("http://localhost:8200");
+                client.BaseAddress = new System.Uri(vaultAddress);
             });
+            
             var sp = services.BuildServiceProvider();
+            var httpClientFactory = sp.GetRequiredService<System.Net.Http.IHttpClientFactory>();
             _logger = sp.GetRequiredService<ILogger<HashiCorpVaultProvider>>();
-            _provider = sp.GetRequiredService<HashiCorpVaultProvider>();
+            
+            // Criar o provider com o HttpClient configurado
+            var httpClient = httpClientFactory.CreateClient(nameof(HashiCorpVaultProvider));
+            _provider = new HashiCorpVaultProvider(httpClient, _logger);
         }
 
         [Fact(DisplayName = "Deve escrever e ler segredo no HashiCorp Vault")]
