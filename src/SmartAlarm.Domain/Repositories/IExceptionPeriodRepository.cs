@@ -38,8 +38,9 @@ namespace SmartAlarm.Domain.Repositories
         /// <param name="userId">ID do usuário</param>
         /// <param name="startDate">Data de início do intervalo</param>
         /// <param name="endDate">Data de fim do intervalo</param>
+        /// <param name="excludeId">ID do período a excluir da busca (opcional)</param>
         /// <returns>Lista de períodos que se sobrepõem ao intervalo</returns>
-        Task<IEnumerable<ExceptionPeriod>> GetOverlappingPeriodsAsync(Guid userId, DateTime startDate, DateTime endDate);
+        Task<IEnumerable<ExceptionPeriod>> GetOverlappingPeriodsAsync(Guid userId, DateTime startDate, DateTime endDate, Guid? excludeId = null);
 
         /// <summary>
         /// Busca períodos de exceção por tipo.
@@ -73,5 +74,13 @@ namespace SmartAlarm.Domain.Repositories
         /// <param name="userId">ID do usuário</param>
         /// <returns>Número de períodos de exceção do usuário</returns>
         Task<int> CountByUserIdAsync(Guid userId);
+
+        /// <summary>
+        /// Verifica se existe algum período de exceção ativo para um usuário em uma data.
+        /// </summary>
+        /// <param name="userId">ID do usuário</param>
+        /// <param name="date">Data a verificar</param>
+        /// <returns>True se existe período ativo</returns>
+        Task<bool> HasActivePeriodOnDateAsync(Guid userId, DateTime date);
     }
 }
