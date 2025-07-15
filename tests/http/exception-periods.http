@@ -1,0 +1,204 @@
+### Smart Alarm - Exception Periods API Tests
+### Base URL: https://localhost:7225/api/v1/exception-periods
+### Substitua o token JWT conforme necessário
+
+@baseUrl = https://localhost:7225/api/v1/exception-periods
+@authToken = Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+### 1. Criar um novo período de exceção (Férias)
+POST {{baseUrl}}
+Content-Type: application/json
+Authorization: {{authToken}}
+
+{
+  "name": "Férias de Verão",
+  "startDate": "2025-07-20",
+  "endDate": "2025-07-30",
+  "type": "Vacation",
+  "description": "Período de férias de verão"
+}
+
+### 2. Criar período de exceção (Viagem de Trabalho)
+POST {{baseUrl}}
+Content-Type: application/json
+Authorization: {{authToken}}
+
+{
+  "name": "Viagem São Paulo",
+  "startDate": "2025-08-01",
+  "endDate": "2025-08-05",
+  "type": "Travel",
+  "description": "Viagem de trabalho para São Paulo"
+}
+
+### 3. Criar período de exceção (Manutenção)
+POST {{baseUrl}}
+Content-Type: application/json
+Authorization: {{authToken}}
+
+{
+  "name": "Manutenção Sistema",
+  "startDate": "2025-08-15",
+  "endDate": "2025-08-16",
+  "type": "Maintenance",
+  "description": "Manutenção programada do sistema"
+}
+
+### 4. Listar todos os períodos de exceção
+GET {{baseUrl}}
+Authorization: {{authToken}}
+
+### 5. Listar períodos filtrados por tipo (Vacation)
+GET {{baseUrl}}?type=Vacation
+Authorization: {{authToken}}
+
+### 6. Listar períodos filtrados por tipo (Travel)
+GET {{baseUrl}}?type=Travel
+Authorization: {{authToken}}
+
+### 7. Listar apenas períodos ativos
+GET {{baseUrl}}?onlyActive=true
+Authorization: {{authToken}}
+
+### 8. Listar todos os períodos (incluindo inativos)
+GET {{baseUrl}}?onlyActive=false
+Authorization: {{authToken}}
+
+### 9. Buscar períodos ativos em uma data específica
+GET {{baseUrl}}?activeOnDate=2025-07-25
+Authorization: {{authToken}}
+
+### 10. Obter período específico por ID (substitua {id} por um ID real)
+GET {{baseUrl}}/550e8400-e29b-41d4-a716-446655440000
+Authorization: {{authToken}}
+
+### 11. Obter períodos ativos em uma data específica (endpoint especializado)
+GET {{baseUrl}}/active-on/2025-07-25
+Authorization: {{authToken}}
+
+### 12. Atualizar um período de exceção (substitua {id} por um ID real)
+PUT {{baseUrl}}/550e8400-e29b-41d4-a716-446655440000
+Content-Type: application/json
+Authorization: {{authToken}}
+
+{
+  "name": "Férias de Verão - Atualizado",
+  "startDate": "2025-07-21",
+  "endDate": "2025-07-31",
+  "type": "Vacation",
+  "description": "Período de férias de verão - data atualizada"
+}
+
+### 13. Excluir um período de exceção (substitua {id} por um ID real)
+DELETE {{baseUrl}}/550e8400-e29b-41d4-a716-446655440000
+Authorization: {{authToken}}
+
+### ===== TESTES DE ERRO =====
+
+### 14. Tentar criar sem autenticação (deve retornar 401)
+POST {{baseUrl}}
+Content-Type: application/json
+
+{
+  "name": "Período Não Autorizado",
+  "startDate": "2025-07-20",
+  "endDate": "2025-07-30",
+  "type": "Vacation"
+}
+
+### 15. Tentar criar com dados inválidos - nome vazio (deve retornar 400)
+POST {{baseUrl}}
+Content-Type: application/json
+Authorization: {{authToken}}
+
+{
+  "name": "",
+  "startDate": "2025-07-20",
+  "endDate": "2025-07-30",
+  "type": "Vacation"
+}
+
+### 16. Tentar criar com datas inválidas - endDate antes de startDate (deve retornar 400)
+POST {{baseUrl}}
+Content-Type: application/json
+Authorization: {{authToken}}
+
+{
+  "name": "Período Inválido",
+  "startDate": "2025-07-30",
+  "endDate": "2025-07-20",
+  "type": "Vacation"
+}
+
+### 17. Tentar criar com startDate no passado (deve retornar 400)
+POST {{baseUrl}}
+Content-Type: application/json
+Authorization: {{authToken}}
+
+{
+  "name": "Período no Passado",
+  "startDate": "2025-01-01",
+  "endDate": "2025-01-05",
+  "type": "Vacation"
+}
+
+### 18. Tentar buscar período inexistente (deve retornar 404)
+GET {{baseUrl}}/00000000-0000-0000-0000-000000000000
+Authorization: {{authToken}}
+
+### 19. Tentar atualizar período inexistente (deve retornar 404)
+PUT {{baseUrl}}/00000000-0000-0000-0000-000000000000
+Content-Type: application/json
+Authorization: {{authToken}}
+
+{
+  "name": "Período Inexistente",
+  "startDate": "2025-07-20",
+  "endDate": "2025-07-30",
+  "type": "Vacation"
+}
+
+### 20. Tentar excluir período inexistente (deve retornar 404)
+DELETE {{baseUrl}}/00000000-0000-0000-0000-000000000000
+Authorization: {{authToken}}
+
+### ===== TESTES DE FILTROS AVANÇADOS =====
+
+### 21. Buscar períodos de múltiplos tipos usando query parameters
+GET {{baseUrl}}?type=Vacation&onlyActive=true
+Authorization: {{authToken}}
+
+### 22. Buscar períodos ativos em uma data específica com filtro de tipo
+GET {{baseUrl}}?type=Travel&activeOnDate=2025-08-03
+Authorization: {{authToken}}
+
+### 23. Buscar todos os períodos incluindo inativos
+GET {{baseUrl}}?onlyActive=false
+Authorization: {{authToken}}
+
+### ===== TESTES DE VALIDAÇÃO DE NEGÓCIO =====
+
+### 24. Tentar criar período com descrição muito longa (deve retornar 400)
+POST {{baseUrl}}
+Content-Type: application/json
+Authorization: {{authToken}}
+
+{
+  "name": "Período com Descrição Longa",
+  "startDate": "2025-07-20",
+  "endDate": "2025-07-30",
+  "type": "Vacation",
+  "description": "Esta é uma descrição extremamente longa que ultrapassa o limite máximo de caracteres permitido para o campo descrição. O sistema deve validar e rejeitar esta entrada com uma mensagem de erro apropriada. Esta descrição tem mais de 1000 caracteres para testar a validação do tamanho máximo do campo descrição. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt."
+}
+
+### 25. Tentar criar período com nome muito longo (deve retornar 400)
+POST {{baseUrl}}
+Content-Type: application/json
+Authorization: {{authToken}}
+
+{
+  "name": "Este é um nome extremamente longo para um período de exceção que ultrapassa o limite máximo de duzentos caracteres permitido pelo sistema de validação e deve ser rejeitado com erro",
+  "startDate": "2025-07-20",
+  "endDate": "2025-07-30",
+  "type": "Vacation"
+}

@@ -113,7 +113,8 @@ namespace SmartAlarm.Api.Tests.Controllers
             _context.Database.EnsureCreated();
             
             // Limpar dados existentes para garantir isolamento entre testes
-            await CleanDatabase();
+            // Nota: CleanDatabase() será chamado de forma síncrona, sem await no construtor
+            CleanDatabase().GetAwaiter().GetResult();
         }
 
         private async Task CleanDatabase()
