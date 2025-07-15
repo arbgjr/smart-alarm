@@ -43,7 +43,9 @@ show_help() {
     echo "  essentials  - Testes essenciais marcados"
     echo ""
     print_message "${CYAN}" "🔬 Testes Especializados:"
+    echo "  api         - Testes da API (Controllers, Endpoints, Auth)"
     echo "  holiday     - Testes da API de Holidays (HTTP/REST)"
+    echo "  exception-period - Testes da API de ExceptionPeriod"
     echo ""
     print_message "${CYAN}" "📊 Análise e Depuração:"
     echo "  coverage    - Testes com análise de cobertura"
@@ -56,7 +58,9 @@ show_help() {
     print_message "${YELLOW}" "Exemplos:"
     echo "  $0 basic              # Testes rápidos sem containers"
     echo "  $0 postgres -v        # Testes PostgreSQL com saída detalhada"
+    echo "  $0 api                # Testes da API"
     echo "  $0 holiday            # Testes da API Holiday"
+    echo "  $0 exception-period   # Testes da API ExceptionPeriod"
     echo "  $0 working-only       # Apenas testes funcionais (sem observabilidade)"
     echo "  $0 coverage           # Análise de cobertura completa"
     echo "  $0 debug              # Modo interativo para diagnóstico"
@@ -68,7 +72,9 @@ show_help() {
     print_message "${CYAN}" "  - scripts/run-basic-tests.sh      # Testes básicos"
     print_message "${CYAN}" "  - scripts/run-integration-tests.sh # Testes de integração"
     print_message "${CYAN}" "  - scripts/run-coverage-tests.sh   # Análise de cobertura"
+    print_message "${CYAN}" "  - scripts/run-api-tests.sh        # Testes da API"
     print_message "${CYAN}" "  - scripts/run-holiday-tests.sh    # Testes Holiday API"
+    print_message "${CYAN}" "  - scripts/run-exception-period-tests.sh # Testes ExceptionPeriod API"
     print_message "${CYAN}" "  - scripts/run-debug.sh            # Ferramentas de debug"
     print_message "${CYAN}" "  - test-common.sh                  # Funções compartilhadas"
 }
@@ -187,8 +193,14 @@ execute_test_group() {
             ;;
         
         # Testes especializados
+        "api")
+            call_specialized_script "run-api-tests.sh" "$test_group" "$verbose_mode"
+            ;;
         "holiday")
             call_specialized_script "run-holiday-tests.sh" "$test_group" "$verbose_mode"
+            ;;
+        "exception-period")
+            call_specialized_script "run-exception-period-tests.sh" "$test_group" "$verbose_mode"
             ;;
         
         # Análise de cobertura

@@ -245,12 +245,12 @@ main() {
         "test")
             run_diagnostic_test
             ;;
-        "")
+        "debug"|"")
             run_debug_mode
             ;;
         *)
             print_message "${RED}" "❌ Modo de debug inválido: $mode"
-            print_message "${BLUE}" "Modos disponíveis: connectivity, interactive, logs, test"
+            print_message "${BLUE}" "Modos disponíveis: connectivity, interactive, logs, test, debug"
             exit 1
             ;;
     esac
