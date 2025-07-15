@@ -1,0 +1,170 @@
+### Smart Alarm API - User Holiday Preferences Tests
+### Arquivo de testes HTTP para endpoints de preferências de feriados dos usuários
+
+@baseUrl = http://localhost:5000/api/v1
+@userId = 123e4567-e89b-12d3-a456-426614174000
+@holidayId = 123e4567-e89b-12d3-a456-426614174001
+@preferenceId = 123e4567-e89b-12d3-a456-426614174002
+
+### 1. Criar uma nova preferência de feriado
+POST {{baseUrl}}/user-holiday-preferences
+Content-Type: application/json
+
+{
+  "userId": "{{userId}}",
+  "holidayId": "{{holidayId}}",
+  "action": "Skip",
+  "isEnabled": true
+}
+
+### 2. Criar preferência com ação Delay
+POST {{baseUrl}}/user-holiday-preferences
+Content-Type: application/json
+
+{
+  "userId": "{{userId}}",
+  "holidayId": "{{holidayId}}",
+  "action": "Delay",
+  "delayInMinutes": 30,
+  "isEnabled": true
+}
+
+### 3. Criar preferência com ação Snooze
+POST {{baseUrl}}/user-holiday-preferences
+Content-Type: application/json
+
+{
+  "userId": "{{userId}}",
+  "holidayId": "{{holidayId}}",
+  "action": "Snooze",
+  "delayInMinutes": 15,
+  "isEnabled": true
+}
+
+### 4. Obter preferência por ID
+GET {{baseUrl}}/user-holiday-preferences/{{preferenceId}}
+
+### 5. Listar todas as preferências de um usuário
+GET {{baseUrl}}/user-holiday-preferences/user/{{userId}}
+
+### 6. Obter preferências aplicáveis para uma data específica
+GET {{baseUrl}}/user-holiday-preferences/user/{{userId}}/applicable?date=2025-12-25
+
+### 7. Atualizar uma preferência existente
+PUT {{baseUrl}}/user-holiday-preferences/{{preferenceId}}
+Content-Type: application/json
+
+{
+  "action": "Skip",
+  "isEnabled": false
+}
+
+### 8. Atualizar preferência para ação Delay
+PUT {{baseUrl}}/user-holiday-preferences/{{preferenceId}}
+Content-Type: application/json
+
+{
+  "action": "Delay",
+  "delayInMinutes": 45,
+  "isEnabled": true
+}
+
+### 9. Remover uma preferência
+DELETE {{baseUrl}}/user-holiday-preferences/{{preferenceId}}
+
+### 10. Teste de validação - Criar preferência sem dados obrigatórios
+POST {{baseUrl}}/user-holiday-preferences
+Content-Type: application/json
+
+{
+  "action": "Skip"
+}
+
+### 11. Teste de validação - Delay sem delayInMinutes
+POST {{baseUrl}}/user-holiday-preferences
+Content-Type: application/json
+
+{
+  "userId": "{{userId}}",
+  "holidayId": "{{holidayId}}",
+  "action": "Delay",
+  "isEnabled": true
+}
+
+### 12. Teste de validação - delayInMinutes com ação não-Delay
+POST {{baseUrl}}/user-holiday-preferences
+Content-Type: application/json
+
+{
+  "userId": "{{userId}}",
+  "holidayId": "{{holidayId}}",
+  "action": "Skip",
+  "delayInMinutes": 30,
+  "isEnabled": true
+}
+
+### 13. Teste de erro - Obter preferência inexistente
+GET {{baseUrl}}/user-holiday-preferences/00000000-0000-0000-0000-000000000000
+
+### 14. Teste de erro - Atualizar preferência inexistente
+PUT {{baseUrl}}/user-holiday-preferences/00000000-0000-0000-0000-000000000000
+Content-Type: application/json
+
+{
+  "action": "Skip",
+  "isEnabled": true
+}
+
+### 15. Teste de erro - Remover preferência inexistente
+DELETE {{baseUrl}}/user-holiday-preferences/00000000-0000-0000-0000-000000000000
+
+### 16. Teste de performance - Listar preferências de usuário inexistente
+GET {{baseUrl}}/user-holiday-preferences/user/00000000-0000-0000-0000-000000000000
+
+### 17. Teste com dados reais - Criar usuário e feriado primeiro (se necessário)
+### Esta seção deve ser executada se você quiser testes com dados reais
+
+# POST {{baseUrl}}/users
+# Content-Type: application/json
+# 
+# {
+#   "name": "Test User",
+#   "email": "test@example.com"
+# }
+
+# POST {{baseUrl}}/holidays
+# Content-Type: application/json
+# 
+# {
+#   "date": "2025-12-25",
+#   "description": "Natal"
+# }
+
+### 18. Teste de edge case - Data futura para preferências aplicáveis
+GET {{baseUrl}}/user-holiday-preferences/user/{{userId}}/applicable?date=2030-01-01
+
+### 19. Teste de edge case - Data passada para preferências aplicáveis
+GET {{baseUrl}}/user-holiday-preferences/user/{{userId}}/applicable?date=2020-01-01
+
+### 20. Teste de bulk - Criar múltiplas preferências para o mesmo usuário
+POST {{baseUrl}}/user-holiday-preferences
+Content-Type: application/json
+
+{
+  "userId": "{{userId}}",
+  "holidayId": "{{holidayId}}",
+  "action": "Skip",
+  "isEnabled": true
+}
+
+### 21. Teste de consistência - Tentar criar preferência duplicada
+POST {{baseUrl}}/user-holiday-preferences
+Content-Type: application/json
+
+{
+  "userId": "{{userId}}",
+  "holidayId": "{{holidayId}}",
+  "action": "Delay",
+  "delayInMinutes": 60,
+  "isEnabled": true
+}

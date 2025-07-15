@@ -89,6 +89,10 @@ namespace SmartAlarm.Infrastructure
             services.AddSingleton<IScheduleRepository, InMemoryScheduleRepository>();
             services.AddSingleton<IRoutineRepository, InMemoryRoutineRepository>();
             services.AddSingleton<IIntegrationRepository, InMemoryIntegrationRepository>();
+            
+            // Register EntityFramework repositories for complex entities that don't have in-memory implementations
+            services.AddScoped<IHolidayRepository, EfHolidayRepository>();
+            services.AddScoped<IUserHolidayPreferenceRepository, EfUserHolidayPreferenceRepository>();
 
             // Register infrastructure services
             services.AddScoped<IEmailService, LoggingEmailService>();

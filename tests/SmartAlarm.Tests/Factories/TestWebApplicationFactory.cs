@@ -16,6 +16,7 @@ using Microsoft.EntityFrameworkCore.InMemory;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using SmartAlarm.Infrastructure;
+using SmartAlarm.Domain.Entities;
 
 namespace SmartAlarm.Tests.Factories
 {
@@ -60,7 +61,7 @@ namespace SmartAlarm.Tests.Factories
                 // Add InMemory database específico para teste
                 services.AddDbContext<SmartAlarmDbContext>(options =>
                 {
-                    options.UseInMemoryDatabase($"TestDb_{Guid.NewGuid()}");
+                    options.UseInMemoryDatabase("SmartAlarmTestDb");
                     options.ConfigureWarnings(warnings => warnings.Ignore(InMemoryEventId.TransactionIgnoredWarning));
                 }, ServiceLifetime.Scoped);
                 
@@ -155,6 +156,16 @@ namespace SmartAlarm.Tests.Factories
                 await userRepo.AddAsync(testUser);
                 
                 // Força o contexto a salvar imediatamente para testes InMemory
+                await context.SaveChangesAsync();
+            }
+            
+            // Criar Holiday de teste se não existir
+            var testHolidayId = Guid.Parse("123e4567-e89b-12d3-a456-426614174001");
+            var existingHoliday = await context.Holidays.FirstOrDefaultAsync(h => h.Id == testHolidayId);
+            if (existingHoliday == null)
+            {
+                var testHoliday = new SmartAlarm.Domain.Entities.Holiday(testHolidayId, DateTime.Today.AddDays(30), "Test Holiday");
+                context.Holidays.Add(testHoliday);
                 await context.SaveChangesAsync();
             }
         }
