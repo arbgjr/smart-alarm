@@ -2,13 +2,20 @@
 
 ## Current Focus
 
-- Implementação dos endpoints principais do AlarmService (CRUD)
-- Handlers e validação com FluentValidation
+- **FASE 2 CONCLUÍDA**: Entidade ExceptionPeriod implementada com sucesso
+- Preparação para **FASE 3**: Application Layer para ExceptionPeriod (Handlers, DTOs, Validators)
+- Manutenção da implementação dos endpoints principais do AlarmService (CRUD)
 - Estruturação de logging e métricas nos fluxos críticos
 - Preparação para testes automatizados e integração de autenticação JWT/FIDO2
-- Correção e simplificação dos testes de integração para infraestrutura
 
 ## Recent Changes
+
+- **✅ FASE 2 - Entidade ExceptionPeriod CONCLUÍDA**:
+  - ExceptionPeriod.cs implementado com validações completas de regras de negócio
+  - ExceptionPeriodType enum com 7 tipos (Vacation, Holiday, Travel, Maintenance, MedicalLeave, RemoteWork, Custom)
+  - 43 testes unitários implementados e 100% passando
+  - IExceptionPeriodRepository.cs com métodos especializados para consultas de períodos
+  - Compilação sem erros, Memory Bank atualizado
 
 - AlarmController implementado com endpoints RESTful (Create, List, GetById, Update, Delete)
 - Handlers para criação, atualização, exclusão, listagem e consulta de alarmes
@@ -17,11 +24,15 @@
 - Simplificados os testes de integração para MinIO e Vault para usar verificação HTTP de saúde
 - Corrigidos problemas de compilação relacionados a APIs incompatíveis em VaultSharp
 - Implementado docker-test-fix.sh para resolver problemas de conectividade em testes de integração
-- Estabelecida abordagem para comunicação entre contêineres usando redes Docker compartilhadas
-- Melhorada resolução de nomes de serviços com estratégias de fallback
-- Adicionado diagnóstico detalhado e sugestões de solução para falhas de conectividade
 
 ## Next Steps
+
+- **🎯 FASE 3**: Implementar Application Layer para ExceptionPeriod:
+  - Commands/Queries (Create, Update, Delete, GetById, GetByUserId, GetActiveOnDate)
+  - Handlers correspondentes
+  - DTOs (ExceptionPeriodDto, CreateExceptionPeriodDto, UpdateExceptionPeriodDto)
+  - Validators com FluentValidation
+  - Testes unitários para handlers e validators
 
 - Implementar autenticação JWT/FIDO2
 - Corrigir erro de compilação em PostgresIntegrationTests.cs
@@ -29,7 +40,6 @@
 - Continuar testes automatizados (xUnit, Moq, cobertura mínima 80%)
 - Documentar endpoints e arquitetura (Swagger/OpenAPI)
 - Validar integração de observabilidade (Loki, Jaeger, Prometheus, Grafana)
-- Integrar melhorias de testes de integração com pipeline CI/CD
 
 ## Infraestrutura de Testes
 
