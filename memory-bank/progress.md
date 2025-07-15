@@ -89,9 +89,64 @@ Ambiente de desenvolvimento completo implementado para testes de integração:
 - [x] ✅ **Documentação**: Código bem documentado com XMLDoc completo
 - [x] ✅ **Memory Bank**: Contexto atualizado com progresso da Fase 2
 
+## **FASE 3: Entidade UserHolidayPreference - CONCLUÍDA** ✅
+
+**Data de Conclusão:** 15 de julho de 2025
+
+### Entregáveis Implementados
+
+- [x] ✅ **UserHolidayPreference.cs** - Entidade do domínio implementada com:
+  - Propriedades: Id, UserId, HolidayId, IsEnabled, Action, DelayInMinutes, CreatedAt, UpdatedAt
+  - Navigation properties para User e Holiday
+  - Métodos de negócio: Enable/Disable, UpdateAction, IsApplicableForDate, GetEffectiveDelayInMinutes
+  - Validações completas de regras de negócio
+  - Relacionamentos bidirecionais com User e Holiday
+
+- [x] ✅ **HolidayPreferenceAction.cs** - Enum implementado com:
+  - 3 ações: Disable (desabilita alarmes), Delay (atrasa por tempo específico), Skip (pula apenas no feriado)
+  - Documentação completa de cada ação
+  - Valores numéricos consistentes (1, 2, 3)
+
+- [x] ✅ **UserHolidayPreferenceTests.cs** - Testes unitários completos:
+  - **47 testes implementados** cobrindo todas as funcionalidades
+  - 100% dos testes passando
+  - Cenários: Constructor, Validation, Enable/Disable, UpdateAction, Business Logic, Edge Cases
+  - Validações de Delay action (obrigatório DelayInMinutes, limites 1-1440 minutos)
+
+- [x] ✅ **HolidayPreferenceActionTests.cs** - Testes do enum:
+  - **15 testes implementados** cobrindo enum operations
+  - Validação de valores, conversões string, TryParse, GetValues/GetNames
+  - Integração com UserHolidayPreference
+
+- [x] ✅ **IUserHolidayPreferenceRepository.cs** - Interface de repositório com:
+  - Métodos CRUD padrão (GetByIdAsync, AddAsync, UpdateAsync, DeleteAsync)
+  - Métodos especializados: GetByUserAndHolidayAsync, GetActiveByUserIdAsync, GetApplicableForDateAsync
+  - Métodos de consulta: ExistsAsync, CountActiveByUserIdAsync
+
+- [x] ✅ **Relacionamentos estabelecidos**:
+  - User.HolidayPreferences - Coleção de preferências do usuário
+  - Holiday.UserPreferences - Coleção de usuários que têm preferências para o feriado
+  - Navigation properties virtual para EF Core
+
+- [x] ✅ **Validação de regras de negócio**:
+  - Validação de IDs obrigatórios (UserId, HolidayId)
+  - Validação específica para Delay action (DelayInMinutes obrigatório e entre 1-1440)
+  - Validação de consistência (DelayInMinutes apenas para Delay action)
+  - Lógica de aplicabilidade com base em data e feriado
+
+### Critérios de "Pronto" Atendidos
+
+- [x] ✅ **Compilação**: Código compila sem erros
+- [x] ✅ **Testes Unitários**: 100% passando (62/62 novos testes + 118 total Domain)
+- [x] ✅ **Testes Integração**: Todos testes do domínio passando sem regressões
+- [x] ✅ **Cobertura**: Testes nas principais funcionalidades (Constructor, Validation, Business Logic, Relationships)
+- [x] ✅ **Documentação**: Código bem documentado com XMLDoc completo
+- [x] ✅ **Memory Bank**: Contexto atualizado com progresso da Fase 3
+
 ## Pending Items / Next Steps
 
-- **FASE 3**: Implementar Application Layer para ExceptionPeriod (Handlers, DTOs, Validators)
+- **PRÓXIMA FASE**: Implementar Application Layer para ExceptionPeriod (Handlers, DTOs, Validators)
+- **FUTURO**: Application Layer para UserHolidayPreference
 - **FASE 4**: Implementar Infrastructure Layer para ExceptionPeriod (Repository EF, Mappings)
 - **FASE 5**: Implementar API Layer para ExceptionPeriod (Controller, Endpoints)
 - Set up JWT/FIDO2 authentication

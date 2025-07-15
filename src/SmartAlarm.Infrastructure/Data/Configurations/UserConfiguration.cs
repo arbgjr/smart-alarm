@@ -48,6 +48,11 @@ namespace SmartAlarm.Infrastructure.Data.Configurations
             builder.Property(u => u.LastLoginAt)
                 .HasColumnName("LastLoginAt");
 
+            // Relationships
+            builder.HasMany(u => u.HolidayPreferences)
+                .WithOne(uhp => uhp.User)
+                .HasForeignKey(uhp => uhp.UserId);
+
             // Index for unique email
             builder.HasIndex(u => u.Email)
                 .IsUnique()

@@ -2,20 +2,28 @@
 
 ## Current Focus
 
-- **FASE 2 CONCLUÍDA**: Entidade ExceptionPeriod implementada com sucesso
-- Preparação para **FASE 3**: Application Layer para ExceptionPeriod (Handlers, DTOs, Validators)
+- **FASE 3 CONCLUÍDA**: Entidade UserHolidayPreference implementada com sucesso
+- Preparação para Application Layer para ExceptionPeriod (Handlers, DTOs, Validators)
 - Manutenção da implementação dos endpoints principais do AlarmService (CRUD)
 - Estruturação de logging e métricas nos fluxos críticos
 - Preparação para testes automatizados e integração de autenticação JWT/FIDO2
 
 ## Recent Changes
 
+- **✅ FASE 3 - Entidade UserHolidayPreference CONCLUÍDA**:
+  - UserHolidayPreference.cs implementado com relacionamentos bidirecionais com User e Holiday
+  - HolidayPreferenceAction enum com 3 ações (Disable, Delay, Skip)
+  - 62 testes unitários implementados e 100% passando (47 UserHolidayPreference + 15 HolidayPreferenceAction)
+  - IUserHolidayPreferenceRepository.cs com métodos especializados para consultas
+  - Relacionamentos estabelecidos: User.HolidayPreferences e Holiday.UserPreferences
+  - Validações completas incluindo regras específicas para Delay action (1-1440 minutos)
+  - Compilação sem erros, 118 testes do domínio passando
+
 - **✅ FASE 2 - Entidade ExceptionPeriod CONCLUÍDA**:
   - ExceptionPeriod.cs implementado com validações completas de regras de negócio
   - ExceptionPeriodType enum com 7 tipos (Vacation, Holiday, Travel, Maintenance, MedicalLeave, RemoteWork, Custom)
   - 43 testes unitários implementados e 100% passando
   - IExceptionPeriodRepository.cs com métodos especializados para consultas de períodos
-  - Compilação sem erros, Memory Bank atualizado
 
 - AlarmController implementado com endpoints RESTful (Create, List, GetById, Update, Delete)
 - Handlers para criação, atualização, exclusão, listagem e consulta de alarmes
@@ -27,13 +35,14 @@
 
 ## Next Steps
 
-- **🎯 FASE 3**: Implementar Application Layer para ExceptionPeriod:
+- **🎯 PRÓXIMA FASE**: Implementar Application Layer para ExceptionPeriod:
   - Commands/Queries (Create, Update, Delete, GetById, GetByUserId, GetActiveOnDate)
   - Handlers correspondentes
   - DTOs (ExceptionPeriodDto, CreateExceptionPeriodDto, UpdateExceptionPeriodDto)
   - Validators com FluentValidation
   - Testes unitários para handlers e validators
 
+- **FUTURO**: Application Layer para UserHolidayPreference com mesmo padrão
 - Implementar autenticação JWT/FIDO2
 - Corrigir erro de compilação em PostgresIntegrationTests.cs
 - Verificar atributos Category=Integration em todos os testes

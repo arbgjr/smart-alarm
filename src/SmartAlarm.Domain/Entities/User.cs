@@ -26,6 +26,9 @@ namespace SmartAlarm.Domain.Entities
         // Navegação para roles (RBAC)  
         public virtual ICollection<UserRole> UserRoles { get; private set; } = new List<UserRole>();
 
+        // Navegação para preferências de feriado
+        public virtual ICollection<UserHolidayPreference> HolidayPreferences { get; private set; } = new List<UserHolidayPreference>();
+
         // Private constructor for EF Core
         private User() 
         { 

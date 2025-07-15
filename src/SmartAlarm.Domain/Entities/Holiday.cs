@@ -12,6 +12,9 @@ namespace SmartAlarm.Domain.Entities
         public string Description { get; private set; }
         public DateTime CreatedAt { get; private set; }
 
+        // Navigation properties
+        public virtual ICollection<UserHolidayPreference> UserPreferences { get; private set; } = new List<UserHolidayPreference>();
+
         // Private constructor for EF Core
         private Holiday() 
         { 

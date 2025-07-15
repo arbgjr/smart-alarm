@@ -45,6 +45,7 @@ namespace SmartAlarm.Infrastructure
                 services.AddScoped<IRoutineRepository, EfRoutineRepositoryPostgres>();
                 services.AddScoped<IIntegrationRepository, EfIntegrationRepositoryPostgres>();
                 services.AddScoped<IHolidayRepository, EfHolidayRepository>();
+                services.AddScoped<IUserHolidayPreferenceRepository, EfUserHolidayPreferenceRepository>();
             }
             else
             {
@@ -64,6 +65,7 @@ namespace SmartAlarm.Infrastructure
                 services.AddScoped<IRoutineRepository, EfRoutineRepository>();
                 services.AddScoped<IIntegrationRepository, EfIntegrationRepository>();
                 services.AddScoped<IHolidayRepository, EfHolidayRepository>();
+                services.AddScoped<IUserHolidayPreferenceRepository, EfUserHolidayPreferenceRepository>();
             }
 
             // Register infrastructure services
