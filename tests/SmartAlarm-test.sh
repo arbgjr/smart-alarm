@@ -47,6 +47,10 @@ show_help() {
     echo "  holiday     - Testes da API de Holidays (HTTP/REST)"
     echo "  exception-period - Testes da API de ExceptionPeriod"
     echo "  user-holiday-preferences - Testes da API de UserHolidayPreferences (CRUD)"
+    echo "  upload      - Testes de Upload/Storage (MinIO, Mock Storage)"
+    echo "  storage     - Todos os testes de Storage (Upload + MinIO + Mock)"
+    echo "  minio       - Testes específicos de integração MinIO"
+    echo "  mock-storage- Testes de Mock Storage (sem containers)"
     echo ""
     print_message "${CYAN}" "📊 Análise e Depuração:"
     echo "  coverage    - Testes com análise de cobertura"
@@ -63,6 +67,10 @@ show_help() {
     echo "  $0 holiday            # Testes da API Holiday"
     echo "  $0 exception-period   # Testes da API ExceptionPeriod"
     echo "  $0 user-holiday-preferences # Testes da API UserHolidayPreferences"
+    echo "  $0 upload             # Testes de Upload/Storage"
+    echo "  $0 storage            # Todos os testes de Storage"
+    echo "  $0 minio              # Testes específicos MinIO"
+    echo "  $0 mock-storage       # Testes Mock Storage"
     echo "  $0 working-only       # Apenas testes funcionais (sem observabilidade)"
     echo "  $0 coverage           # Análise de cobertura completa"
     echo "  $0 debug              # Modo interativo para diagnóstico"
@@ -78,6 +86,7 @@ show_help() {
     print_message "${CYAN}" "  - scripts/run-holiday-tests.sh    # Testes Holiday API"
     print_message "${CYAN}" "  - scripts/run-exception-period-tests.sh # Testes ExceptionPeriod API"
     print_message "${CYAN}" "  - scripts/run-user-holiday-preferences-tests.sh # Testes UserHolidayPreferences API"
+    print_message "${CYAN}" "  - scripts/run-upload-tests.sh        # Testes Upload/Storage"
     print_message "${CYAN}" "  - scripts/run-debug.sh            # Ferramentas de debug"
     print_message "${CYAN}" "  - test-common.sh                  # Funções compartilhadas"
 }
@@ -207,6 +216,11 @@ execute_test_group() {
             ;;
         "user-holiday-preferences")
             call_specialized_script "run-user-holiday-preferences-tests.sh" "$test_group" "$verbose_mode"
+            ;;
+        
+        # Testes de Upload/Storage
+        "upload"|"storage"|"minio"|"mock-storage"|"all-upload"|"all-storage")
+            call_specialized_script "run-upload-tests.sh" "$test_group" "$verbose_mode"
             ;;
         
         # Análise de cobertura

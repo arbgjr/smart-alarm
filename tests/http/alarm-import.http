@@ -1,0 +1,176 @@
+### 📁 Import Alarms - Test Scenarios
+### Base URL for all requests
+@baseUrl = https://localhost:7099
+@token = your-jwt-token-here
+
+### Test CSV Content
+@csvContent = Name,Time,Enabled
+Morning Alarm,07:00,true
+Evening Alarm,19:00,false
+Night Alarm,23:30,true
+
+### 🔄 1. Import Alarms - Success Case
+POST {{baseUrl}}/api/v1/alarms/import
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="alarms.csv"
+Content-Type: text/csv
+
+Name,Time,Enabled
+Morning Alarm,07:00,true
+Evening Alarm,19:00,false
+Weekend Alarm,09:00,true
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="overwriteExisting"
+
+false
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### 🔄 2. Import Alarms - With Overwrite
+POST {{baseUrl}}/api/v1/alarms/import
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="alarms-update.csv"
+Content-Type: text/csv
+
+Name,Time,Enabled
+Morning Alarm,06:30,true
+New Evening Alarm,20:00,false
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="overwriteExisting"
+
+true
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### ❌ 3. Import Alarms - No Authentication
+POST {{baseUrl}}/api/v1/alarms/import
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="alarms.csv"
+Content-Type: text/csv
+
+Name,Time,Enabled
+Test Alarm,08:00,true
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### ❌ 4. Import Alarms - No File
+POST {{baseUrl}}/api/v1/alarms/import
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="overwriteExisting"
+
+false
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### ❌ 5. Import Alarms - Empty File
+POST {{baseUrl}}/api/v1/alarms/import
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="empty.csv"
+Content-Type: text/csv
+
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### ❌ 6. Import Alarms - Unsupported File Type
+POST {{baseUrl}}/api/v1/alarms/import
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="alarms.txt"
+Content-Type: text/plain
+
+Name,Time,Enabled
+Test Alarm,08:00,true
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### ❌ 7. Import Alarms - Invalid CSV Format
+POST {{baseUrl}}/api/v1/alarms/import
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="invalid.csv"
+Content-Type: text/csv
+
+Invalid CSV Content
+Without proper headers
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### 🔄 8. Import Alarms - Large Valid File
+POST {{baseUrl}}/api/v1/alarms/import
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="large-alarms.csv"
+Content-Type: text/csv
+
+Name,Time,Enabled
+Alarm 1,06:00,true
+Alarm 2,06:30,true
+Alarm 3,07:00,true
+Alarm 4,07:30,true
+Alarm 5,08:00,true
+Alarm 6,08:30,true
+Alarm 7,09:00,true
+Alarm 8,09:30,true
+Alarm 9,10:00,true
+Alarm 10,10:30,true
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### 🔄 9. Import Alarms - Mixed Valid/Invalid Records
+POST {{baseUrl}}/api/v1/alarms/import
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="mixed-alarms.csv"
+Content-Type: text/csv
+
+Name,Time,Enabled
+Valid Alarm 1,07:00,true
+,08:00,true
+Valid Alarm 2,09:00,false
+Invalid Time,25:99,true
+Valid Alarm 3,10:00,true
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### 📊 10. Check Import Results - Get All Alarms
+GET {{baseUrl}}/api/v1/alarms
+Authorization: Bearer {{token}}
+
+### 📋 Sample CSV Templates
+
+###
+# Template 1: Basic Alarms
+# Name,Time,Enabled
+# Morning Alarm,07:00,true
+# Evening Alarm,19:00,false
+# Night Alarm,23:30,true
+
+###
+# Template 2: Work Schedule
+# Name,Time,Enabled  
+# Work Start,08:00,true
+# Lunch Break,12:00,true
+# Work End,17:00,true
+# Commute Home,17:30,false
+
+###
+# Template 3: Weekend Schedule
+# Name,Time,Enabled
+# Weekend Wake Up,09:00,true
+# Exercise Time,10:00,true
+# Meal Prep,12:00,false
+# Relax Time,20:00,false

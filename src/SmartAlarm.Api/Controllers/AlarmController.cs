@@ -9,7 +9,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using SmartAlarm.Application.Commands;
+using SmartAlarm.Application.Commands.Import;
 using SmartAlarm.Application.DTOs;
+using SmartAlarm.Application.DTOs.Import;
 using SmartAlarm.Application.Queries;
 using SmartAlarm.Api.Services;
 
@@ -139,6 +141,129 @@ namespace SmartAlarm.Api.Controllers
             if (!result)
                 return NotFound();
             return NoContent();
+        }
+
+        /// <summary>
+        /// Import alarms from a CSV file.
+        /// </summary>
+        /// <param name="file">CSV file containing alarms to import</param>
+        /// <param name="overwriteExisting">Whether to overwrite existing alarms with the same name</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Import result with success/failure counts and details</returns>
+        [HttpPost("import")]
+        [Authorize(Roles = "Admin,User")]
+        [ProducesResponseType(typeof(ImportAlarmsResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status413PayloadTooLarge)]
+        [ProducesResponseType(StatusCodes.Status415UnsupportedMediaType)]
+        public async Task<IActionResult> ImportAlarms(
+            [FromForm] IFormFile file,
+            [FromForm] bool overwriteExisting = false,
+            CancellationToken cancellationToken = default)
+        {
+            // Obter userId do usuário autenticado
+            if (!_currentUserService.IsAuthenticated || 
+                string.IsNullOrEmpty(_currentUserService.UserId) || 
+                !Guid.TryParse(_currentUserService.UserId, out var userId))
+            {
+                return Unauthorized();
+            }
+
+            // Validações básicas do arquivo
+            if (file == null || file.Length == 0)
+            {
+                return BadRequest(new SmartAlarm.Api.Models.ErrorResponse
+                {
+                    StatusCode = StatusCodes.Status400BadRequest,
+                    Title = "Arquivo obrigatório",
+                    Detail = "Nenhum arquivo foi enviado ou o arquivo está vazio.",
+                    Type = "ValidationError",
+                    TraceId = HttpContext.TraceIdentifier,
+                    Timestamp = DateTime.UtcNow
+                });
+            }
+
+            // Validação do tamanho do arquivo (máximo 5MB)
+            const long maxFileSize = 5 * 1024 * 1024; // 5MB
+            if (file.Length > maxFileSize)
+            {
+                return StatusCode(StatusCodes.Status413PayloadTooLarge, new SmartAlarm.Api.Models.ErrorResponse
+                {
+                    StatusCode = StatusCodes.Status413PayloadTooLarge,
+                    Title = "Arquivo muito grande",
+                    Detail = $"O arquivo deve ter no máximo {maxFileSize / (1024 * 1024)}MB. Tamanho atual: {file.Length / (1024 * 1024)}MB.",
+                    Type = "FileSizeError",
+                    TraceId = HttpContext.TraceIdentifier,
+                    Timestamp = DateTime.UtcNow
+                });
+            }
+
+            // Validação do tipo de arquivo
+            var allowedExtensions = new[] { ".csv" };
+            var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
+            if (!allowedExtensions.Contains(fileExtension))
+            {
+                return StatusCode(StatusCodes.Status415UnsupportedMediaType, new SmartAlarm.Api.Models.ErrorResponse
+                {
+                    StatusCode = StatusCodes.Status415UnsupportedMediaType,
+                    Title = "Tipo de arquivo não suportado",
+                    Detail = $"Apenas arquivos CSV são aceitos. Extensões permitidas: {string.Join(", ", allowedExtensions)}",
+                    Type = "FileTypeError",
+                    TraceId = HttpContext.TraceIdentifier,
+                    Timestamp = DateTime.UtcNow
+                });
+            }
+
+            _logger.LogInformation("Iniciando importação de alarmes. UserId: {UserId}, FileName: {FileName}, FileSize: {FileSize}", 
+                userId, file.FileName, file.Length);
+
+            try
+            {
+                using var stream = file.OpenReadStream();
+                var command = new ImportAlarmsCommand(stream, file.FileName, userId, overwriteExisting);
+                var result = await _mediator.Send(command, cancellationToken);
+
+                _logger.LogInformation("Importação concluída. Total: {Total}, Sucessos: {Success}, Falhas: {Failed}, Atualizações: {Updated}", 
+                    result.TotalRecords, result.SuccessfulImports, result.FailedImports, result.UpdatedImports);
+
+                return Ok(result);
+            }
+            catch (FluentValidation.ValidationException ex)
+            {
+                _logger.LogWarning("Erro de validação na importação: {Errors}", 
+                    string.Join("; ", ex.Errors.Select(e => $"{e.PropertyName}: {e.ErrorMessage}")));
+
+                var errorResponse = new SmartAlarm.Api.Models.ErrorResponse
+                {
+                    StatusCode = StatusCodes.Status400BadRequest,
+                    Title = "Erro de validação",
+                    Detail = "Um ou mais campos estão inválidos.",
+                    Type = "ValidationError",
+                    TraceId = HttpContext.TraceIdentifier,
+                    Timestamp = DateTime.UtcNow,
+                    ValidationErrors = ex.Errors.Select(e => new SmartAlarm.Api.Models.ValidationError
+                    {
+                        Field = e.PropertyName,
+                        Message = e.ErrorMessage,
+                        Code = e.ErrorCode,
+                        AttemptedValue = e.AttemptedValue
+                    }).ToList()
+                };
+                return BadRequest(errorResponse);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erro inesperado durante importação de alarmes");
+                return StatusCode(StatusCodes.Status500InternalServerError, new SmartAlarm.Api.Models.ErrorResponse
+                {
+                    StatusCode = StatusCodes.Status500InternalServerError,
+                    Title = "Erro interno do servidor",
+                    Detail = "Ocorreu um erro inesperado durante a importação.",
+                    Type = "SystemError",
+                    TraceId = HttpContext.TraceIdentifier,
+                    Timestamp = DateTime.UtcNow
+                });
+            }
         }
     }
 }
