@@ -1,0 +1,5 @@
+Name,Time,DaysOfWeek,Description,IsActive
+,06:30,segunda,Nome vazio,true
+Horário Inválido,25:70,segunda,Horário inválido,true
+Dia Inválido,07:00,diaInexistente,Dia da semana inválido,true
+Status Inválido,08:00,segunda,Status inválido,maybe

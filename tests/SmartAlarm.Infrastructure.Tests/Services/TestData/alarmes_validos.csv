@@ -1,0 +1,6 @@
+Name,Time,DaysOfWeek,Description,IsActive
+Acordar Cedo,06:30,"segunda,terça,quarta,quinta,sexta",Alarme para acordar nos dias úteis,true
+Exercício Matinal,07:00,"segunda,quarta,sexta",Hora do exercício,true
+Reunião Semanal,14:00,terça,Reunião de equipe,true
+Lembrete Medicamento,20:00,"domingo,segunda,terça,quarta,quinta,sexta,sábado",Tomar remédio,true
+Alarme Final de Semana,09:00,"sábado,domingo",Acordar mais tarde no fim de semana,false

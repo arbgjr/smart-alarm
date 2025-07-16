@@ -2,7 +2,36 @@
 
 ## Completed Features
 
-## Etapa 8 (Observabilidade e Segurança) concluída em 05/07/2025
+### ✅ FASE 4.1 - Infrastructure FileParser (Janeiro 2025)
+
+- **IFileParser Interface**: Define contratos para parsing de arquivos de importação
+- **CsvFileParser Implementation**: Parser completo para arquivos CSV com validação robusta
+- **Validation Engine**: Validação de formato, horários, dias da semana e status
+- **Multi-language Support**: Suporte a dias da semana em português e inglês
+- **Comprehensive Testing**: 50 testes unitários e de integração com 100% de aprovação
+- **Error Handling**: Relatórios detalhados de erros com numeração de linhas
+- **Dependencies**: CsvHelper integrado para parsing robusto
+- **Logging**: Logging estruturado para monitoramento e debug
+- **DI Registration**: Serviço registrado no sistema de injeção de dependência
+
+### ✅ FASE 3 - Domain UserHolidayPreference (Janeiro 2025)
+
+- **UserHolidayPreference Entity**: Entidade para gerenciar preferências de usuários para feriados
+- **HolidayPreferenceAction Enum**: 3 ações (Disable, Delay, Skip) com validações específicas
+- **Bidirectional Relationships**: User.HolidayPreferences ↔ Holiday.UserPreferences
+- **Business Rules**: Validação de delay entre 1-1440 minutos, relacionamentos únicos
+- **Repository Pattern**: IUserHolidayPreferenceRepository com consultas especializadas
+- **Comprehensive Testing**: 62 testes unitários (47 entidade + 15 enum) com 100% aprovação
+
+### ✅ FASE 2 - Domain ExceptionPeriod (Janeiro 2025)
+
+- **ExceptionPeriod Entity**: Entidade para períodos de exceção com validações completas
+- **ExceptionPeriodType Enum**: 7 tipos (Vacation, Holiday, Travel, Maintenance, MedicalLeave, RemoteWork, Custom)
+- **Business Rules**: Validação de datas, tipos, sobreposições e relacionamentos
+- **Repository Pattern**: IExceptionPeriodRepository com métodos especializados de consulta
+- **Comprehensive Testing**: 43 testes unitários com 100% aprovação
+
+### Etapa 8 (Observabilidade e Segurança) concluída em 05/07/2025
 
 Todos os requisitos de observabilidade e segurança implementados, testados e validados:
 

@@ -68,14 +68,7 @@ namespace SmartAlarm.Infrastructure
                 services.AddScoped<IUserHolidayPreferenceRepository, EfUserHolidayPreferenceRepository>();
             }
 
-            // Register infrastructure services
-            services.AddScoped<IEmailService, LoggingEmailService>();
-            services.AddScoped<INotificationService, LoggingNotificationService>();
-            
-            // Register security services
-            services.AddScoped<IJwtTokenService, SimpleJwtTokenService>();
-
-            return services;
+            return services.AddCommonInfrastructureServices();
         }
 
         /// <summary>
@@ -94,20 +87,7 @@ namespace SmartAlarm.Infrastructure
             services.AddScoped<IHolidayRepository, EfHolidayRepository>();
             services.AddScoped<IUserHolidayPreferenceRepository, EfUserHolidayPreferenceRepository>();
 
-            // Register infrastructure services
-            services.AddScoped<IEmailService, LoggingEmailService>();
-            services.AddScoped<INotificationService, LoggingNotificationService>();
-            
-            // Register security services
-            services.AddScoped<IJwtTokenService, SimpleJwtTokenService>();
-
-            // Register messaging, storage, tracing, metrics (mock for now)
-            services.AddSingleton<Messaging.IMessagingService, Messaging.MockMessagingService>();
-            services.AddSingleton<Storage.IStorageService, Storage.MockStorageService>();
-            services.AddSingleton<Observability.ITracingService, Observability.MockTracingService>();
-            services.AddSingleton<Observability.IMetricsService, Observability.MockMetricsService>();
-
-            return services;
+            return services.AddCommonInfrastructureServices();
         }
 
         /// <summary>
@@ -130,9 +110,18 @@ namespace SmartAlarm.Infrastructure
             services.AddSingleton<IRoutineRepository, InMemoryRoutineRepository>();
             services.AddSingleton<IIntegrationRepository, InMemoryIntegrationRepository>();
 
+            return services.AddCommonInfrastructureServices();
+        }
+
+        /// <summary>
+        /// Registra serviços comuns da infraestrutura
+        /// </summary>
+        private static IServiceCollection AddCommonInfrastructureServices(this IServiceCollection services)
+        {
             // Register infrastructure services
             services.AddScoped<IEmailService, LoggingEmailService>();
             services.AddScoped<INotificationService, LoggingNotificationService>();
+            services.AddScoped<IFileParser, CsvFileParser>();
             
             // Register security services
             services.AddScoped<IJwtTokenService, SimpleJwtTokenService>();

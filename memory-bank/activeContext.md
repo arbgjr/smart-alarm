@@ -2,13 +2,25 @@
 
 ## Current Focus
 
-- **FASE 3 CONCLUÍDA**: Entidade UserHolidayPreference implementada com sucesso
-- Preparação para Application Layer para ExceptionPeriod (Handlers, DTOs, Validators)
+- **✅ FASE 4.1 - Infrastructure FileParser CONCLUÍDA**: IFileParser e CsvFileParser implementados com sucesso
+- **PRÓXIMA FASE**: Application Layer para ExceptionPeriod (Handlers, DTOs, Validators) - ainda pendente
 - Manutenção da implementação dos endpoints principais do AlarmService (CRUD)
 - Estruturação de logging e métricas nos fluxos críticos
 - Preparação para testes automatizados e integração de autenticação JWT/FIDO2
 
 ## Recent Changes
+
+- **✅ FASE 4.1 - Infrastructure FileParser CONCLUÍDA**:
+  - IFileParser interface criada com métodos ParseAsync, IsFormatSupported e GetSupportedFormats
+  - CsvFileParser implementado com parsing completo de arquivos CSV para alarmes
+  - Suporte a múltiplos formatos de dias da semana (português e inglês)
+  - Validação completa de formato, horários, dias da semana e status
+  - CsvHelper integrado para parsing robusto de CSV
+  - 50 testes unitários implementados e 100% passando (incluindo testes de integração)
+  - Arquivos CSV de exemplo criados para testes
+  - IFileParser registrado no DependencyInjection para todos os métodos
+  - Logging estruturado implementado
+  - Tratamento de erros com relatórios detalhados de validação
 
 - **✅ FASE 3 - Entidade UserHolidayPreference CONCLUÍDA**:
   - UserHolidayPreference.cs implementado com relacionamentos bidirecionais com User e Holiday
@@ -35,12 +47,19 @@
 
 ## Next Steps
 
-- **🎯 PRÓXIMA FASE**: Implementar Application Layer para ExceptionPeriod:
+- **🎯 PRÓXIMA FASE**: Application Layer para ExceptionPeriod:
   - Commands/Queries (Create, Update, Delete, GetById, GetByUserId, GetActiveOnDate)
   - Handlers correspondentes
   - DTOs (ExceptionPeriodDto, CreateExceptionPeriodDto, UpdateExceptionPeriodDto)
   - Validators com FluentValidation
   - Testes unitários para handlers e validators
+
+- **FUTURO - FASE 4.2**: Application Layer para FileParser:
+  - Commands para ImportAlarms
+  - Handlers para processamento de importação
+  - DTOs para resultados de importação
+  - Validadores para arquivos de importação
+  - Endpoints de API para upload e importação
 
 - **FUTURO**: Application Layer para UserHolidayPreference com mesmo padrão
 - Implementar autenticação JWT/FIDO2
@@ -48,6 +67,7 @@
 - Verificar atributos Category=Integration em todos os testes
 - Continuar testes automatizados (xUnit, Moq, cobertura mínima 80%)
 - Documentar endpoints e arquitetura (Swagger/OpenAPI)
+- Resolver dependência faltante do IExceptionPeriodRepository
 - Validar integração de observabilidade (Loki, Jaeger, Prometheus, Grafana)
 
 ## Infraestrutura de Testes
