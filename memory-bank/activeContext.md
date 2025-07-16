@@ -83,21 +83,12 @@
 
 - **Verificação Dinâmica**: Substituição de sleeps fixos por checagens ativas de disponibilidade
 - **Inicialização Condicional**: Serviços de observabilidade inicializados apenas quando necessário
-- **Diagnóstico Aprimorado**: Informações detalhadas sobre o status dos serviços
-- **Modo Debug**: Opção para apenas verificar ambiente sem executar testes
-- **Rede Compartilhada**: Criação de rede dedicada para comunicação entre contêineres
-- **Resolução de Nomes**: Mapeamento explícito de nomes de serviços para IPs
-- **Diagnóstico de Rede**: Ferramentas para identificar problemas de comunicação entre contêineres
 
 Este documento reflete o status real do backend do Smart Alarm, baseado em análise detalhada do código-fonte, corrigindo avaliações anteriores equivocadas e distinguindo entre pendências reais e comentários desatualizados.
 
----
-
----
 
 ## 1. API Layer (src/SmartAlarm.Api)
 
-- Todos os arquivos principais da API existem e estão implementados.
 - `AuthController.cs`: A autenticação está de fato mockada (usuário/senha hardcoded), sem integração real com provider de identidade. O comentário reflete o status real.
 
 ---
@@ -109,7 +100,6 @@ Este documento reflete o status real do backend do Smart Alarm, baseado em anál
 
 ---
 
-## 3. Domain Layer (src/SmartAlarm.Domain)
 
 - Entities e ValueObjects estão completos, com métodos, validações e construtores adequados.
 - `Integration.cs`: Possui métodos de negócio implementados. Os construtores obsoletos lançam NotSupportedException apenas para evitar uso incorreto, não por falta de implementação.
@@ -118,30 +108,20 @@ Este documento reflete o status real do backend do Smart Alarm, baseado em anál
 ---
 
 ## 4. Infrastructure Layer (src/SmartAlarm.Infrastructure)
-
 ### Messaging
 
 - `OciStreamingMessagingService.cs`: Stub real, TODOs para integração com OCI SDK. MockMessagingService está implementado para dev/teste.
 
 ### Storage
-
-- `OciObjectStorageService.cs`: TODOs para integração real com OCI SDK. MockStorageService está implementado para dev/teste.
-
-### KeyVault
-
-- `OciVaultProvider.cs`, `AzureKeyVaultProvider.cs`, `AwsSecretsManagerProvider.cs`: Todos são stubs, com TODOs para integração real. MockKeyVaultProvider está implementado para dev/teste.
-
 ### Observability
 
 - MockTracingService e MockMetricsService implementados para dev/teste. Integração real (OpenTelemetry/Prometheus/Serilog) só ocorre em produção.
-
 ### Dependency Injection
 
 - `DependencyInjection.cs`: Por padrão, registra mocks para mensageria, storage, keyvault, tracing e métricas. Integrações reais só são ativadas por configuração.
 
 ### Migrations
 
-- Migrations do EF Core presentes, mas não foi verificado se refletem 100% o modelo de domínio.
 
 ---
 

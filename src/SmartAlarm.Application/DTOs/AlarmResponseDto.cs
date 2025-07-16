@@ -13,6 +13,7 @@ namespace SmartAlarm.Application.DTOs
         public DateTime Time { get; set; }
         public bool Enabled { get; set; }
         public Guid UserId { get; set; }
+        public bool CanTriggerNow { get; set; }
 
         /// <summary>
         /// Construtor que mapeia a entidade de domínio Alarm para o DTO.
@@ -26,6 +27,7 @@ namespace SmartAlarm.Application.DTOs
             Time = alarm.Time;
             Enabled = alarm.Enabled;
             UserId = alarm.UserId;
+            CanTriggerNow = alarm.ShouldTriggerNow();
         }
 
         // Construtor padrão para serialização/deserialização

@@ -37,14 +37,16 @@ namespace SmartAlarm.Application.Handlers
             activity?.SetTag("alarm.id", alarm.Id.ToString());
             activity?.SetStatus(ActivityStatusCode.Ok);
             SmartAlarmMetrics.AlarmsCreatedCounter.Add(1);
-            return new AlarmResponseDto
+            var dto = new AlarmResponseDto
             {
                 Id = alarm.Id,
                 Name = alarm.Name.ToString(),
                 Time = alarm.Time,
                 Enabled = alarm.Enabled,
-                UserId = alarm.UserId
+                UserId = alarm.UserId,
+                CanTriggerNow = alarm.ShouldTriggerNow()
             };
+            return dto;
         }
     }
 }

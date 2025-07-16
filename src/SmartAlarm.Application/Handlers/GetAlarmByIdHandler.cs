@@ -37,13 +37,20 @@ namespace SmartAlarm.Application.Handlers
                 SmartAlarmMetrics.NotFoundErrorsCounter.Add(1);
                 return null;
             }
-            
+
+            // Considera exceções e status de disparo
+            var canTrigger = alarm.ShouldTriggerNow();
+
             _logger.LogInformation("Alarm retrieved: {AlarmId}", alarm.Id);
             activity?.SetTag("alarm.name", alarm.Name);
             activity?.SetTag("alarm.user_id", alarm.UserId.ToString());
             activity?.SetStatus(ActivityStatusCode.Ok);
             SmartAlarmMetrics.AlarmsRetrievedCounter.Add(1);
-            return new AlarmResponseDto(alarm);
+            var dto = new AlarmResponseDto(alarm)
+            {
+                CanTriggerNow = canTrigger
+            };
+            return dto;
         }
     }
 }

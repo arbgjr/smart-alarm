@@ -128,8 +128,57 @@ namespace SmartAlarm.Domain.Entities
         {
             if (!Enabled) return false;
             var now = DateTime.Now;
+
+            // Verifica se existe ExceptionPeriod ativo para o usuário e data atual
+            if (ExceptionPeriodIsActiveForUser(UserId, now))
+                return false;
+
+            // Verifica se hoje é feriado e se há preferência do usuário
+            var holiday = GetHolidayForDate(now.Date);
+            if (holiday != null)
+            {
+                var preference = GetUserHolidayPreference(UserId, holiday.Id);
+                if (preference != null && preference.IsEnabled)
+                {
+                    switch (preference.Action)
+                    {
+                        case HolidayPreferenceAction.Disable:
+                            return false;
+                        case HolidayPreferenceAction.Skip:
+                            return false;
+                        case HolidayPreferenceAction.Delay:
+                            // Adiciona o atraso ao horário do alarme
+                            return _schedules.Any(s => s.IsActive && s.ShouldTriggerToday() &&
+                                s.Time.Hour == now.AddMinutes(-(preference.DelayInMinutes ?? 0)).Hour &&
+                                s.Time.Minute == now.AddMinutes(-(preference.DelayInMinutes ?? 0)).Minute);
+                        default:
+                            break;
+                    }
+                }
+            }
+
+            // Lógica padrão
             return _schedules.Any(s => s.IsActive && s.ShouldTriggerToday() &&
                                       s.Time.Hour == now.Hour && s.Time.Minute == now.Minute);
+        }
+
+        // Métodos auxiliares para integração (devem ser implementados via DI ou mocks nos testes)
+        protected virtual bool ExceptionPeriodIsActiveForUser(Guid userId, DateTime date)
+        {
+            // Implementação real deve consultar o repositório de ExceptionPeriod
+            return false;
+        }
+
+        protected virtual Holiday? GetHolidayForDate(DateTime date)
+        {
+            // Implementação real deve consultar o repositório de Holiday
+            return null;
+        }
+
+        protected virtual UserHolidayPreference? GetUserHolidayPreference(Guid userId, Guid holidayId)
+        {
+            // Implementação real deve consultar o repositório de UserHolidayPreference
+            return null;
         }
     }
 }

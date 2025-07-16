@@ -52,14 +52,16 @@ namespace SmartAlarm.Application.Handlers
             _logger.LogInformation("Alarme atualizado: {AlarmId}", updated.Id);
             activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Ok);
             SmartAlarmMetrics.AlarmsUpdatedCounter.Add(1);
-            return new AlarmResponseDto
+            var dto = new AlarmResponseDto
             {
                 Id = updated.Id,
                 Name = updated.Name.ToString(),
                 Time = updated.Time,
                 Enabled = updated.Enabled,
-                UserId = updated.UserId
+                UserId = updated.UserId,
+                CanTriggerNow = updated.ShouldTriggerNow()
             };
+            return dto;
         }
     }
 }

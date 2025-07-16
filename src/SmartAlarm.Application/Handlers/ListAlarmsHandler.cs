@@ -30,13 +30,17 @@ namespace SmartAlarm.Application.Handlers
             using var activity = SmartAlarmTracing.ActivitySource.StartActivity("ListAlarmsHandler.Handle");
             activity?.SetTag("user.id", request.UserId.ToString());
             var alarms = await _alarmRepository.GetByUserIdAsync(request.UserId);
-            var result = alarms.Select(a => new AlarmResponseDto
-            {
-                Id = a.Id,
-                Name = a.Name.ToString(),
-                Time = a.Time,
-                Enabled = a.Enabled,
-                UserId = a.UserId
+            var result = alarms.Select(a => {
+                var dto = new AlarmResponseDto
+                {
+                    Id = a.Id,
+                    Name = a.Name.ToString(),
+                    Time = a.Time,
+                    Enabled = a.Enabled,
+                    UserId = a.UserId,
+                    CanTriggerNow = a.ShouldTriggerNow()
+                };
+                return dto;
             }).ToList();
             _logger.LogInformation("{Count} alarmes retornados para o usuário {UserId}", result.Count, request.UserId);
             activity?.SetTag("alarms.count", result.Count);
