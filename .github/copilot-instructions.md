@@ -1,131 +1,77 @@
-# Smart Alarm - Copilot Instructions
+# Smart Alarm – Copilot Instructions (AI Agents)
 
-## Project Overview
+## Visão Geral e Arquitetura
 
-**Smart Alarm** is a backend and services platform for intelligent management of alarms, routines, and integrations, with a focus on accessibility and security. The entire backend architecture is exclusively based on **C# (.NET 6+)**, following Clean Architecture, SOLID, and modern practices for testability, observability, and integration. The default serverless pattern is **Oracle Cloud Infrastructure (OCI Functions)**, aiming for cost optimization and scalability.
+Smart Alarm é uma plataforma modular para gestão inteligente de alarmes, rotinas e integrações, baseada 100% em C# (.NET 8+), Clean Architecture e OCI Functions (serverless). Todos os serviços seguem separação clara: Domain, Application, Infrastructure, Api. Veja `/services/` e `/src/` para exemplos.
 
-### System Patterns
-Follow the system patterns defined in [`systemPatterns.md`](/docs/architecture/systemPatterns.md).
+**Padrões obrigatórios:**
+- Clean Architecture, SOLID, DTOs validados (FluentValidation)
+- Logging estruturado (Serilog), tracing (OpenTelemetry, Application Insights)
+- Integração externa desacoplada via HttpClientFactory, Polly, OAuth2/OpenID Connect
+- Nunca expor segredos em código/logs
 
-### Code Standard
-- Follow [`code-generation.instructions.md`](./instructions/code-generation.instructions.md)
+**Referências rápidas:**
+- Padrões: [`docs/architecture/systemPatterns.md`](../docs/architecture/systemPatterns.md)
+- Observabilidade: [`src/SmartAlarm.Observability/README.md`](../src/SmartAlarm.Observability/README.md)
+- ADRs: [`docs/architecture/`](../docs/architecture/)
+- Exemplos de testes: [`tests/SmartAlarm.Tests/`](../tests/SmartAlarm.Tests/)
 
-### Key Features
-- **RESTful APIs**: Alarm services, AI, and external integrations
-- **Modular Architecture**: Clear separation of domain, application, infrastructure, and presentation
-- **C#/.NET**: Single language for all backend, including AI (ML.NET)
-- **Testing**: xUnit, Moq, and minimum 80% coverage for critical code
-- **Security**: JWT/FIDO2 authentication, LGPD, structured logging (Serilog), Application Insights
-- **Documentation**: Swagger/OpenAPI for endpoints, architecture, and compliance docs
-- **Cloud**: OCI Functions (Oracle Cloud Infrastructure) as serverless standard, Autonomous DB, Object Storage
+## Contexto e Memória
 
-### Technology Stack
-- **Backend:** C# (.NET 6+), Clean Architecture, OCI Functions, ML.NET
-- **Frontend:** React, TypeScript, PWA, Atomic Design, integration via RESTful APIs
-- **Cloud:** OCI (Functions, Autonomous DB, Object Storage, Vault, Application Performance Monitoring)
-- **Integrations:** HttpClientFactory, Polly, OAuth2/OpenID Connect, external APIs
+O projeto utiliza o **Memory Bank** (`memory-bank/`) para registrar contexto, decisões e progresso. Sempre consulte e mantenha alinhamento com os arquivos de contexto antes de propor mudanças arquiteturais ou padrões. Veja instruções em [`memory-bank/memory-bank.instructions.md`](../memory-bank/memory-bank.instructions.md) se disponível.
 
-## Folder Structure
+## Fluxo de Desenvolvimento
 
-```
-/AlarmService
-  /Application
-  /Domain
-  /Infrastructure
-  /Api
-/AnalysisService
-/IntegrationService
-/docs
-  /architecture
-  /development
-  /business
-/tests
-  /unit
-  /integration
-/infrastructure
-  /docker
-  /kubernetes
-  /terraform
-```
+**Build e dependências:**
+- `dotnet restore` para dependências
+- `dotnet build` para build local
 
-- Each service is an independent .NET project, preferably serverless (OCI Functions).
-- Technical and business documentation in docs.
-- Tests close to the code and organized by domain.
+**Testes:**
+- `dotnet test --logger "console;verbosity=detailed"` (sempre usar este logger)
+- Cobertura: `dotnet test --collect:"XPlat Code Coverage" --settings tests/coverlet.runsettings`
+- Testes de integração exigem infraestrutura local: `docker compose up -d --build` (RabbitMQ, Vault, MinIO, PostgreSQL)
+- Scripts úteis: `tests/run-auth-tests.ps1`, `tests/SmartAlarm-test.sh`
+- AAA obrigatório em todos os testes (ver exemplos em `tests/SmartAlarm.Tests/Domain/Entities/`)
 
-## Architecture and Code Standards
+**Debug:**
+- Use mocks (`MockStorageService`, `MockKeyVaultProvider`, etc.) para testes isolados
+- Para troubleshooting de integração, veja [`docs/development/testes-integracao.md`](../docs/development/testes-integracao.md)
 
-### Backend (C#/.NET)
-- Clean Architecture and SOLID in all services
-- Clear separation: Controllers, Application, Domain, Infrastructure
-- DTOs for input/output, strict validation (FluentValidation)
-- Structured logging (Serilog), tracing (Application Insights)
-- Automated tests (xUnit, Moq), minimum 80% coverage
-- Documentation via Swagger/OpenAPI
-- JWT/FIDO2 authentication, RBAC, LGPD compliance
-- External integrations via HttpClientFactory, Polly, OAuth2/OpenID Connect
-- Never expose secrets in code or logs
+## Convenções Específicas
 
-### Frontend (React, TypeScript, PWA)
-- Follow Atomic Design for component organization
-- Use React, TypeScript, and hooks for UI logic
-- Separate components by atomicity (atoms, molecules, organisms, pages)
-- Use context API for global state and custom hooks for shared logic
-- Implement accessibility (WCAG), responsiveness, and internationalization
-- Use Service Workers for PWA and notifications
-- Test components with Testing Library and simulate real interactions
-- Document props and component contracts with TypeScript
-- Never expose tokens or secrets in code or bundle
+- PascalCase para classes, métodos públicos, arquivos
+- camelCase para variáveis, métodos privados
+- UPPER_SNAKE_CASE para constantes globais
+- Componentes React organizados por atomicidade (frontend)
+- Commits: siga [`.github/instructions/commit-message.instructions.md`](./instructions/commit-message.instructions.md)
 
-### Integrations and Cloud
-- OCI Functions as serverless standard (Oracle Functions, Autonomous DB, Object Storage)
-- Infrastructure as code (prefer Terraform, Bicep optional)
-- Abstraction for cloud provider, facilitating future migration
-- Centralized monitoring and alerts (OCI Application Performance Monitoring, Logging)
-- On the frontend, consume APIs via HttpClient/Fetch, handle errors and loading states
+## Segurança e Variáveis Sensíveis
 
-### Naming and Organization
-- PascalCase for classes, public methods, files, and React components
-- camelCase for variables, private methods, and functions
-- UPPER_SNAKE_CASE for global constants
-- Descriptive names, no abbreviations
-- On the frontend, organize components in folders by atomicity
+- Nunca exponha segredos, tokens ou credenciais em código, logs ou bundles
+- Variáveis sensíveis devem ser lidas de configuração segura ou KeyVault (ver exemplos em `src/SmartAlarm.Infrastructure/KeyVault/`)
 
-### Testing
-- xUnit for unit/integration tests (backend)
-- Mocks with Moq (backend)
-- AAA (Arrange, Act, Assert)
-- Test for success, error, and edge cases
-- Tests close to the implemented code
-- On the frontend, use Testing Library for React components, cover interactions, accessibility, and visual states
+## Pull Requests e Revisão
 
-### Security and Compliance
-- OWASP Top 10, LGPD, granular consent
-- AES-256-GCM for data at rest, TLS 1.3 in transit
-- FIDO2/WebAuthn for passwordless authentication
-- BYOK (Bring Your Own Key) for sensitive data
-- On the frontend, never expose tokens or secrets in code or bundle
-- Implement authentication and authorization when consuming APIs
-- Follow accessibility (WCAG) and privacy (LGPD) practices in the interface
+- Siga o template de PR e checklist em [`.github/instructions/pull-request.instructions.md`](./instructions/pull-request.instructions.md)
+- Sempre descreva claramente o objetivo, mudanças técnicas e pendências
+- Confirme que todos os testes passam e que não há segredos/credenciais expostos
 
-## Development Flow
+## Integração e Comunicação
 
-- Install dependencies: `dotnet restore`
-- Build: `dotnet build`
-- Run tests: `dotnet test`
-- Deploy: OCI Functions via CI/CD pipelines
-- Document endpoints and decisions in architecture
+- Serviços se comunicam via REST (ver APIs em `/services/*/Api/`)
+- Repositórios desacoplados: multi-provider (PostgreSQL dev/test, Oracle prod) – veja `src/SmartAlarm.Infrastructure/README.md`
+- Mensageria: RabbitMQ (dev), stub para OCI Streaming (prod)
+- Storage: MinIO (dev), stub para OCI Object Storage (prod)
+- KeyVault: HashiCorp Vault (dev), estrutura extensível para OCI/Azure/AWS
 
-## Pull Requests & Code Review
+## Exemplos Frontend (se aplicável)
 
-- Follow the conventional commit format
-- Clearly describe what changed and why
-- Include context, changes, tests performed, and pending items
-- Use technical and business reviewers
+- Componentes React seguem Atomic Design (veja exemplos em `docs/frontend/` ou `src/SmartAlarm.Frontend/` se existir)
+- Testes de componentes: utilize Testing Library, cubra interações, acessibilidade e estados visuais
 
-## Examples
+## Exemplos Essenciais
 
-### C# Handler (AlarmService)
-
+**Handler com validação e logging:**
 ```csharp
 public class CreateAlarmHandler : IRequestHandler<CreateAlarmCommand, AlarmResponse>
 {
@@ -141,7 +87,6 @@ public class CreateAlarmHandler : IRequestHandler<CreateAlarmCommand, AlarmRespo
             _logger.LogWarning("Validation failed: {@Errors}", validationResult.Errors);
             throw new ValidationException(validationResult.Errors);
         }
-
         var alarm = new Alarm { /* ... */ };
         await _alarmRepository.AddAsync(alarm);
         _logger.LogInformation("Alarm created: {AlarmId}", alarm.Id);
@@ -150,14 +95,15 @@ public class CreateAlarmHandler : IRequestHandler<CreateAlarmCommand, AlarmRespo
 }
 ```
 
-### C# Unit Test
-
+**Teste AAA com xUnit:**
 ```csharp
 [Fact]
 public async Task Should_ThrowValidationException_When_CommandIsInvalid()
 {
+    // Arrange
     var handler = new CreateAlarmHandler(...);
     var invalidCommand = new CreateAlarmCommand { /* ... */ };
+    // Act & Assert
     await Assert.ThrowsAsync<ValidationException>(() => handler.Handle(invalidCommand, CancellationToken.None));
 }
 ```

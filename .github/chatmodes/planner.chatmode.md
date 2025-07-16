@@ -1,5 +1,5 @@
 ---
-tools: ['architecture', 'development', 'memory-system', 'testing']
+tools: ['architecture', 'development', 'testing', 'codebase', 'fetch', 'githubRepo', 'problems', 'search', 'searchResults', 'usages']
 description: 'Strategic planning specialist, task breakdown and prioritization oriented by project context'
 ---
 

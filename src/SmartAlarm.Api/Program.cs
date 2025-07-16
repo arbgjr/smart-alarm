@@ -13,6 +13,7 @@ using System.Threading.RateLimiting;
 using MediatR;
 using FluentValidation;
 using System.Reflection;
+using SmartAlarm.Observability.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,6 +28,9 @@ builder.Services.Configure<Microsoft.AspNetCore.Http.Features.IHttpResponseFeatu
 {
     // This will be handled by middleware
 });
+
+// Add Observability
+builder.Services.AddObservability(builder.Configuration, "SmartAlarm.Api", "1.0.0");
 
 // Configuração do Serilog
 builder.Host.UseSerilog((context, services, configuration) =>
@@ -46,17 +50,6 @@ if (!builder.Environment.IsEnvironment("Testing"))
 {
     builder.Services.AddSmartAlarmInfrastructure(builder.Configuration);
 }
-
-// Configuração do OpenTelemetry (Tracing e Métricas)
-builder.Services.AddOpenTelemetry()
-    .WithTracing(tracing => tracing
-        .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("SmartAlarm.Api"))
-        .AddAspNetCoreInstrumentation()
-        .AddOtlpExporter())
-    .WithMetrics(metrics => metrics
-        .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("SmartAlarm.Api"))
-        .AddAspNetCoreInstrumentation()
-        .AddPrometheusExporter());
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
@@ -204,7 +197,7 @@ app.Use(async (context, next) =>
 
 // Observabilidade: logging estruturado e tracing
 app.UseSerilogRequestLogging();
-app.UseMiddleware<SmartAlarm.Observability.ObservabilityMiddleware>();
+app.UseObservability();
 
 // Rate limiting before authentication (disabled in testing environments)
 if (!app.Environment.IsEnvironment("Testing"))
