@@ -49,7 +49,7 @@ namespace SmartAlarm.Application.Tests.Handlers
             var alarm = new TestAlarm(alarmId, "Alarme Teste", DateTime.Now, true, userId)
             {
                 HolidayActive = true,
-                HolidayPreference = new UserHolidayPreference(Guid.NewGuid(), userId, Guid.NewGuid(), true, HolidayPreferenceAction.Disable)
+                HolidayPreference = new SmartAlarm.Domain.Entities.UserHolidayPreference(Guid.NewGuid(), userId, Guid.NewGuid(), true, HolidayPreferenceAction.Disable)
             };
             var repoMock = new Mock<IAlarmRepository>();
             repoMock.Setup(r => r.GetByIdAsync(alarmId)).ReturnsAsync(alarm);
@@ -77,7 +77,7 @@ namespace SmartAlarm.Application.Tests.Handlers
             var alarm2 = new TestAlarm(Guid.NewGuid(), "Alarme 2", DateTime.Now, true, userId)
             {
                 HolidayActive = true,
-                HolidayPreference = new UserHolidayPreference(Guid.NewGuid(), userId, Guid.NewGuid(), true, HolidayPreferenceAction.Disable)
+                HolidayPreference = new SmartAlarm.Domain.Entities.UserHolidayPreference(Guid.NewGuid(), userId, Guid.NewGuid(), true, HolidayPreferenceAction.Disable)
             };
             var repoMock = new Mock<IAlarmRepository>();
             repoMock.Setup(r => r.GetByUserIdAsync(userId)).ReturnsAsync(new List<Alarm> { alarm1, alarm2 });
@@ -97,7 +97,7 @@ namespace SmartAlarm.Application.Tests.Handlers
         {
             public bool ExceptionPeriodActive { get; set; }
             public bool HolidayActive { get; set; }
-            public UserHolidayPreference? HolidayPreference { get; set; }
+            public SmartAlarm.Domain.Entities.UserHolidayPreference? HolidayPreference { get; set; }
 
             public TestAlarm(Guid id, string name, DateTime time, bool enabled, Guid userId)
                 : base(id, name, time, enabled, userId) { }
@@ -108,7 +108,7 @@ namespace SmartAlarm.Application.Tests.Handlers
             protected override Holiday? GetHolidayForDate(DateTime date)
                 => HolidayActive ? new Holiday(date, "Feriado Teste") : null;
 
-            protected override UserHolidayPreference? GetUserHolidayPreference(Guid userId, Guid holidayId)
+            protected override SmartAlarm.Domain.Entities.UserHolidayPreference? GetUserHolidayPreference(Guid userId, Guid holidayId)
                 => HolidayPreference;
         }
     }
