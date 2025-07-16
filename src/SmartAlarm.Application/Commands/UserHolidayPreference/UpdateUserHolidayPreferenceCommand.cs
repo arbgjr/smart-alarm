@@ -8,7 +8,7 @@ namespace SmartAlarm.Application.Commands.UserHolidayPreference
     /// <summary>
     /// Command para atualizar uma preferência de feriado do usuário.
     /// </summary>
-    public class UpdateUserHolidayPreferenceCommand : IRequest<UserHolidayPreferenceResponseDto>
+    public class UpdateUserHolidayPreferenceCommand : IRequest<UserHolidayPreferenceResponseDto?>
     {
         /// <summary>
         /// ID da preferência a ser atualizada.

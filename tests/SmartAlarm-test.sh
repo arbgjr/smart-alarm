@@ -46,6 +46,7 @@ show_help() {
     echo "  api         - Testes da API (Controllers, Endpoints, Auth)"
     echo "  holiday     - Testes da API de Holidays (HTTP/REST)"
     echo "  exception-period - Testes da API de ExceptionPeriod"
+    echo "  user-holiday-preferences - Testes da API de UserHolidayPreferences (CRUD)"
     echo ""
     print_message "${CYAN}" "📊 Análise e Depuração:"
     echo "  coverage    - Testes com análise de cobertura"
@@ -61,6 +62,7 @@ show_help() {
     echo "  $0 api                # Testes da API"
     echo "  $0 holiday            # Testes da API Holiday"
     echo "  $0 exception-period   # Testes da API ExceptionPeriod"
+    echo "  $0 user-holiday-preferences # Testes da API UserHolidayPreferences"
     echo "  $0 working-only       # Apenas testes funcionais (sem observabilidade)"
     echo "  $0 coverage           # Análise de cobertura completa"
     echo "  $0 debug              # Modo interativo para diagnóstico"
@@ -75,6 +77,7 @@ show_help() {
     print_message "${CYAN}" "  - scripts/run-api-tests.sh        # Testes da API"
     print_message "${CYAN}" "  - scripts/run-holiday-tests.sh    # Testes Holiday API"
     print_message "${CYAN}" "  - scripts/run-exception-period-tests.sh # Testes ExceptionPeriod API"
+    print_message "${CYAN}" "  - scripts/run-user-holiday-preferences-tests.sh # Testes UserHolidayPreferences API"
     print_message "${CYAN}" "  - scripts/run-debug.sh            # Ferramentas de debug"
     print_message "${CYAN}" "  - test-common.sh                  # Funções compartilhadas"
 }
@@ -201,6 +204,9 @@ execute_test_group() {
             ;;
         "exception-period")
             call_specialized_script "run-exception-period-tests.sh" "$test_group" "$verbose_mode"
+            ;;
+        "user-holiday-preferences")
+            call_specialized_script "run-user-holiday-preferences-tests.sh" "$test_group" "$verbose_mode"
             ;;
         
         # Análise de cobertura

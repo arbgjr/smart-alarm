@@ -13,7 +13,7 @@ namespace SmartAlarm.Application.Handlers.UserHolidayPreference
     /// <summary>
     /// Handler para atualizar uma preferência de feriado do usuário.
     /// </summary>
-    public class UpdateUserHolidayPreferenceHandler : IRequestHandler<UpdateUserHolidayPreferenceCommand, UserHolidayPreferenceResponseDto>
+    public class UpdateUserHolidayPreferenceHandler : IRequestHandler<UpdateUserHolidayPreferenceCommand, UserHolidayPreferenceResponseDto?>
     {
         private readonly IUserHolidayPreferenceRepository _userHolidayPreferenceRepository;
         private readonly ILogger<UpdateUserHolidayPreferenceHandler> _logger;
@@ -26,7 +26,7 @@ namespace SmartAlarm.Application.Handlers.UserHolidayPreference
             _logger = logger;
         }
 
-        public async Task<UserHolidayPreferenceResponseDto> Handle(UpdateUserHolidayPreferenceCommand request, CancellationToken cancellationToken)
+        public async Task<UserHolidayPreferenceResponseDto?> Handle(UpdateUserHolidayPreferenceCommand request, CancellationToken cancellationToken)
         {
             if (request == null)
                 throw new ArgumentNullException(nameof(request));
@@ -37,7 +37,8 @@ namespace SmartAlarm.Application.Handlers.UserHolidayPreference
             var preference = await _userHolidayPreferenceRepository.GetByIdAsync(request.Id);
             if (preference == null)
             {
-                throw new ArgumentException($"Preferência com ID {request.Id} não encontrada.");
+                _logger.LogWarning("User holiday preference with ID {PreferenceId} not found", request.Id);
+                return null;
             }
 
             // Validar DelayInMinutes quando action for Delay

@@ -239,6 +239,12 @@ namespace SmartAlarm.Api.Controllers
 
                 var result = await _mediator.Send(command, cancellationToken);
 
+                if (result == null)
+                {
+                    _logger.LogWarning("User holiday preference not found for update with ID: {PreferenceId}", id);
+                    return NotFound(new { message = $"Preferência com ID {id} não encontrada" });
+                }
+
                 _logger.LogInformation("User holiday preference updated successfully with ID: {PreferenceId}", id);
 
                 return Ok(result);

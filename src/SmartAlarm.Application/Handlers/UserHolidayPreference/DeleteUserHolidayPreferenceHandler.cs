@@ -38,7 +38,8 @@ namespace SmartAlarm.Application.Handlers.UserHolidayPreference
             var preference = await _userHolidayPreferenceRepository.GetByIdAsync(request.Id);
             if (preference == null)
             {
-                throw new ArgumentException($"Preferência com ID {request.Id} não encontrada.");
+                _logger.LogWarning("User holiday preference with ID {PreferenceId} not found", request.Id);
+                return false;
             }
 
             await _userHolidayPreferenceRepository.DeleteAsync(preference);

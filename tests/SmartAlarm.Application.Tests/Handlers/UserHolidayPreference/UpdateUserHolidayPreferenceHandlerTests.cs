@@ -69,7 +69,7 @@ namespace SmartAlarm.Application.Tests.Handlers.UserHolidayPreference
         }
 
         [Fact]
-        public async Task Handle_Should_ThrowArgumentException_When_PreferenceNotFound()
+        public async Task Handle_Should_ReturnNull_When_PreferenceNotFound()
         {
             // Arrange
             var command = new UpdateUserHolidayPreferenceCommand
@@ -82,8 +82,11 @@ namespace SmartAlarm.Application.Tests.Handlers.UserHolidayPreference
             _repositoryMock.Setup(x => x.GetByIdAsync(_testPreferenceId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync((Domain.Entities.UserHolidayPreference?)null);
 
-            // Act & Assert
-            await Assert.ThrowsAsync<ArgumentException>(() => _handler.Handle(command, CancellationToken.None));
+            // Act
+            var result = await _handler.Handle(command, CancellationToken.None);
+
+            // Assert
+            Assert.Null(result);
         }
 
         [Fact]
