@@ -56,7 +56,7 @@ namespace SmartAlarm.IntegrationService.Application.Queries
         int TotalEventsSynced,
         int TotalAlarmsFromIntegrations,
         DateTime? LastSuccessfulSync,
-        List<string> HealthIssues = null
+        List<string>? HealthIssues = null
     );
 
     /// <summary>
@@ -176,7 +176,6 @@ namespace SmartAlarm.IntegrationService.Application.Queries
 
                 stopwatch.Stop();
                 _meter.RecordRequestDuration(stopwatch.ElapsedMilliseconds, "get_user_integrations", "success", "completed");
-                _meter.RecordCustomMetric("user_integrations_retrieved", integrations.Count, "user_id", request.UserId.ToString());
 
                 var response = new GetUserIntegrationsResponse(
                     UserId: request.UserId,
@@ -290,23 +289,11 @@ namespace SmartAlarm.IntegrationService.Application.Queries
             var userBasedSeed = userId.GetHashCode();
             var random = new Random(userBasedSeed);
             
-            // Randomizar algumas propriedades para tornar mais realista
-            foreach (var integration in mockIntegrations.Take(random.Next(1, 4)))
-            {
-                if (integration.IsActive && integration.IsConnected)
-                {
-                    // Variar os números baseado no usuário
-                    var multiplier = (userBasedSeed % 3) + 1;
-                    integration = integration with
-                    {
-                        TotalEventsSynced = integration.TotalEventsSynced * multiplier,
-                        AlarmsCreatedFromIntegration = integration.AlarmsCreatedFromIntegration * multiplier
-                    };
-                }
-            }
+            // Selecionar algumas integrações baseado no usuário para tornar mais realista
+            var selectedIntegrations = mockIntegrations.Take(random.Next(1, 4)).ToList();
 
-            activity?.SetTag("mock_integrations_generated", mockIntegrations.Count.ToString());
-            return mockIntegrations;
+            activity?.SetTag("mock_integrations_generated", selectedIntegrations.Count.ToString());
+            return selectedIntegrations;
         }
 
         /// <summary>

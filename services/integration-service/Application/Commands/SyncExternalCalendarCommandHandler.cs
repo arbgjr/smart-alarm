@@ -378,10 +378,10 @@ namespace SmartAlarm.IntegrationService.Application.Commands
             CancellationToken cancellationToken)
         {
             // Verificar se já existe um alarme para este evento
-            var existingAlarms = await _alarmRepository.GetUserAlarmsAsync(userId);
+            var existingAlarms = await _alarmRepository.GetByUserIdAsync(userId);
             var existingAlarm = existingAlarms.FirstOrDefault(a => 
-                a.Description?.Contains(calendarEvent.Id) == true ||
-                (a.Name == calendarEvent.Title && Math.Abs((a.AlarmTime - calendarEvent.StartTime).TotalMinutes) < 60));
+                a.Name.ToString().Contains(calendarEvent.Id) ||
+                (a.Name.ToString() == calendarEvent.Title && Math.Abs((a.Time - calendarEvent.StartTime).TotalMinutes) < 60));
 
             string action;
             bool alarmCreated = false;
@@ -395,10 +395,8 @@ namespace SmartAlarm.IntegrationService.Application.Commands
             else if (existingAlarm != null && forceUpdate)
             {
                 // Atualizar alarme existente
-                existingAlarm.Name = calendarEvent.Title;
-                existingAlarm.AlarmTime = calendarEvent.StartTime.AddMinutes(-15); // 15 min antes do evento
-                existingAlarm.Description = $"Evento do calendário: {calendarEvent.Description} (ID: {calendarEvent.Id})";
-                existingAlarm.IsActive = true;
+                existingAlarm.UpdateName(new SmartAlarm.Domain.ValueObjects.Name(calendarEvent.Title));
+                existingAlarm.UpdateTime(calendarEvent.StartTime.AddMinutes(-15)); // 15 min antes do evento
 
                 await _alarmRepository.UpdateAsync(existingAlarm);
                 action = "updated";
@@ -407,19 +405,13 @@ namespace SmartAlarm.IntegrationService.Application.Commands
             else
             {
                 // Criar novo alarme
-                var user = await _userRepository.GetByIdAsync(userId);
-                var newAlarm = new Alarm
-                {
-                    Id = Guid.NewGuid(),
-                    UserId = userId,
-                    User = user,
-                    Name = calendarEvent.Title,
-                    AlarmTime = calendarEvent.StartTime.AddMinutes(-15), // 15 min antes do evento
-                    Description = $"Evento do calendário: {calendarEvent.Description} (ID: {calendarEvent.Id})",
-                    IsActive = true,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                };
+                var newAlarm = new Alarm(
+                    id: Guid.NewGuid(),
+                    name: calendarEvent.Title,
+                    time: calendarEvent.StartTime.AddMinutes(-15), // 15 min antes do evento
+                    enabled: true,
+                    userId: userId
+                );
 
                 await _alarmRepository.AddAsync(newAlarm);
                 action = "created";
