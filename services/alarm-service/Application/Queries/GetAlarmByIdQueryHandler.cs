@@ -25,9 +25,8 @@ namespace SmartAlarm.AlarmService.Application.Queries
         DateTime Time,
         bool Enabled,
         DateTime CreatedAt,
-        DateTime? UpdatedAt,
-        Guid UserId,
-        string? Description
+        DateTime? LastTriggeredAt,
+        Guid UserId
     );
 
     /// <summary>
@@ -135,9 +134,8 @@ namespace SmartAlarm.AlarmService.Application.Queries
                     alarm.Time,
                     alarm.Enabled,
                     alarm.CreatedAt,
-                    alarm.UpdatedAt,
-                    alarm.UserId,
-                    alarm.Description
+                    alarm.LastTriggeredAt,
+                    alarm.UserId
                 );
             }
             catch (ValidationException)

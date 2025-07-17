@@ -38,8 +38,7 @@ namespace SmartAlarm.AlarmService.Application.Queries
         string Name,
         DateTime Time,
         bool Enabled,
-        DateTime CreatedAt,
-        string? Description
+        DateTime CreatedAt
     );
 
     /// <summary>
@@ -164,8 +163,7 @@ namespace SmartAlarm.AlarmService.Application.Queries
                         a.Name.Value,
                         a.Time,
                         a.Enabled,
-                        a.CreatedAt,
-                        a.Description
+                        a.CreatedAt
                     ))
                     .ToList();
 

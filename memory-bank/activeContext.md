@@ -2,24 +2,26 @@
 
 ## Current Focus
 
-- **🎯 FASE 6 - Advanced Business Functionality EM ANDAMENTO**: Implementação de lógica de negócio real com MediatR
-- **✅ PRIMEIRA IMPLEMENTAÇÃO**: CreateAlarmCommandHandler completamente funcional com observabilidade
-- **PRÓXIMOS PASSOS**: Query handlers (GetAlarmByIdQuery, ListAlarmsQuery) e integração com outros serviços
-- **PENDENTE**: Handlers para AI Service e Integration Service seguindo mesmo padrão
+- **🎯 FASE 6 - Advanced Business Functionality EM PROGRESSO**: CQRS completo implementado no AlarmService
+- **✅ COMMAND/QUERY HANDLERS**: CreateAlarmCommandHandler + GetAlarmByIdQuery + ListUserAlarmsQuery funcionais
+- **✅ CONTROLLERS ATUALIZADOS**: AlarmsController usando MediatR para todas as operações
+- **PRÓXIMOS PASSOS**: Handlers para AI Service e Integration Service seguindo mesmo padrão
 
 ## Recent Changes
 
-- **🚀 FASE 6 - Advanced Business Functionality INICIADA (17/07/2025)**:
-  - **CreateAlarmCommandHandler**: Implementação completa de Command/Response/Validator com MediatR
-  - **Observabilidade Integrada**: SmartAlarmActivitySource, SmartAlarmMeter, ICorrelationContext, structured logging
-  - **FluentValidation**: Validação robusta de entrada com mensagens personalizadas
-  - **Domain Integration**: Integração correta com entidades Alarm e User existentes
-  - **Controller Updated**: AlarmsController utilizando MediatR para processamento de comandos
-  - **Build Status**: AlarmService compila com sucesso - Build succeeded in 25,9s
-  - **Arquitetura CQRS**: Padrão Command/Query Responsibility Segregation implementado
-  - **Error Handling**: Exception handling completo com categorização e correlation context
-  - **Performance Metrics**: Instrumentação completa de duração e contadores de operação
-  - **Próximo**: Query handlers e handlers para AI/Integration services
+- **🚀 FASE 6 - Advanced Business Functionality EVOLUINDO (17/07/2025)**:
+  - **CQRS Completo Implementado**: Command + Query handlers funcionais no AlarmService
+  - **CreateAlarmCommandHandler**: ✅ Implementação completa de Command/Response/Validator com MediatR
+  - **GetAlarmByIdQueryHandler**: ✅ Query handler com validação, observabilidade e error handling
+  - **ListUserAlarmsQueryHandler**: ✅ Query handler com paginação, filtros e métricas de performance
+  - **AlarmsController Atualizado**: ✅ Endpoints GET /user/{userId}, GET /{alarmId}, POST / usando MediatR
+  - **Build Status**: ✅ AlarmService compila com sucesso - Build succeeded in 9,6s
+  - **Observabilidade Completa**: SmartAlarmActivitySource, SmartAlarmMeter, structured logging, correlation context
+  - **Domain Integration**: ✅ Integração correta com entidades Alarm e User existentes
+  - **FluentValidation**: ✅ Validação robusta em Commands e Queries com mensagens personalizadas
+  - **Error Handling**: ✅ Exception handling categorizado (ValidationException, InvalidOperationException)
+  - **Performance Metrics**: ✅ Instrumentação completa de duração, contadores e activity tags
+  - **Próximo**: Handlers para AI Service e Integration Service
 
 - **✅ FASE 5 - Service Integration CONCLUÍDA (17/07/2025)**:
   - **3 Serviços Criados**: AiService, AlarmService, IntegrationService com observabilidade completa
