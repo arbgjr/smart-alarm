@@ -244,6 +244,25 @@ namespace SmartAlarm.Observability.Logging
 
         #endregion
 
+        #region Messaging Templates
+
+        /// <summary>
+        /// Template para início de operação de messaging
+        /// </summary>
+        public const string MessagingOperationStarted = "Messaging operation {Service}.{Operation} started for topic {Topic} with CorrelationId {CorrelationId}";
+
+        /// <summary>
+        /// Template para conclusão de operação de messaging
+        /// </summary>
+        public const string MessagingOperationCompleted = "Messaging operation {Service}.{Operation} completed for topic {Topic} in {Duration}ms with CorrelationId {CorrelationId}";
+
+        /// <summary>
+        /// Template para falha em operação de messaging
+        /// </summary>
+        public const string MessagingOperationFailed = "Messaging operation {Service}.{Operation} failed for topic {Topic} with error {ErrorMessage} and CorrelationId {CorrelationId}";
+
+        #endregion
+
         #region Integration Templates
 
         /// <summary>

@@ -1,9 +1,14 @@
 using System;
+using System.Diagnostics;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using SmartAlarm.Observability.Context;
+using SmartAlarm.Observability.Logging;
+using SmartAlarm.Observability.Metrics;
+using SmartAlarm.Observability.Tracing;
 
 namespace SmartAlarm.Infrastructure.Messaging
 {
@@ -15,10 +20,20 @@ namespace SmartAlarm.Infrastructure.Messaging
         private readonly IConnection _connection;
         private readonly IModel _channel;
         private readonly ILogger<RabbitMqMessagingService> _logger;
+        private readonly SmartAlarmMeter _meter;
+        private readonly ICorrelationContext _correlationContext;
+        private readonly SmartAlarmActivitySource _activitySource;
 
-        public RabbitMqMessagingService(ILogger<RabbitMqMessagingService> logger)
+        public RabbitMqMessagingService(
+            ILogger<RabbitMqMessagingService> logger,
+            SmartAlarmMeter meter,
+            ICorrelationContext correlationContext,
+            SmartAlarmActivitySource activitySource)
         {
             _logger = logger;
+            _meter = meter;
+            _correlationContext = correlationContext;
+            _activitySource = activitySource;
             
             // Log das variáveis de ambiente para depuração
             _logger.LogInformation("ASPNETCORE_ENVIRONMENT: {Env}", 
@@ -59,26 +74,110 @@ namespace SmartAlarm.Infrastructure.Messaging
 
         public Task PublishEventAsync(string topic, string message)
         {
-            _channel.QueueDeclare(queue: topic, durable: false, exclusive: false, autoDelete: false, arguments: null);
-            var body = Encoding.UTF8.GetBytes(message);
-            _channel.BasicPublish(exchange: "", routingKey: topic, basicProperties: null, body: body);
-            _logger.LogInformation("[RabbitMQ] Evento publicado no tópico {Topic}: {Message}", topic, message);
-            return Task.CompletedTask;
+            var stopwatch = Stopwatch.StartNew();
+            var correlationId = _correlationContext.CorrelationId;
+            
+            using var activity = _activitySource.StartActivity("RabbitMqMessagingService.PublishEventAsync");
+            activity?.SetTag("messaging.system", "rabbitmq");
+            activity?.SetTag("messaging.destination", topic);
+            activity?.SetTag("messaging.operation", "publish");
+            activity?.SetTag("correlation.id", correlationId);
+            
+            try
+            {
+                _logger.LogDebug(LogTemplates.MessagingOperationStarted, 
+                    "RabbitMQ", "PublishEvent", topic, correlationId);
+                
+                _channel.QueueDeclare(queue: topic, durable: false, exclusive: false, autoDelete: false, arguments: null);
+                var body = Encoding.UTF8.GetBytes(message);
+                _channel.BasicPublish(exchange: "", routingKey: topic, basicProperties: null, body: body);
+                
+                stopwatch.Stop();
+                _meter.RecordExternalServiceCallDuration(stopwatch.ElapsedMilliseconds, "messaging", "rabbitmq", true);
+                
+                _logger.LogInformation(LogTemplates.MessagingOperationCompleted, 
+                    "RabbitMQ", "PublishEvent", topic, stopwatch.ElapsedMilliseconds, correlationId);
+                    
+                activity?.SetStatus(ActivityStatusCode.Ok);
+                return Task.CompletedTask;
+            }
+            catch (Exception ex)
+            {
+                stopwatch.Stop();
+                _meter.IncrementErrorCount("MESSAGING", "RabbitMQ", "PublishError");
+                
+                _logger.LogError(LogTemplates.MessagingOperationFailed, ex,
+                    "RabbitMQ", "PublishEvent", topic, ex.Message, correlationId);
+                    
+                activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+                throw;
+            }
         }
 
         public Task SubscribeAsync(string topic, Func<string, Task> handler)
         {
-            _channel.QueueDeclare(queue: topic, durable: false, exclusive: false, autoDelete: false, arguments: null);
-            var consumer = new EventingBasicConsumer(_channel);
-            consumer.Received += async (model, ea) =>
+            var stopwatch = Stopwatch.StartNew();
+            var correlationId = _correlationContext.CorrelationId;
+            
+            using var activity = _activitySource.StartActivity("RabbitMqMessagingService.SubscribeAsync");
+            activity?.SetTag("messaging.system", "rabbitmq");
+            activity?.SetTag("messaging.destination", topic);
+            activity?.SetTag("messaging.operation", "subscribe");
+            activity?.SetTag("correlation.id", correlationId);
+            
+            try
             {
-                var body = ea.Body.ToArray();
-                var message = Encoding.UTF8.GetString(body);
-                await handler(message);
-            };
-            _channel.BasicConsume(queue: topic, autoAck: true, consumer: consumer);
-            _logger.LogInformation("[RabbitMQ] Subscrito ao tópico {Topic}", topic);
-            return Task.CompletedTask;
+                _logger.LogDebug(LogTemplates.MessagingOperationStarted, 
+                    "RabbitMQ", "Subscribe", topic, correlationId);
+                
+                _channel.QueueDeclare(queue: topic, durable: false, exclusive: false, autoDelete: false, arguments: null);
+                var consumer = new EventingBasicConsumer(_channel);
+                consumer.Received += async (model, ea) =>
+                {
+                    var handlerStopwatch = Stopwatch.StartNew();
+                    try
+                    {
+                        var body = ea.Body.ToArray();
+                        var message = Encoding.UTF8.GetString(body);
+                        await handler(message);
+                        
+                        handlerStopwatch.Stop();
+                        _meter.RecordExternalServiceCallDuration(handlerStopwatch.ElapsedMilliseconds, "messaging", "rabbitmq_handler", true);
+                        
+                        _logger.LogDebug(LogTemplates.MessagingOperationCompleted, 
+                            "RabbitMQ", "MessageReceived", topic, handlerStopwatch.ElapsedMilliseconds, correlationId);
+                    }
+                    catch (Exception ex)
+                    {
+                        handlerStopwatch.Stop();
+                        _meter.IncrementErrorCount("MESSAGING", "RabbitMQ", "HandlerError");
+                        
+                        _logger.LogError(LogTemplates.MessagingOperationFailed, ex,
+                            "RabbitMQ", "MessageHandler", topic, ex.Message, correlationId);
+                    }
+                };
+                _channel.BasicConsume(queue: topic, autoAck: true, consumer: consumer);
+                
+                stopwatch.Stop();
+                _meter.RecordExternalServiceCallDuration(stopwatch.ElapsedMilliseconds, "messaging", "rabbitmq", true);
+                
+                _logger.LogInformation(LogTemplates.MessagingOperationCompleted, 
+                    "RabbitMQ", "Subscribe", topic, stopwatch.ElapsedMilliseconds, correlationId);
+                    
+                activity?.SetStatus(ActivityStatusCode.Ok);
+                return Task.CompletedTask;
+            }
+            catch (Exception ex)
+            {
+                stopwatch.Stop();
+                _meter.IncrementErrorCount("MESSAGING", "RabbitMQ", "SubscribeError");
+                
+                _logger.LogError(LogTemplates.MessagingOperationFailed, ex,
+                    "RabbitMQ", "Subscribe", topic, ex.Message, correlationId);
+                    
+                activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+                throw;
+            }
         }
 
         public void Dispose()
