@@ -124,6 +124,14 @@ namespace SmartAlarm.Domain.Entities
             LastTriggeredAt = DateTime.UtcNow;
         }
 
+        public void RecordTrigger(DateTime triggeredAt)
+        {
+            if (!Enabled)
+                throw new InvalidOperationException("NÃ£o Ã© possÃ­vel disparar um alarme desabilitado.");
+
+            LastTriggeredAt = triggeredAt;
+        }
+
         public virtual bool ShouldTriggerNow()
         {
             if (!Enabled) return false;

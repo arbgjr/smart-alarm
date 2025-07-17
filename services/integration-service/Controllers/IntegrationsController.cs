@@ -165,7 +165,7 @@ namespace SmartAlarm.IntegrationService.Controllers
         /// </summary>
         /// <returns>Lista de provedores de integração suportados</returns>
         [HttpGet("providers")]
-        public async Task<IActionResult> GetAvailableProviders()
+        public IActionResult GetAvailableProviders()
         {
             using var activity = _activitySource.StartActivity("IntegrationsController.GetAvailableProviders");
             var stopwatch = Stopwatch.StartNew();
@@ -240,23 +240,15 @@ namespace SmartAlarm.IntegrationService.Controllers
                 _logger.LogInformation("Criando integração para alarme {AlarmId} com provedor {Provider} - CorrelationId: {CorrelationId}", 
                     alarmId, request.Provider, _correlationContext.CorrelationId);
 
-                // Simular validação com serviço externo
-                var httpClient = _httpClientFactory.CreateClient("ExternalIntegrations");
+                // Implementação real do comando para criar integração
+                var command = new CreateIntegrationCommand(
+                    alarmId, 
+                    request.Provider, 
+                    request.Configuration, 
+                    request.EnableNotifications,
+                    request.Features);
                 
-                // TODO: Implementar comando real para criar integração
-                // var integration = await _mediator.Send(new CreateIntegrationCommand(alarmId, request));
-                
-                var mockIntegration = new
-                {
-                    Id = Guid.NewGuid(),
-                    AlarmId = alarmId,
-                    Provider = request.Provider,
-                    Configuration = request.Configuration,
-                    Status = "Active",
-                    CreatedAt = DateTime.UtcNow,
-                    AuthRequired = true,
-                    AuthUrl = $"https://auth.{request.Provider.ToLower()}.com/oauth/authorize?client_id=smartalarm"
-                };
+                var integration = await _mediator.Send(command);
 
                 stopwatch.Stop();
                 _meter.RecordRequestDuration(stopwatch.ElapsedMilliseconds, "create_alarm_integration", "success", "201");
@@ -264,7 +256,7 @@ namespace SmartAlarm.IntegrationService.Controllers
                 _logger.LogInformation("Integração criada com sucesso para alarme {AlarmId} em {Duration}ms", 
                     alarmId, stopwatch.ElapsedMilliseconds);
 
-                return Created($"/api/v1/integrations/{mockIntegration.Id}", mockIntegration);
+                return Created($"/api/v1/integrations/{integration.Id}", integration);
             }
             catch (Exception ex)
             {
@@ -288,7 +280,7 @@ namespace SmartAlarm.IntegrationService.Controllers
         /// <param name="integrationId">ID da integração</param>
         /// <returns>Status da sincronização</returns>
         [HttpPost("{integrationId:guid}/sync")]
-        public async Task<IActionResult> SyncIntegration(Guid integrationId)
+        public IActionResult SyncIntegration(Guid integrationId)
         {
             using var activity = _activitySource.StartActivity("IntegrationsController.SyncIntegration");
             var stopwatch = Stopwatch.StartNew();

@@ -16,19 +16,21 @@ using SmartAlarm.Observability.Logging;
 using System.Diagnostics;
 using System.Threading;
 using System.Linq;
-// using Oci.ObjectstorageService;
-// using Oci.ObjectstorageService.Requests;
-// using Oci.Common.Auth;
+using Oci.ObjectstorageService;
+using Oci.ObjectstorageService.Requests;
+using Oci.ObjectstorageService.Responses;
+using Oci.Common.Auth;
+using Oci.Common;
 
 namespace SmartAlarm.Infrastructure.Storage
 {
     /// <summary>
     /// Implementação real do serviço de armazenamento OCI Object Storage
-    /// Implementação completa para produção com autenticação e observabilidade
+    /// Implementação completa para produção com Oracle OCI SDK oficial
     /// </summary>
     public class OciObjectStorageService : IStorageService, IDisposable
     {
-        // private readonly ObjectStorageClient _client;
+        private readonly Lazy<ObjectStorageClient> _client;
         private readonly IConfiguration _configuration;
         private readonly ILogger<OciObjectStorageService> _logger;
         private readonly SmartAlarmMeter _meter;
@@ -76,15 +78,51 @@ namespace SmartAlarm.Infrastructure.Storage
             _endpoint = $"https://objectstorage.{_region}.oraclecloud.com";
             _httpClient.BaseAddress = new Uri(_endpoint);
                 
-            // TODO: Uncomment when OCI SDK is properly configured
-            // _client = new ObjectStorageClient(GetAuthenticationDetailsProvider());
-            // _client.SetEndpoint($"https://objectstorage.{_region}.oraclecloud.com");
+            // Implementação com Oracle OCI SDK oficial em lazy loading para performance
+            _client = new Lazy<ObjectStorageClient>(() => CreateObjectStorageClient());
         }
 
-        // private IAuthenticationDetailsProvider GetAuthenticationDetailsProvider()
-        // {
-        //     return new ConfigFileAuthenticationDetailsProvider("DEFAULT");
-        // }
+        /// <summary>
+        /// Cria cliente OCI ObjectStorage com autenticação baseada em chave privada
+        /// </summary>
+        private ObjectStorageClient CreateObjectStorageClient()
+        {
+            try
+            {
+                // Estratégia de autenticação com chave privada
+                var authProvider = CreateAuthenticationProvider();
+                var client = new ObjectStorageClient(authProvider);
+                client.SetEndpoint($"https://objectstorage.{_region}.oraclecloud.com");
+                
+                _logger.LogInformation("Cliente OCI ObjectStorage criado com sucesso para região {Region}", _region);
+                return client;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erro ao criar cliente OCI ObjectStorage");
+                throw new InvalidOperationException("Falha ao inicializar cliente OCI ObjectStorage", ex);
+            }
+        }
+
+        /// <summary>
+        /// Cria provedor de autenticação para OCI
+        /// Utiliza configuração padrão do OCI ou arquivo de configuração
+        /// </summary>
+        private IAuthenticationDetailsProvider CreateAuthenticationProvider()
+        {
+            try
+            {
+                // Usar o provedor de configuração padrão do OCI
+                var configFileProvider = new ConfigFileAuthenticationDetailsProvider("DEFAULT");
+                _logger.LogDebug("Provedor de autenticação OCI criado usando arquivo de configuração");
+                return configFileProvider;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erro ao criar provedor de autenticação OCI");
+                throw new InvalidOperationException("Falha ao configurar autenticação OCI. Verifique se o arquivo ~/.oci/config está configurado corretamente.", ex);
+            }
+        }
 
         /// <summary>
         /// Cria assinatura de autenticação para OCI REST API
@@ -159,19 +197,16 @@ namespace SmartAlarm.Infrastructure.Storage
 
             try
             {
-                // TODO: Uncomment when OCI SDK is properly configured
-                // var putObjectRequest = new PutObjectRequest
-                // {
-                //     NamespaceName = _namespace,
-                //     BucketName = _bucketName,
-                //     ObjectName = path,
-                //     PutObjectBody = content
-                // };
-                // 
-                // await _client.PutObject(putObjectRequest);
-
-                // Implementação real estruturada para OCI Object Storage via REST API
-                await UploadToOciAsync(path, content);
+                // Implementação real com Oracle OCI SDK oficial
+                var putObjectRequest = new PutObjectRequest
+                {
+                    NamespaceName = _namespace,
+                    BucketName = _bucketName,
+                    ObjectName = path,
+                    PutObjectBody = content
+                };
+                
+                var response = await _client.Value.PutObject(putObjectRequest);
 
                 stopwatch.Stop();
                 _meter.RecordExternalServiceCallDuration(stopwatch.ElapsedMilliseconds, "OCI", "Upload", true);
@@ -183,6 +218,7 @@ namespace SmartAlarm.Infrastructure.Storage
                     stopwatch.ElapsedMilliseconds);
 
                 activity?.SetStatus(ActivityStatusCode.Ok);
+                activity?.SetTag("oci.etag", response.ETag);
             }
             catch (Exception ex)
             {
@@ -201,43 +237,6 @@ namespace SmartAlarm.Infrastructure.Storage
             }
         }
 
-        private async Task UploadToOciAsync(string path, Stream content)
-        {
-            var uri = $"/n/{_namespace}/b/{_bucketName}/o/{Uri.EscapeDataString(path)}";
-            var contentBytes = await ReadStreamToBytes(content);
-            var contentLength = contentBytes.Length.ToString();
-
-            var headers = CreateAuthHeaders("PUT", uri, contentLength, "application/octet-stream");
-
-            using var request = new HttpRequestMessage(HttpMethod.Put, uri);
-            foreach (var header in headers)
-            {
-                if (header.Key == "content-type")
-                    request.Content = new ByteArrayContent(contentBytes);
-                else if (header.Key == "host")
-                    request.Headers.Host = header.Value;
-                else
-                    request.Headers.Add(header.Key, header.Value);
-            }
-
-            if (request.Content != null)
-            {
-                request.Content.Headers.ContentLength = contentBytes.Length;
-                request.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
-            }
-
-            _logger.LogDebug("Uploading to OCI Object Storage: {Path} ({Size} bytes)", path, contentBytes.Length);
-
-            var response = await _httpClient.SendAsync(request);
-            if (!response.IsSuccessStatusCode)
-            {
-                var errorContent = await response.Content.ReadAsStringAsync();
-                throw new InvalidOperationException($"OCI upload failed with status {response.StatusCode}: {errorContent}");
-            }
-
-            _logger.LogInformation("Successfully uploaded {Path} to OCI Object Storage", path);
-        }
-
         public async Task<Stream> DownloadAsync(string path)
         {
             using var activity = _activitySource.StartActivity("OCI.ObjectStorage.Download");
@@ -253,18 +252,15 @@ namespace SmartAlarm.Infrastructure.Storage
 
             try
             {
-                // TODO: Uncomment when OCI SDK is properly configured
-                // var getObjectRequest = new GetObjectRequest
-                // {
-                //     NamespaceName = _namespace,
-                //     BucketName = _bucketName,
-                //     ObjectName = path
-                // };
-                // var response = await _client.GetObject(getObjectRequest);
-                // return response.InputStream;
-
-                // Implementação real estruturada para OCI Object Storage via REST API
-                var result = await DownloadFromOciAsync(path);
+                // Implementação real com Oracle OCI SDK oficial
+                var getObjectRequest = new GetObjectRequest
+                {
+                    NamespaceName = _namespace,
+                    BucketName = _bucketName,
+                    ObjectName = path
+                };
+                
+                var response = await _client.Value.GetObject(getObjectRequest);
 
                 stopwatch.Stop();
                 _meter.RecordExternalServiceCallDuration(stopwatch.ElapsedMilliseconds, "OCI", "Download", true);
@@ -275,9 +271,11 @@ namespace SmartAlarm.Infrastructure.Storage
                     _bucketName,
                     stopwatch.ElapsedMilliseconds);
 
-                activity?.SetTag("storage.size", result.Length.ToString());
+                activity?.SetTag("storage.size", response.ContentLength.ToString());
+                activity?.SetTag("oci.etag", response.ETag);
                 activity?.SetStatus(ActivityStatusCode.Ok);
-                return result;
+                
+                return response.InputStream;
             }
             catch (Exception ex)
             {
@@ -296,40 +294,6 @@ namespace SmartAlarm.Infrastructure.Storage
             }
         }
 
-        private async Task<Stream> DownloadFromOciAsync(string path)
-        {
-            var uri = $"/n/{_namespace}/b/{_bucketName}/o/{Uri.EscapeDataString(path)}";
-            var headers = CreateAuthHeaders("GET", uri, "0", "application/octet-stream");
-
-            using var request = new HttpRequestMessage(HttpMethod.Get, uri);
-            foreach (var header in headers)
-            {
-                if (header.Key == "host")
-                    request.Headers.Host = header.Value;
-                else if (header.Key != "content-length" && header.Key != "content-type")
-                    request.Headers.Add(header.Key, header.Value);
-            }
-
-            _logger.LogDebug("Downloading from OCI Object Storage: {Path}", path);
-
-            var response = await _httpClient.SendAsync(request);
-            if (!response.IsSuccessStatusCode)
-            {
-                if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
-                {
-                    throw new FileNotFoundException($"Arquivo não encontrado: {path}");
-                }
-
-                var errorContent = await response.Content.ReadAsStringAsync();
-                throw new InvalidOperationException($"OCI download failed with status {response.StatusCode}: {errorContent}");
-            }
-
-            var contentBytes = await response.Content.ReadAsByteArrayAsync();
-            _logger.LogInformation("Successfully downloaded {Path} from OCI Object Storage ({Size} bytes)", path, contentBytes.Length);
-
-            return new MemoryStream(contentBytes);
-        }
-
         public async Task DeleteAsync(string path)
         {
             using var activity = _activitySource.StartActivity("OCI.ObjectStorage.Delete");
@@ -345,17 +309,15 @@ namespace SmartAlarm.Infrastructure.Storage
 
             try
             {
-                // TODO: Uncomment when OCI SDK is properly configured
-                // var deleteObjectRequest = new DeleteObjectRequest
-                // {
-                //     NamespaceName = _namespace,
-                //     BucketName = _bucketName,
-                //     ObjectName = path
-                // };
-                // await _client.DeleteObject(deleteObjectRequest);
-
-                // Implementação real estruturada para OCI Object Storage via REST API
-                await DeleteFromOciAsync(path);
+                // Implementação real com Oracle OCI SDK oficial
+                var deleteObjectRequest = new DeleteObjectRequest
+                {
+                    NamespaceName = _namespace,
+                    BucketName = _bucketName,
+                    ObjectName = path
+                };
+                
+                await _client.Value.DeleteObject(deleteObjectRequest);
 
                 stopwatch.Stop();
                 _meter.RecordExternalServiceCallDuration(stopwatch.ElapsedMilliseconds, "OCI", "Delete", true);
@@ -385,44 +347,6 @@ namespace SmartAlarm.Infrastructure.Storage
             }
         }
 
-        private async Task DeleteFromOciAsync(string path)
-        {
-            var uri = $"/n/{_namespace}/b/{_bucketName}/o/{Uri.EscapeDataString(path)}";
-            var headers = CreateAuthHeaders("DELETE", uri, "0", "application/octet-stream");
-
-            using var request = new HttpRequestMessage(HttpMethod.Delete, uri);
-            foreach (var header in headers)
-            {
-                if (header.Key == "host")
-                    request.Headers.Host = header.Value;
-                else if (header.Key != "content-length" && header.Key != "content-type")
-                    request.Headers.Add(header.Key, header.Value);
-            }
-
-            _logger.LogDebug("Deleting from OCI Object Storage: {Path}", path);
-
-            var response = await _httpClient.SendAsync(request);
-            if (!response.IsSuccessStatusCode && response.StatusCode != System.Net.HttpStatusCode.NotFound)
-            {
-                var errorContent = await response.Content.ReadAsStringAsync();
-                throw new InvalidOperationException($"OCI delete failed with status {response.StatusCode}: {errorContent}");
-            }
-
-            _logger.LogInformation("Successfully deleted {Path} from OCI Object Storage", path);
-        }
-
-        private static async Task<byte[]> ReadStreamToBytes(Stream stream)
-        {
-            if (stream is MemoryStream memoryStream)
-            {
-                return memoryStream.ToArray();
-            }
-
-            using var ms = new MemoryStream();
-            await stream.CopyToAsync(ms);
-            return ms.ToArray();
-        }
-
         public void Dispose()
         {
             Dispose(true);
@@ -433,6 +357,10 @@ namespace SmartAlarm.Infrastructure.Storage
         {
             if (!_disposed && disposing)
             {
+                if (_client.IsValueCreated)
+                {
+                    _client.Value.Dispose();
+                }
                 _httpClient?.Dispose();
                 _disposed = true;
             }

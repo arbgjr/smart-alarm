@@ -288,16 +288,9 @@ namespace SmartAlarm.AlarmService.Controllers
                 _logger.LogInformation("Atualizando status do alarme {AlarmId} para {Status} - CorrelationId: {CorrelationId}", 
                     alarmId, request.IsActive ? "ativo" : "inativo", _correlationContext.CorrelationId);
 
-                // TODO: Implementar comando real
-                // await _mediator.Send(new UpdateAlarmStatusCommand(alarmId, request.IsActive));
-
-                var result = new
-                {
-                    AlarmId = alarmId,
-                    IsActive = request.IsActive,
-                    UpdatedAt = DateTime.UtcNow,
-                    Message = request.IsActive ? "Alarme ativado com sucesso" : "Alarme desativado com sucesso"
-                };
+                // Implementar comando real
+                var command = new UpdateAlarmStatusCommand(alarmId, request.IsActive, request.UserId, request.Reason);
+                var result = await _mediator.Send(command);
 
                 stopwatch.Stop();
                 _meter.RecordRequestDuration(stopwatch.ElapsedMilliseconds, "update_alarm_status", "success", "200");
@@ -339,14 +332,21 @@ namespace SmartAlarm.AlarmService.Controllers
                 
                 _logger.LogInformation("Disparando alarme {AlarmId} para usuário {UserId}", alarmId, userId);
 
-                // TODO: Implementar lógica de disparo real
-                // - Comunicar com AI Service para obter recomendações personalizadas
-                // - Comunicar com Integration Service para enviar notificações
-                // - Registrar evento de disparo
-                
-                _meter.IncrementAlarmTriggered("scheduled", userId.ToString(), "success");
-                
-                _logger.LogInformation("Alarme {AlarmId} disparado com sucesso para usuário {UserId}", alarmId, userId);
+                // Implementação real usando MediatR e TriggerAlarmCommand
+                var command = new TriggerAlarmCommand(alarmId, userId, "scheduled");
+                var result = await _mediator.Send(command);
+
+                if (result.Success)
+                {
+                    _meter.IncrementAlarmTriggered("scheduled", userId.ToString(), "success");
+                    _logger.LogInformation("Alarme {AlarmId} disparado com sucesso: {Message} - Ações: {ActionsCount}, Notificações: {NotificationsCount}", 
+                        alarmId, result.Message, result.ActionsExecuted.Count, result.Notifications.Count);
+                }
+                else
+                {
+                    _meter.IncrementAlarmTriggered("scheduled", userId.ToString(), "failed");
+                    _logger.LogWarning("Falha ao disparar alarme {AlarmId}: {Message}", alarmId, result.Message);
+                }
             }
             catch (Exception ex)
             {
@@ -357,6 +357,64 @@ namespace SmartAlarm.AlarmService.Controllers
                 
                 _logger.LogError(ex, "Erro ao disparar alarme {AlarmId} para usuário {UserId}", alarmId, userId);
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// Dispara um alarme manualmente (útil para testes)
+        /// </summary>
+        /// <param name="alarmId">ID do alarme</param>
+        /// <param name="request">Dados do disparo manual</param>
+        /// <returns>Resultado do disparo</returns>
+        [HttpPost("{alarmId:guid}/trigger")]
+        public async Task<IActionResult> TriggerAlarmManual(Guid alarmId, [FromBody] TriggerAlarmRequest request)
+        {
+            using var activity = _activitySource.StartActivity("AlarmsController.TriggerAlarmManual");
+            var stopwatch = Stopwatch.StartNew();
+
+            try
+            {
+                activity?.SetTag("alarm.id", alarmId.ToString());
+                activity?.SetTag("user.id", request.UserId.ToString());
+                activity?.SetTag("trigger.type", "manual");
+                activity?.SetTag("operation", "trigger_alarm_manual");
+                
+                _logger.LogInformation("Disparo manual do alarme {AlarmId} solicitado pelo usuário {UserId} - CorrelationId: {CorrelationId}", 
+                    alarmId, request.UserId, _correlationContext.CorrelationId);
+
+                // Usar MediatR para processar o comando
+                var command = new TriggerAlarmCommand(alarmId, request.UserId, "manual");
+                var result = await _mediator.Send(command);
+
+                stopwatch.Stop();
+
+                if (result.Success)
+                {
+                    _meter.RecordRequestDuration(stopwatch.ElapsedMilliseconds, "trigger_alarm_manual", "success", "200");
+                    _logger.LogInformation("Alarme {AlarmId} disparado manualmente com sucesso em {Duration}ms", 
+                        alarmId, stopwatch.ElapsedMilliseconds);
+                    return Ok(result);
+                }
+                else
+                {
+                    _meter.RecordRequestDuration(stopwatch.ElapsedMilliseconds, "trigger_alarm_manual", "failed", "400");
+                    _logger.LogWarning("Falha no disparo manual do alarme {AlarmId}: {Message}", alarmId, result.Message);
+                    return BadRequest(result);
+                }
+            }
+            catch (Exception ex)
+            {
+                stopwatch.Stop();
+                _meter.RecordRequestDuration(stopwatch.ElapsedMilliseconds, "trigger_alarm_manual", "error", "500");
+                _meter.IncrementErrorCount("controller", "trigger_alarm_manual", "exception");
+                
+                activity?.SetTag("error", true);
+                activity?.SetTag("error.message", ex.Message);
+                
+                _logger.LogError(ex, "Erro no disparo manual do alarme {AlarmId} - CorrelationId: {CorrelationId}", 
+                    alarmId, _correlationContext.CorrelationId);
+
+                return StatusCode(500, new { error = "Erro interno do servidor", correlationId = _correlationContext.CorrelationId });
             }
         }
 
@@ -409,6 +467,16 @@ namespace SmartAlarm.AlarmService.Controllers
     public class UpdateAlarmStatusRequest
     {
         public bool IsActive { get; set; }
+        public string? Reason { get; set; }
+        public Guid UserId { get; set; }
+    }
+
+    /// <summary>
+    /// Modelo para disparo manual de alarme
+    /// </summary>
+    public class TriggerAlarmRequest
+    {
+        public Guid UserId { get; set; }
         public string? Reason { get; set; }
     }
 }
