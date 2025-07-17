@@ -3,8 +3,10 @@ using SmartAlarm.Observability.Extensions;
 using SmartAlarm.Infrastructure;
 using SmartAlarm.Application;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using Polly;
 using Polly.Extensions.Http;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -48,8 +50,24 @@ builder.Services.AddHttpClient("ExternalIntegrations", client =>
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        // TODO: Configurar JWT adequadamente
-        options.RequireHttpsMetadata = false;
+        var jwtSettings = builder.Configuration.GetSection("JWT");
+        var secretKey = jwtSettings["SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey não configurada");
+        var issuer = jwtSettings["Issuer"] ?? "SmartAlarm";
+        var audience = jwtSettings["Audience"] ?? "SmartAlarm.IntegrationService";
+
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = issuer,
+            ValidAudience = audience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
+            ClockSkew = TimeSpan.FromMinutes(2)
+        };
+        
+        options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
         options.SaveToken = true;
     });
 

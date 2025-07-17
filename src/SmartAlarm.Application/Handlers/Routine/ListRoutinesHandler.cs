@@ -16,6 +16,7 @@ namespace SmartAlarm.Application.Handlers.Routine
     public class ListRoutinesHandler : IRequestHandler<ListRoutinesQuery, List<RoutineResponseDto>>
     {
         private readonly IRoutineRepository _routineRepository;
+        private readonly IAlarmRepository _alarmRepository;
         private readonly ActivitySource _activitySource;
         private readonly SmartAlarmMeter _meter;
         private readonly BusinessMetrics _businessMetrics;
@@ -23,12 +24,14 @@ namespace SmartAlarm.Application.Handlers.Routine
 
         public ListRoutinesHandler(
             IRoutineRepository routineRepository,
+            IAlarmRepository alarmRepository,
             ActivitySource activitySource,
             SmartAlarmMeter meter,
             BusinessMetrics businessMetrics,
             ILogger<ListRoutinesHandler> logger)
         {
             _routineRepository = routineRepository;
+            _alarmRepository = alarmRepository;
             _activitySource = activitySource;
             _meter = meter;
             _businessMetrics = businessMetrics;
@@ -49,13 +52,25 @@ namespace SmartAlarm.Application.Handlers.Routine
             try
             {
                 IEnumerable<Domain.Entities.Routine> routines;
+                
                 if (request.AlarmId.HasValue)
+                {
+                    // Buscar rotinas específicas de um alarme
                     routines = await _routineRepository.GetByAlarmIdAsync(request.AlarmId.Value);
+                }
                 else
-                    routines = await _routineRepository.GetByAlarmIdAsync(System.Guid.Empty); // TODO: ajustar para buscar todas se necessário
+                {
+                    // Buscar todas as rotinas se AlarmId não for especificado
+                    routines = await _routineRepository.GetAllAsync();
+                }
 
+                // Se UserId for especificado, filtrar por usuário através dos alarmes
                 if (request.UserId.HasValue)
-                    routines = routines.Where(r => r.AlarmId == request.UserId.Value); // Ajustar se houver UserId na entidade
+                {
+                    var userAlarms = await _alarmRepository.GetByUserIdAsync(request.UserId.Value);
+                    var userAlarmIds = userAlarms.Select(a => a.Id).ToHashSet();
+                    routines = routines.Where(r => userAlarmIds.Contains(r.AlarmId));
+                }
 
                 var routineList = routines.ToList();
                 var activeRoutines = routineList.Count(r => r.IsActive);

@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.Extensions.Logging;
 using SmartAlarm.Domain.Abstractions;
+using SmartAlarm.Domain.Repositories;
 using SmartAlarm.Application.DTOs.Auth;
 using SmartAlarm.Application.Queries.Auth;
 using System.Linq;
@@ -54,13 +55,16 @@ public class GetUserCredentialsHandler : IRequestHandler<GetUserCredentialsQuery
 public class ValidateTokenHandler : IRequestHandler<ValidateTokenQuery, UserDto?>
 {
     private readonly IJwtTokenService _jwtTokenService;
+    private readonly IUserRepository _userRepository;
     private readonly ILogger<ValidateTokenHandler> _logger;
 
     public ValidateTokenHandler(
         IJwtTokenService jwtTokenService,
+        IUserRepository userRepository,
         ILogger<ValidateTokenHandler> logger)
     {
         _jwtTokenService = jwtTokenService ?? throw new ArgumentNullException(nameof(jwtTokenService));
+        _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -84,16 +88,22 @@ public class ValidateTokenHandler : IRequestHandler<ValidateTokenQuery, UserDto?
                 return null;
             }
 
-            // Retornar um DTO básico para o token válido
-            // Em uma implementação completa, você buscaria os dados do usuário no banco
+            // Buscar dados reais do usuário no banco de dados
+            var user = await _userRepository.GetByIdAsync(userId.Value);
+            if (user == null || !user.IsActive)
+            {
+                _logger.LogWarning("User not found or inactive: {UserId}", userId);
+                return null;
+            }
+
             return new UserDto
             {
-                Id = userId.Value,
-                Name = "User", // TODO: Buscar do banco
-                Email = "user@example.com", // TODO: Buscar do banco
-                IsActive = true,
-                EmailVerified = true,
-                Roles = new[] { "User" }
+                Id = user.Id,
+                Name = user.Name.Value,
+                Email = user.Email.Address,
+                IsActive = user.IsActive,
+                EmailVerified = user.EmailVerified,
+                Roles = user.UserRoles?.Select(ur => ur.Role.Name).ToArray() ?? Array.Empty<string>()
             };
         }
         catch (Exception ex)

@@ -46,6 +46,7 @@ namespace SmartAlarm.Infrastructure
                 services.AddScoped<IIntegrationRepository, EfIntegrationRepositoryPostgres>();
                 services.AddScoped<IHolidayRepository, EfHolidayRepository>();
                 services.AddScoped<IUserHolidayPreferenceRepository, EfUserHolidayPreferenceRepository>();
+                services.AddScoped<IExceptionPeriodRepository, EfExceptionPeriodRepository>();
             }
             else
             {
@@ -66,6 +67,7 @@ namespace SmartAlarm.Infrastructure
                 services.AddScoped<IIntegrationRepository, EfIntegrationRepository>();
                 services.AddScoped<IHolidayRepository, EfHolidayRepository>();
                 services.AddScoped<IUserHolidayPreferenceRepository, EfUserHolidayPreferenceRepository>();
+                services.AddScoped<IExceptionPeriodRepository, EfExceptionPeriodRepository>();
             }
 
             return services.AddCommonInfrastructureServices();
@@ -86,6 +88,7 @@ namespace SmartAlarm.Infrastructure
             // Register EntityFramework repositories for complex entities that don't have in-memory implementations
             services.AddScoped<IHolidayRepository, EfHolidayRepository>();
             services.AddScoped<IUserHolidayPreferenceRepository, EfUserHolidayPreferenceRepository>();
+            services.AddScoped<IExceptionPeriodRepository, EfExceptionPeriodRepository>();
 
             return services.AddCommonInfrastructureServices();
         }
