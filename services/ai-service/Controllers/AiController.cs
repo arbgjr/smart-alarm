@@ -3,6 +3,8 @@ using MediatR;
 using SmartAlarm.Observability.Context;
 using SmartAlarm.Observability.Tracing;
 using SmartAlarm.Observability.Metrics;
+using SmartAlarm.AiService.Application.Commands;
+using SmartAlarm.AiService.Application.Queries;
 using System.Diagnostics;
 
 namespace SmartAlarm.AiService.Controllers
@@ -36,57 +38,53 @@ namespace SmartAlarm.AiService.Controllers
         }
 
         /// <summary>
-        /// Obtém recomendações de IA para configuração de alarmes
+        /// Analisa padrões de uso de alarmes do usuário
         /// </summary>
         /// <param name="userId">ID do usuário</param>
-        /// <returns>Recomendações personalizadas</returns>
-        [HttpGet("recommendations/{userId:guid}")]
-        public async Task<IActionResult> GetRecommendations(Guid userId)
+        /// <param name="startDate">Data de início da análise (opcional)</param>
+        /// <param name="endDate">Data de fim da análise (opcional)</param>
+        /// <param name="maxDaysToAnalyze">Máximo de dias para analisar (padrão: 30)</param>
+        /// <returns>Análise de padrões de alarmes</returns>
+        [HttpPost("analyze-patterns")]
+        public async Task<IActionResult> AnalyzeAlarmPatterns(
+            [FromQuery] Guid userId,
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null,
+            [FromQuery] int maxDaysToAnalyze = 30)
         {
-            using var activity = _activitySource.StartActivity("AiController.GetRecommendations");
+            using var activity = _activitySource.StartActivity("AiController.AnalyzeAlarmPatterns");
             var stopwatch = Stopwatch.StartNew();
 
             try
             {
                 activity?.SetTag("user.id", userId.ToString());
-                activity?.SetTag("operation", "get_ai_recommendations");
+                activity?.SetTag("operation", "analyze_alarm_patterns");
+                activity?.SetTag("max_days", maxDaysToAnalyze.ToString());
                 
-                _logger.LogInformation("Iniciando busca de recomendações de IA para usuário {UserId} - CorrelationId: {CorrelationId}", 
+                _logger.LogInformation("Iniciando análise de padrões de alarmes para usuário {UserId} - CorrelationId: {CorrelationId}", 
                     userId, _correlationContext.CorrelationId);
 
-                // TODO: Implementar comando para buscar recomendações
-                // var recommendations = await _mediator.Send(new GetAiRecommendationsQuery(userId));
-                
-                var mockRecommendations = new
-                {
-                    UserId = userId,
-                    Recommendations = new[]
-                    {
-                        new { Type = "OptimalTime", Value = "07:30", Confidence = 0.85 },
-                        new { Type = "AlarmTone", Value = "Nature Sounds", Confidence = 0.72 },
-                        new { Type = "SnoozeInterval", Value = "5 minutes", Confidence = 0.68 }
-                    },
-                    GeneratedAt = DateTime.UtcNow
-                };
+                var command = new AnalyzeAlarmPatternsCommand(userId, startDate, endDate, maxDaysToAnalyze);
+                var result = await _mediator.Send(command);
 
                 stopwatch.Stop();
-                _meter.RecordRequestDuration(stopwatch.ElapsedMilliseconds, "get_ai_recommendations", "success", "200");
+                _meter.RecordRequestDuration(stopwatch.ElapsedMilliseconds, "analyze_alarm_patterns", "success", "200");
                 
-                _logger.LogInformation("Recomendações de IA obtidas com sucesso para usuário {UserId} em {Duration}ms", 
+                _logger.LogInformation("Análise de padrões de alarmes concluída para usuário {UserId} em {Duration}ms", 
                     userId, stopwatch.ElapsedMilliseconds);
 
-                return Ok(mockRecommendations);
+                return Ok(result);
             }
             catch (Exception ex)
             {
                 stopwatch.Stop();
-                _meter.RecordRequestDuration(stopwatch.ElapsedMilliseconds, "get_ai_recommendations", "error", "500");
-                _meter.IncrementErrorCount("controller", "ai_recommendations", "exception");
+                _meter.RecordRequestDuration(stopwatch.ElapsedMilliseconds, "analyze_alarm_patterns", "error", "500");
+                _meter.IncrementErrorCount("controller", "analyze_alarm_patterns", "exception");
                 
                 activity?.SetTag("error", true);
                 activity?.SetTag("error.message", ex.Message);
                 
-                _logger.LogError(ex, "Erro ao obter recomendações de IA para usuário {UserId} - CorrelationId: {CorrelationId}", 
+                _logger.LogError(ex, "Erro ao analisar padrões de alarmes para usuário {UserId} - CorrelationId: {CorrelationId}", 
                     userId, _correlationContext.CorrelationId);
 
                 return StatusCode(500, new { error = "Erro interno do servidor", correlationId = _correlationContext.CorrelationId });
@@ -94,57 +92,58 @@ namespace SmartAlarm.AiService.Controllers
         }
 
         /// <summary>
-        /// Analisa padrões de uso do usuário
+        /// Prediz horários ótimos para alarmes usando IA
         /// </summary>
         /// <param name="userId">ID do usuário</param>
-        /// <returns>Análise de padrões comportamentais</returns>
-        [HttpGet("analysis/{userId:guid}")]
-        public async Task<IActionResult> GetBehavioralAnalysis(Guid userId)
+        /// <param name="targetDay">Dia da semana desejado</param>
+        /// <param name="context">Contexto do alarme (trabalho, exercício, compromisso)</param>
+        /// <param name="preferredTimeRangeHours">Faixa de horário preferida em horas (opcional)</param>
+        /// <returns>Predições de horários ótimos</returns>
+        [HttpGet("predict-optimal-time")]
+        public async Task<IActionResult> PredictOptimalTime(
+            [FromQuery] Guid userId,
+            [FromQuery] DayOfWeek targetDay,
+            [FromQuery] string? context = null,
+            [FromQuery] int? preferredTimeRangeHours = null)
         {
-            using var activity = _activitySource.StartActivity("AiController.GetBehavioralAnalysis");
+            using var activity = _activitySource.StartActivity("AiController.PredictOptimalTime");
             var stopwatch = Stopwatch.StartNew();
 
             try
             {
                 activity?.SetTag("user.id", userId.ToString());
-                activity?.SetTag("operation", "behavioral_analysis");
+                activity?.SetTag("operation", "predict_optimal_time");
+                activity?.SetTag("target_day", targetDay.ToString());
+                activity?.SetTag("context", context ?? "none");
                 
-                _logger.LogInformation("Iniciando análise comportamental para usuário {UserId} - CorrelationId: {CorrelationId}", 
-                    userId, _correlationContext.CorrelationId);
+                _logger.LogInformation("Iniciando predição de horário ótimo para usuário {UserId}, dia {TargetDay} - CorrelationId: {CorrelationId}", 
+                    userId, targetDay, _correlationContext.CorrelationId);
 
-                // TODO: Implementar análise comportamental real
-                var mockAnalysis = new
-                {
-                    UserId = userId,
-                    Patterns = new
-                    {
-                        WakeUpTimes = new[] { "07:00", "07:15", "07:30" },
-                        SleepPatterns = "Regular",
-                        AlarmUsage = "High",
-                        SnoozeFrequency = "Low"
-                    },
-                    Score = 0.82,
-                    AnalyzedAt = DateTime.UtcNow
-                };
+                TimeSpan? preferredTimeRange = preferredTimeRangeHours.HasValue 
+                    ? TimeSpan.FromHours(preferredTimeRangeHours.Value) 
+                    : null;
+
+                var query = new PredictOptimalTimeQuery(userId, targetDay, context, preferredTimeRange);
+                var result = await _mediator.Send(query);
 
                 stopwatch.Stop();
-                _meter.RecordRequestDuration(stopwatch.ElapsedMilliseconds, "behavioral_analysis", "success", "200");
+                _meter.RecordRequestDuration(stopwatch.ElapsedMilliseconds, "predict_optimal_time", "success", "200");
                 
-                _logger.LogInformation("Análise comportamental concluída para usuário {UserId} em {Duration}ms", 
+                _logger.LogInformation("Predição de horário ótimo concluída para usuário {UserId} em {Duration}ms", 
                     userId, stopwatch.ElapsedMilliseconds);
 
-                return Ok(mockAnalysis);
+                return Ok(result);
             }
             catch (Exception ex)
             {
                 stopwatch.Stop();
-                _meter.RecordRequestDuration(stopwatch.ElapsedMilliseconds, "behavioral_analysis", "error", "500");
-                _meter.IncrementErrorCount("controller", "behavioral_analysis", "exception");
+                _meter.RecordRequestDuration(stopwatch.ElapsedMilliseconds, "predict_optimal_time", "error", "500");
+                _meter.IncrementErrorCount("controller", "predict_optimal_time", "exception");
                 
                 activity?.SetTag("error", true);
                 activity?.SetTag("error.message", ex.Message);
                 
-                _logger.LogError(ex, "Erro na análise comportamental para usuário {UserId} - CorrelationId: {CorrelationId}", 
+                _logger.LogError(ex, "Erro ao predizer horário ótimo para usuário {UserId} - CorrelationId: {CorrelationId}", 
                     userId, _correlationContext.CorrelationId);
 
                 return StatusCode(500, new { error = "Erro interno do servidor", correlationId = _correlationContext.CorrelationId });

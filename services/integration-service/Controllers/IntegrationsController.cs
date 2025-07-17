@@ -3,6 +3,8 @@ using MediatR;
 using SmartAlarm.Observability.Context;
 using SmartAlarm.Observability.Tracing;
 using SmartAlarm.Observability.Metrics;
+using SmartAlarm.IntegrationService.Application.Commands;
+using SmartAlarm.IntegrationService.Application.Queries;
 using System.Diagnostics;
 
 namespace SmartAlarm.IntegrationService.Controllers
@@ -36,6 +38,126 @@ namespace SmartAlarm.IntegrationService.Controllers
             _meter = meter;
             _correlationContext = correlationContext;
             _httpClientFactory = httpClientFactory;
+        }
+
+        /// <summary>
+        /// Sincroniza calendário externo do usuário
+        /// </summary>
+        /// <param name="userId">ID do usuário</param>
+        /// <param name="provider">Provedor do calendário (google, outlook, apple, caldav)</param>
+        /// <param name="accessToken">Token de acesso para o calendário</param>
+        /// <param name="startDate">Data de início da sincronização (opcional)</param>
+        /// <param name="endDate">Data de fim da sincronização (opcional)</param>
+        /// <param name="forceFullSync">Forçar sincronização completa</param>
+        /// <returns>Resultado da sincronização</returns>
+        [HttpPost("calendar/sync")]
+        public async Task<IActionResult> SyncExternalCalendar(
+            [FromQuery] Guid userId,
+            [FromQuery] string provider,
+            [FromHeader(Name = "Authorization")] string accessToken,
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null,
+            [FromQuery] bool forceFullSync = false)
+        {
+            using var activity = _activitySource.StartActivity("IntegrationsController.SyncExternalCalendar");
+            var stopwatch = Stopwatch.StartNew();
+
+            try
+            {
+                activity?.SetTag("user.id", userId.ToString());
+                activity?.SetTag("provider", provider.ToLowerInvariant());
+                activity?.SetTag("operation", "sync_external_calendar");
+                activity?.SetTag("force_full_sync", forceFullSync.ToString());
+                
+                _logger.LogInformation("Iniciando sincronização de calendário {Provider} para usuário {UserId} - CorrelationId: {CorrelationId}", 
+                    provider, userId, _correlationContext.CorrelationId);
+
+                // Extrair token do header Authorization (formato: "Bearer <token>")
+                var token = accessToken?.Replace("Bearer ", "").Trim();
+                if (string.IsNullOrEmpty(token))
+                {
+                    return BadRequest(new { error = "Token de acesso é obrigatório no header Authorization" });
+                }
+
+                var command = new SyncExternalCalendarCommand(userId, provider, token, startDate, endDate, forceFullSync);
+                var result = await _mediator.Send(command);
+
+                stopwatch.Stop();
+                _meter.RecordRequestDuration(stopwatch.ElapsedMilliseconds, "sync_external_calendar", "success", "200");
+                
+                _logger.LogInformation("Sincronização de calendário concluída para usuário {UserId}: {EventsProcessed} eventos processados em {Duration}ms", 
+                    userId, result.EventsProcessed, stopwatch.ElapsedMilliseconds);
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                stopwatch.Stop();
+                _meter.RecordRequestDuration(stopwatch.ElapsedMilliseconds, "sync_external_calendar", "error", "500");
+                _meter.IncrementErrorCount("controller", "sync_external_calendar", "exception");
+                
+                activity?.SetTag("error", true);
+                activity?.SetTag("error.message", ex.Message);
+                
+                _logger.LogError(ex, "Erro ao sincronizar calendário {Provider} para usuário {UserId} - CorrelationId: {CorrelationId}", 
+                    provider, userId, _correlationContext.CorrelationId);
+
+                return StatusCode(500, new { error = "Erro interno do servidor", correlationId = _correlationContext.CorrelationId });
+            }
+        }
+
+        /// <summary>
+        /// Lista integrações ativas do usuário
+        /// </summary>
+        /// <param name="userId">ID do usuário</param>
+        /// <param name="providerFilter">Filtro por provedor específico (opcional)</param>
+        /// <param name="includeInactive">Incluir integrações inativas</param>
+        /// <param name="includeStatistics">Incluir estatísticas das integrações</param>
+        /// <returns>Lista de integrações do usuário</returns>
+        [HttpGet("user/{userId:guid}")]
+        public async Task<IActionResult> GetUserIntegrations(
+            Guid userId,
+            [FromQuery] string? providerFilter = null,
+            [FromQuery] bool includeInactive = false,
+            [FromQuery] bool includeStatistics = true)
+        {
+            using var activity = _activitySource.StartActivity("IntegrationsController.GetUserIntegrations");
+            var stopwatch = Stopwatch.StartNew();
+
+            try
+            {
+                activity?.SetTag("user.id", userId.ToString());
+                activity?.SetTag("provider_filter", providerFilter ?? "none");
+                activity?.SetTag("operation", "get_user_integrations");
+                
+                _logger.LogInformation("Buscando integrações para usuário {UserId} - CorrelationId: {CorrelationId}", 
+                    userId, _correlationContext.CorrelationId);
+
+                var query = new GetUserIntegrationsQuery(userId, providerFilter, includeInactive, includeStatistics);
+                var result = await _mediator.Send(query);
+
+                stopwatch.Stop();
+                _meter.RecordRequestDuration(stopwatch.ElapsedMilliseconds, "get_user_integrations", "success", "200");
+                
+                _logger.LogInformation("Integrações recuperadas para usuário {UserId}: {IntegrationCount} integrações em {Duration}ms", 
+                    userId, result.Integrations.Count, stopwatch.ElapsedMilliseconds);
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                stopwatch.Stop();
+                _meter.RecordRequestDuration(stopwatch.ElapsedMilliseconds, "get_user_integrations", "error", "500");
+                _meter.IncrementErrorCount("controller", "get_user_integrations", "exception");
+                
+                activity?.SetTag("error", true);
+                activity?.SetTag("error.message", ex.Message);
+                
+                _logger.LogError(ex, "Erro ao buscar integrações para usuário {UserId} - CorrelationId: {CorrelationId}", 
+                    userId, _correlationContext.CorrelationId);
+
+                return StatusCode(500, new { error = "Erro interno do servidor", correlationId = _correlationContext.CorrelationId });
+            }
         }
 
         /// <summary>
