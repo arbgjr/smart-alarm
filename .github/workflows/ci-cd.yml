@@ -1,0 +1,267 @@
+name: Smart Alarm CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'src/**'
+      - 'services/**'
+      - 'tests/**'
+      - 'SmartAlarm.sln'
+      - 'docker-compose*.yml'
+      - 'infrastructure/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'src/**'
+      - 'services/**'
+      - 'tests/**'
+      - 'SmartAlarm.sln'
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  DOCKER_REGISTRY: ghcr.io
+  IMAGE_NAME: smartalarm
+
+jobs:
+  # Build and Test Phase
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: smartalarm_test
+          POSTGRES_USER: smartalarm
+          POSTGRES_PASSWORD: test123
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      rabbitmq:
+        image: rabbitmq:3.12-management-alpine
+        env:
+          RABBITMQ_DEFAULT_USER: guest
+          RABBITMQ_DEFAULT_PASS: guest
+        options: >-
+          --health-cmd "rabbitmq-diagnostics ping"
+          --health-interval 30s
+          --health-timeout 10s
+          --health-retries 5
+        ports:
+          - 5672:5672
+      
+      minio:
+        image: minio/minio:RELEASE.2024-01-13T07-53-03Z
+        env:
+          MINIO_ROOT_USER: minioadmin
+          MINIO_ROOT_PASSWORD: minioadmin
+        options: >-
+          --health-cmd "curl -f http://localhost:9000/minio/health/live"
+          --health-interval 30s
+          --health-timeout 10s
+          --health-retries 3
+        ports:
+          - 9000:9000
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+        
+    - name: Cache NuGet packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+
+    - name: Restore dependencies
+      run: dotnet restore SmartAlarm.sln
+
+    - name: Build solution
+      run: dotnet build SmartAlarm.sln --configuration Release --no-restore
+
+    - name: Run unit tests
+      run: |
+        dotnet test SmartAlarm.sln \
+          --configuration Release \
+          --no-build \
+          --logger "console;verbosity=detailed" \
+          --collect:"XPlat Code Coverage" \
+          --settings tests/coverlet.runsettings \
+          --filter "Category!=Integration"
+
+    - name: Run integration tests
+      run: |
+        dotnet test SmartAlarm.sln \
+          --configuration Release \
+          --no-build \
+          --logger "console;verbosity=detailed" \
+          --filter "Category=Integration"
+      env:
+        ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=smartalarm_test;Username=smartalarm;Password=test123"
+        RabbitMQ__Host: "localhost"
+        RabbitMQ__Username: "guest"
+        RabbitMQ__Password: "guest"
+        Storage__Endpoint: "localhost:9000"
+        Storage__AccessKey: "minioadmin"
+        Storage__SecretKey: "minioadmin"
+
+    - name: Generate test report
+      uses: dorny/test-reporter@v1
+      if: success() || failure()
+      with:
+        name: .NET Tests
+        path: TestResults/*.trx
+        reporter: dotnet-trx
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: test-results
+        path: TestResults/
+
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      with:
+        files: TestResults/*/coverage.cobertura.xml
+        fail_ci_if_error: true
+
+  # Security Scanning
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+  # Build Docker Images
+  build-images:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    needs: [build-and-test, security-scan]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    
+    strategy:
+      matrix:
+        service: [alarm-service, ai-service, integration-service]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.DOCKER_REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.DOCKER_REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}-${{ matrix.service }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: services/${{ matrix.service }}/Dockerfile
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        platforms: linux/amd64,linux/arm64
+
+  # Deploy to Development
+  deploy-dev:
+    name: Deploy to Development
+    runs-on: ubuntu-latest
+    needs: build-images
+    if: github.ref == 'refs/heads/develop'
+    environment: development
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Deploy to development cluster
+      run: |
+        echo "🚀 Deploying to development environment"
+        # Add actual deployment commands here
+        # kubectl apply -f infrastructure/kubernetes/
+        echo "✅ Development deployment completed"
+
+  # Deploy to Production
+  deploy-prod:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: build-images
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Deploy to production cluster
+      run: |
+        echo "🚀 Deploying to production environment"
+        # Add actual deployment commands here
+        # kubectl apply -f infrastructure/kubernetes/
+        echo "✅ Production deployment completed"
+
+  # Notify Success
+  notify:
+    name: Notify Success
+    runs-on: ubuntu-latest
+    needs: [deploy-dev, deploy-prod]
+    if: always() && (needs.deploy-dev.result == 'success' || needs.deploy-prod.result == 'success')
+    
+    steps:
+    - name: Notify deployment success
+      run: |
+        echo "🎉 Smart Alarm deployment completed successfully!"
+        echo "Environment: ${{ github.ref == 'refs/heads/main' && 'Production' || 'Development' }}"
+        echo "Commit: ${{ github.sha }}"
+        echo "Branch: ${{ github.ref_name }}"

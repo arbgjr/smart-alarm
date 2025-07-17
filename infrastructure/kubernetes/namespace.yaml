@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: smartalarm
+  labels:
+    app.kubernetes.io/name: smartalarm
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/component: namespace
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: smartalarm-config
+  namespace: smartalarm
+  labels:
+    app.kubernetes.io/name: smartalarm
+    app.kubernetes.io/component: config
+data:
+  ASPNETCORE_ENVIRONMENT: "Production"
+  Observability__Environment: "Production"
+  Observability__ServiceVersion: "1.0.0"
+  RabbitMQ__Host: "rabbitmq-service"
+  RabbitMQ__Username: "guest"
+  KeyVault__Endpoint: "http://vault-service:8200"
+  Storage__Endpoint: "minio-service:9000"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: smartalarm-secrets
+  namespace: smartalarm
+  labels:
+    app.kubernetes.io/name: smartalarm
+    app.kubernetes.io/component: secrets
+type: Opaque
+data:
+  # Base64 encoded values - replace with actual secrets in production
+  postgres-password: RGV2MTIzIUAj  # Dev123!@#
+  rabbitmq-password: Z3Vlc3Q=       # guest
+  minio-access-key: bWluaW9hZG1pbg== # minioadmin
+  minio-secret-key: bWluaW9hZG1pbg== # minioadmin
+  vault-token: ZGV2LXRva2Vu           # dev-token

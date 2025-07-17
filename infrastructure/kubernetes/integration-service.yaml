@@ -1,0 +1,257 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: integration-service
+  namespace: smartalarm
+  labels:
+    app: integration-service
+    component: microservice
+    tier: backend
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: integration-service
+  template:
+    metadata:
+      labels:
+        app: integration-service
+        component: microservice
+        tier: backend
+    spec:
+      serviceAccountName: smartalarm-service-account
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+      containers:
+      - name: integration-service
+        image: ghcr.io/arbgjr/smartalarm-integration-service:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          value: "Production"
+        - name: ASPNETCORE_URLS
+          value: "http://+:8080"
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          valueFrom:
+            configMapKeyRef:
+              name: smartalarm-config
+              key: observability.otlp.endpoint
+        - name: OTEL_SERVICE_NAME
+          value: "smartalarm-integration-service"
+        - name: OTEL_SERVICE_VERSION
+          value: "1.0.0"
+        - name: ConnectionStrings__DefaultConnection
+          valueFrom:
+            secretKeyRef:
+              name: smartalarm-secrets
+              key: database.connection
+        - name: RabbitMQ__Host
+          valueFrom:
+            configMapKeyRef:
+              name: smartalarm-config
+              key: rabbitmq.host
+        - name: RabbitMQ__Username
+          valueFrom:
+            secretKeyRef:
+              name: smartalarm-secrets
+              key: rabbitmq.username
+        - name: RabbitMQ__Password
+          valueFrom:
+            secretKeyRef:
+              name: smartalarm-secrets
+              key: rabbitmq.password
+        - name: Storage__Endpoint
+          valueFrom:
+            configMapKeyRef:
+              name: smartalarm-config
+              key: storage.endpoint
+        - name: Storage__AccessKey
+          valueFrom:
+            secretKeyRef:
+              name: smartalarm-secrets
+              key: storage.accesskey
+        - name: Storage__SecretKey
+          valueFrom:
+            secretKeyRef:
+              name: smartalarm-secrets
+              key: storage.secretkey
+        - name: HolidayApi__BaseUrl
+          valueFrom:
+            configMapKeyRef:
+              name: smartalarm-config
+              key: holidayapi.baseurl
+        - name: HolidayApi__ApiKey
+          valueFrom:
+            secretKeyRef:
+              name: smartalarm-secrets
+              key: holidayapi.apikey
+        - name: Spotify__ClientId
+          valueFrom:
+            secretKeyRef:
+              name: smartalarm-secrets
+              key: spotify.clientid
+        - name: Spotify__ClientSecret
+          valueFrom:
+            secretKeyRef:
+              name: smartalarm-secrets
+              key: spotify.clientsecret
+        - name: Weather__ApiKey
+          valueFrom:
+            secretKeyRef:
+              name: smartalarm-secrets
+              key: weather.apikey
+        - name: Weather__BaseUrl
+          valueFrom:
+            configMapKeyRef:
+              name: smartalarm-config
+              key: weather.baseurl
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1001
+        volumeMounts:
+        - name: tmp-volume
+          mountPath: /tmp
+        - name: app-logs
+          mountPath: /app/logs
+      volumes:
+      - name: tmp-volume
+        emptyDir: {}
+      - name: app-logs
+        emptyDir: {}
+      imagePullSecrets:
+      - name: github-registry-secret
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: integration-service
+  namespace: smartalarm
+  labels:
+    app: integration-service
+    component: microservice
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: http
+    protocol: TCP
+    name: http
+  selector:
+    app: integration-service
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: integration-service-ingress
+  namespace: smartalarm
+  labels:
+    app: integration-service
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/rate-limit: "200"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+spec:
+  tls:
+  - hosts:
+    - integrations.smartalarm.local
+    secretName: integration-service-tls
+  rules:
+  - host: integrations.smartalarm.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: integration-service
+            port:
+              number: 80
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: integration-service-hpa
+  namespace: smartalarm
+  labels:
+    app: integration-service
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: integration-service
+  minReplicas: 3
+  maxReplicas: 15
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 15
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60

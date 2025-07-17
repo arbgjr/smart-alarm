@@ -1,0 +1,185 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alarm-service
+  namespace: smartalarm
+  labels:
+    app.kubernetes.io/name: alarm-service
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/component: microservice
+    app.kubernetes.io/part-of: smartalarm
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: alarm-service
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: alarm-service
+        app.kubernetes.io/version: "1.0.0"
+        app.kubernetes.io/component: microservice
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+      - name: alarm-service
+        image: smartalarm/alarm-service:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        - containerPort: 8081
+          name: metrics
+          protocol: TCP
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          valueFrom:
+            configMapKeyRef:
+              name: smartalarm-config
+              key: ASPNETCORE_ENVIRONMENT
+        - name: Observability__ServiceName
+          value: "SmartAlarm.AlarmService"
+        - name: Observability__ServiceVersion
+          valueFrom:
+            configMapKeyRef:
+              name: smartalarm-config
+              key: Observability__ServiceVersion
+        - name: Observability__Environment
+          valueFrom:
+            configMapKeyRef:
+              name: smartalarm-config
+              key: Observability__Environment
+        - name: ConnectionStrings__DefaultConnection
+          value: "Host=postgres-service;Port=5432;Database=smartalarm;Username=smartalarm;Password=$(POSTGRES_PASSWORD)"
+        - name: Hangfire__ConnectionString
+          value: "Host=postgres-service;Port=5432;Database=smartalarm_hangfire;Username=smartalarm;Password=$(POSTGRES_PASSWORD)"
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: smartalarm-secrets
+              key: postgres-password
+        - name: RabbitMQ__Host
+          valueFrom:
+            configMapKeyRef:
+              name: smartalarm-config
+              key: RabbitMQ__Host
+        - name: RabbitMQ__Username
+          valueFrom:
+            configMapKeyRef:
+              name: smartalarm-config
+              key: RabbitMQ__Username
+        - name: RabbitMQ__Password
+          valueFrom:
+            secretKeyRef:
+              name: smartalarm-secrets
+              key: rabbitmq-password
+        - name: KeyVault__Endpoint
+          valueFrom:
+            configMapKeyRef:
+              name: smartalarm-config
+              key: KeyVault__Endpoint
+        - name: Storage__Endpoint
+          valueFrom:
+            configMapKeyRef:
+              name: smartalarm-config
+              key: Storage__Endpoint
+        - name: Storage__AccessKey
+          valueFrom:
+            secretKeyRef:
+              name: smartalarm-secrets
+              key: minio-access-key
+        - name: Storage__SecretKey
+          valueFrom:
+            secretKeyRef:
+              name: smartalarm-secrets
+              key: minio-secret-key
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alarm-service
+  namespace: smartalarm
+  labels:
+    app.kubernetes.io/name: alarm-service
+    app.kubernetes.io/component: microservice
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  - port: 8081
+    targetPort: 8081
+    protocol: TCP
+    name: metrics
+  selector:
+    app.kubernetes.io/name: alarm-service
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: alarm-service-ingress
+  namespace: smartalarm
+  labels:
+    app.kubernetes.io/name: alarm-service
+    app.kubernetes.io/component: ingress
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  tls:
+  - hosts:
+    - alarm.smartalarm.com
+    secretName: alarm-service-tls
+  rules:
+  - host: alarm.smartalarm.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: alarm-service
+            port:
+              number: 80
