@@ -2,13 +2,22 @@
 
 ## Current Focus
 
-- **✅ FASE 4.1 - Infrastructure FileParser CONCLUÍDA**: IFileParser e CsvFileParser implementados com sucesso
-- **PRÓXIMA FASE**: Application Layer para ExceptionPeriod (Handlers, DTOs, Validators) - ainda pendente
+- **✅ FASE 1 - Observabilidade Foundation CONCLUÍDA**: Base completa de observabilidade implementada
+- **🎯 PRÓXIMA FASE**: FASE 2 - Instrumentação nos Handlers e Logging Estruturado
+- **PENDENTE**: Application Layer para ExceptionPeriod (Handlers, DTOs, Validators)
 - Manutenção da implementação dos endpoints principais do AlarmService (CRUD)
-- Estruturação de logging e métricas nos fluxos críticos
 - Preparação para testes automatizados e integração de autenticação JWT/FIDO2
 
 ## Recent Changes
+
+- **✅ FASE 1 - Observabilidade Foundation CONCLUÍDA**:
+  - **Health Checks**: 5 health checks implementados (SmartAlarm, Database, Storage, KeyVault, MessageQueue)
+  - **Endpoints de Monitoramento**: 7 endpoints completos no MonitoramentoController
+  - **Métricas Expandidas**: SmartAlarmMeter + BusinessMetrics com 13 contadores, 7 histogramas, 9 gauges
+  - **LogTemplates**: 50+ templates estruturados para todas as camadas
+  - **Integração**: ObservabilityExtensions com health checks automáticos
+  - **Dependências**: Todos os pacotes necessários adicionados e compilação 100% funcional
+  - **Estrutura**: Preparado para instrumentação distribuída nos serviços
 
 - **✅ FASE 4.1 - Infrastructure FileParser CONCLUÍDA**:
   - IFileParser interface criada com métodos ParseAsync, IsFormatSupported e GetSupportedFormats
@@ -47,7 +56,62 @@
 
 ## Next Steps
 
-- **🎯 PRÓXIMA FASE**: Application Layer para ExceptionPeriod:
+### 🎯 FASE 2 - Instrumentação e Logging (PRIORIDADE IMEDIATA)
+
+#### **2.1 Instrumentar Handlers Existentes**
+- Adicionar LogTemplates nos handlers de alarme
+- Implementar métricas de negócio (IncrementAlarmCount, RecordAlarmCreationDuration)
+- Estruturar logs em CreateAlarmHandler, UpdateAlarmHandler, DeleteAlarmHandler
+- Configurar correlation context propagation
+
+#### **2.2 Implementar Business Metrics**
+- Instrumentar contadores de usuário, autenticação, uploads
+- Configurar gauges para alarmes ativos, usuários online
+- Implementar health score calculation baseado nos health checks
+- Adicionar métricas de performance nos handlers críticos
+
+#### **2.3 Testar Endpoints de Monitoramento**
+- Validar `/api/monitoramento/status`, `/health`, `/metrics`
+- Configurar dashboards básicos (Grafana opcional)
+- Testar health checks com dependências reais
+- Validar logs estruturados no pipeline
+
+### 🔄 FASES PENDENTES
+
+#### **FASE 3 - Application Layer para ExceptionPeriod**
+- CreateExceptionPeriodHandler, UpdateExceptionPeriodHandler, DeleteExceptionPeriodHandler
+- ListExceptionPeriodsHandler, GetExceptionPeriodByIdHandler
+- ExceptionPeriodDto, CreateExceptionPeriodCommand, UpdateExceptionPeriodCommand
+- CreateExceptionPeriodValidator, UpdateExceptionPeriodValidator
+- Testes unitários para handlers e validadores
+
+#### **FASE 4 - Integração de FileParser nos Handlers**
+- ImportAlarmsFromFileHandler usando IFileParser
+- ImportAlarmsFromFileCommand com validação de arquivo
+- Endpoint POST /api/alarmes/import para upload de CSV
+- Relatórios de importação com sucessos/falhas
+- Testes de integração completos
+
+### 🚀 Cronograma Sugerido
+
+**Esta Semana**:
+- FASE 2.1: Instrumentar handlers existentes
+- FASE 2.2: Implementar business metrics
+- FASE 2.3: Testar endpoints de monitoramento
+
+**Próxima Semana**:
+- FASE 3: Application Layer ExceptionPeriod
+- FASE 4: Integração FileParser
+
+### 📋 Checklist de Validação FASE 2
+
+- [ ] Logs estruturados em todos os handlers críticos
+- [ ] Métricas de negócio funcionando (contadores, histogramas, gauges)
+- [ ] Health checks respondendo corretamente
+- [ ] Correlation IDs propagando entre requisições
+- [ ] Endpoints `/api/monitoramento/*` funcionais
+- [ ] Performance acceptable (<2s para health checks)
+- [ ] Compilação sem warnings críticos
   - Commands/Queries (Create, Update, Delete, GetById, GetByUserId, GetActiveOnDate)
   - Handlers correspondentes
   - DTOs (ExceptionPeriodDto, CreateExceptionPeriodDto, UpdateExceptionPeriodDto)

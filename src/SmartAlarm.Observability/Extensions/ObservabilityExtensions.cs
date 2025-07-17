@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -20,6 +21,8 @@ using Serilog.Sinks.File;
 using Serilog.Formatting.Json;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text.Json;
 
 namespace SmartAlarm.Observability.Extensions
 {
@@ -137,6 +140,7 @@ namespace SmartAlarm.Observability.Extensions
 
             // Métricas customizadas
             services.AddSingleton<SmartAlarmMeter>();
+            services.AddSingleton<BusinessMetrics>();
 
             // Tracing customizado
             services.AddSingleton<SmartAlarmActivitySource>();
@@ -146,6 +150,9 @@ namespace SmartAlarm.Observability.Extensions
 
             // Informações de versão
             services.AddSingleton<IVersionInfo, VersionInfo>();
+
+            // Health Checks
+            services.AddSmartAlarmHealthChecks(configuration);
 
             return services;
         }
@@ -159,6 +166,41 @@ namespace SmartAlarm.Observability.Extensions
         {
             // Middleware de correlação deve vir antes de outros middlewares
             app.UseMiddleware<ObservabilityMiddleware>();
+
+            // Health checks endpoints
+            app.UseHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+            {
+                Predicate = _ => true,
+                ResponseWriter = async (context, report) =>
+                {
+                    context.Response.ContentType = "application/json";
+                    var response = new
+                    {
+                        status = report.Status.ToString(),
+                        totalDuration = report.TotalDuration.TotalMilliseconds,
+                        entries = report.Entries.Select(entry => new
+                        {
+                            name = entry.Key,
+                            status = entry.Value.Status.ToString(),
+                            duration = entry.Value.Duration.TotalMilliseconds,
+                            description = entry.Value.Description
+                        })
+                    };
+                    await context.Response.WriteAsync(JsonSerializer.Serialize(response));
+                }
+            });
+
+            // Liveness probe (health check básico)
+            app.UseHealthChecks("/health/live", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+            {
+                Predicate = check => check.Tags.Contains("basic") || check.Tags.Contains("ready")
+            });
+
+            // Readiness probe (dependências)
+            app.UseHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+            {
+                Predicate = check => check.Tags.Contains("readiness") || check.Tags.Contains("database")
+            });
 
             // Middleware de métricas do Prometheus (se habilitado)
             var observabilityConfig = app.ApplicationServices.GetService<ObservabilityConfiguration>();

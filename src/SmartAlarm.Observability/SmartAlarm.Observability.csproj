@@ -38,6 +38,16 @@
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.1" />
     
+    <!-- Health Checks -->
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="8.0.4" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions" Version="8.0.4" />
+    
+    <!-- Health Checks Dependencies (Optional, só se injetadas) -->
+    <PackageReference Include="Npgsql" Version="8.0.3" />
+    <PackageReference Include="Minio" Version="6.0.1" />
+    <PackageReference Include="VaultSharp" Version="1.17.5.1" />
+    <PackageReference Include="RabbitMQ.Client" Version="6.8.1" />
+    
     <!-- Graylog/GELF -->
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="System.Net.Sockets" Version="4.3.0" />
