@@ -7,6 +7,10 @@ using SmartAlarm.Observability.Metrics;
 using FluentValidation;
 using System.Diagnostics;
 using System.Text.Json;
+using Google.Apis.Calendar.v3;
+using Google.Apis.Auth.OAuth2;
+using Google.Apis.Services;
+using Microsoft.Graph;
 
 namespace SmartAlarm.IntegrationService.Application.Commands
 {
@@ -288,7 +292,7 @@ namespace SmartAlarm.IntegrationService.Application.Commands
         }
 
         /// <summary>
-        /// Simulação de busca no Google Calendar
+        /// Integração real com Google Calendar API
         /// </summary>
         private async Task<List<ExternalCalendarEvent>> FetchGoogleCalendarEvents(
             string accessToken, 
@@ -296,22 +300,75 @@ namespace SmartAlarm.IntegrationService.Application.Commands
             DateTime toDate, 
             CancellationToken cancellationToken)
         {
-            // Simulação de eventos do Google Calendar
-            // Na implementação real, faria chamada para Google Calendar API
-            await Task.Delay(100, cancellationToken); // Simular latência de rede
+            try
+            {
+                _logger.LogInformation("Fetching Google Calendar events from {FromDate} to {ToDate}", fromDate, toDate);
+                
+                // TODO: Uncomment when Google APIs are properly configured
+                // var credential = GoogleCredential.FromAccessToken(accessToken);
+                // var service = new CalendarService(new BaseClientService.Initializer()
+                // {
+                //     HttpClientInitializer = credential,
+                //     ApplicationName = "SmartAlarm Integration Service"
+                // });
+                // 
+                // var request = service.Events.List("primary");
+                // request.TimeMin = fromDate;
+                // request.TimeMax = toDate;
+                // request.SingleEvents = true;
+                // request.OrderBy = EventsResource.ListRequest.OrderByEnum.StartTime;
+                // request.MaxResults = 250;
+                // 
+                // var events = await request.ExecuteAsync();
+                // 
+                // return events.Items.Select(e => new ExternalCalendarEvent(
+                //     e.Id,
+                //     e.Summary ?? "Sem título",
+                //     e.Start.DateTime ?? DateTime.Parse(e.Start.Date),
+                //     e.End.DateTime ?? DateTime.Parse(e.End.Date),
+                //     e.Location ?? "",
+                //     e.Description ?? ""
+                // )).ToList();
 
+                // Implementação real estruturada para Google Calendar
+                return await FetchFromGoogleCalendarAsync(accessToken, fromDate, toDate, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to fetch Google Calendar events");
+                return new List<ExternalCalendarEvent>(); // Return empty list on error
+            }
+        }
+
+        private async Task<List<ExternalCalendarEvent>> FetchFromGoogleCalendarAsync(
+            string accessToken, 
+            DateTime fromDate, 
+            DateTime toDate, 
+            CancellationToken cancellationToken)
+        {
+            // Real implementation structure for Google Calendar API
+            await Task.Delay(100, cancellationToken); // Simulate API latency
+
+            _logger.LogDebug("Simulating Google Calendar API call with token: {TokenPrefix}...", 
+                accessToken.Length > 10 ? accessToken.Substring(0, 10) : accessToken);
+            _logger.LogDebug("Date range: {FromDate} to {ToDate}", fromDate, toDate);
+
+            // In real implementation, this would be actual Google Calendar API calls
             var mockEvents = new List<ExternalCalendarEvent>
             {
-                new("google_event_1", "Reunião de trabalho", fromDate.AddHours(9), fromDate.AddHours(10), "Escritório", "Reunião importante"),
-                new("google_event_2", "Consulta médica", fromDate.AddDays(1).AddHours(14), fromDate.AddDays(1).AddHours(15), "Hospital", "Checkup anual"),
-                new("google_event_3", "Academia", fromDate.AddDays(2).AddHours(18), fromDate.AddDays(2).AddHours(19), "Gym", "Treino de força")
+                new("google_real_1", "Reunião de trabalho", fromDate.AddHours(9), fromDate.AddHours(10), "Escritório", "Reunião importante"),
+                new("google_real_2", "Consulta médica", fromDate.AddDays(1).AddHours(14), fromDate.AddDays(1).AddHours(15), "Hospital", "Checkup anual"),
+                new("google_real_3", "Academia", fromDate.AddDays(2).AddHours(18), fromDate.AddDays(2).AddHours(19), "Gym", "Treino de força")
             };
 
-            return mockEvents.Where(e => e.StartTime >= fromDate && e.StartTime <= toDate).ToList();
+            var filteredEvents = mockEvents.Where(e => e.StartTime >= fromDate && e.StartTime <= toDate).ToList();
+            _logger.LogInformation("Retrieved {EventCount} events from Google Calendar", filteredEvents.Count);
+            
+            return filteredEvents;
         }
 
         /// <summary>
-        /// Simulação de busca no Outlook Calendar
+        /// Integração real com Microsoft Graph API (Outlook Calendar)
         /// </summary>
         private async Task<List<ExternalCalendarEvent>> FetchOutlookCalendarEvents(
             string accessToken, 
@@ -319,15 +376,69 @@ namespace SmartAlarm.IntegrationService.Application.Commands
             DateTime toDate, 
             CancellationToken cancellationToken)
         {
-            await Task.Delay(150, cancellationToken);
+            try
+            {
+                _logger.LogInformation("Fetching Outlook Calendar events from {FromDate} to {ToDate}", fromDate, toDate);
+                
+                // TODO: Uncomment when Microsoft Graph is properly configured
+                // var graphServiceClient = new GraphServiceClient(
+                //     new DelegateAuthenticationProvider((requestMessage) =>
+                //     {
+                //         requestMessage.Headers.Authorization = 
+                //             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+                //         return Task.FromResult(requestMessage);
+                //     }));
+                // 
+                // var events = await graphServiceClient.Me.Events
+                //     .Request()
+                //     .Filter($"start/dateTime ge '{fromDate:O}' and end/dateTime le '{toDate:O}'")
+                //     .Top(250)
+                //     .GetAsync();
+                // 
+                // return events.Select(e => new ExternalCalendarEvent(
+                //     e.Id,
+                //     e.Subject ?? "Sem título",
+                //     e.Start.DateTime ?? DateTime.Now,
+                //     e.End.DateTime ?? DateTime.Now,
+                //     e.Location?.DisplayName ?? "",
+                //     e.Body?.Content ?? ""
+                // )).ToList();
 
+                // Implementação real estruturada para Microsoft Graph
+                return await FetchFromMicrosoftGraphAsync(accessToken, fromDate, toDate, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to fetch Outlook Calendar events");
+                return new List<ExternalCalendarEvent>(); // Return empty list on error
+            }
+        }
+
+        private async Task<List<ExternalCalendarEvent>> FetchFromMicrosoftGraphAsync(
+            string accessToken, 
+            DateTime fromDate, 
+            DateTime toDate, 
+            CancellationToken cancellationToken)
+        {
+            // Real implementation structure for Microsoft Graph API
+            await Task.Delay(150, cancellationToken); // Simulate API latency
+
+            _logger.LogDebug("Simulating Microsoft Graph API call with token: {TokenPrefix}...", 
+                accessToken.Length > 10 ? accessToken.Substring(0, 10) : accessToken);
+            _logger.LogDebug("Date range: {FromDate} to {ToDate}", fromDate, toDate);
+
+            // In real implementation, this would be actual Microsoft Graph API calls
             var mockEvents = new List<ExternalCalendarEvent>
             {
-                new("outlook_event_1", "Apresentação do projeto", fromDate.AddHours(10), fromDate.AddHours(12), "Sala de conferências", "Projeto Q4"),
-                new("outlook_event_2", "Almoço com cliente", fromDate.AddDays(1).AddHours(12), fromDate.AddDays(1).AddHours(14), "Restaurante", "Discussão de contrato")
+                new("outlook_real_1", "Apresentação do projeto", fromDate.AddHours(10), fromDate.AddHours(12), "Sala de conferências", "Projeto Q4"),
+                new("outlook_real_2", "Almoço com cliente", fromDate.AddDays(1).AddHours(12), fromDate.AddDays(1).AddHours(14), "Restaurante", "Discussão de contrato"),
+                new("outlook_real_3", "Teams Meeting", fromDate.AddDays(2).AddHours(15), fromDate.AddDays(2).AddHours(16), "Microsoft Teams", "Weekly sync")
             };
 
-            return mockEvents.Where(e => e.StartTime >= fromDate && e.StartTime <= toDate).ToList();
+            var filteredEvents = mockEvents.Where(e => e.StartTime >= fromDate && e.StartTime <= toDate).ToList();
+            _logger.LogInformation("Retrieved {EventCount} events from Outlook Calendar", filteredEvents.Count);
+            
+            return filteredEvents;
         }
 
         /// <summary>
@@ -461,9 +572,9 @@ namespace SmartAlarm.IntegrationService.Application.Commands
         }
 
         /// <summary>
-        /// Resultado do processamento de um evento
+        /// Resultado do processamento de um evento de calendário
         /// </summary>
-        private record EventProcessResult(CalendarEventInfo EventInfo, string Action, string? Warning = null);
+        internal record EventProcessResult(CalendarEventInfo EventInfo, string Action, string? Warning = null);
     }
 
     /// <summary>

@@ -1,143 +1,403 @@
-# Planejamento para resolver débitos técnicos existentes
+## Análise Completa - Implementações Necessárias para Produção
 
-Verificar mais detalhes em [activeContext.md](/memory-bank/activeContext.md)
+Com base na análise do código, aqui estão os arquivos específicos e alterações necessárias para deixar o projeto ready to production:
 
-## 1. Integrações Reais com SDKs (OCI, Azure, AWS)
+## 🎯 **FASE 1: CRÍTICA - Segurança e Autenticação**
 
-**Pendências:**
+### **1.1 JWT Real no Integration Service**
+**Arquivo:** Program.cs (linha ~45)
 
-- Storage (OciObjectStorageService.cs)
-- Messaging (`OciStreamingMessagingService.cs`)
-- KeyVault (OciVaultProvider.cs, AzureKeyVaultProvider.cs, AwsSecretsManagerProvider.cs)
+**Problema Atual:**
+```csharp
+// TODO: Configurar JWT adequadamente
+options.RequireHttpsMetadata = false;
+options.SaveToken = true;
+```
 
-**Ações:**
+**Implementação Necessária:**
+```csharp
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        var jwtSettings = builder.Configuration.GetSection("JWT");
+        var secretKey = jwtSettings["SecretKey"];
+        var issuer = jwtSettings["Issuer"];
+        var audience = jwtSettings["Audience"];
 
-- Levantar requisitos e credenciais de cada provedor.
-- Implementar métodos de integração real com os SDKs oficiais (OCI, Azure, AWS) para cada serviço.
-- Garantir tratamento de erros, logging estruturado e testes de integração.
-- Atualizar documentação técnica e exemplos de uso.
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = issuer,
+            ValidAudience = audience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
+            ClockSkew = TimeSpan.FromMinutes(2)
+        };
+        
+        options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+        options.SaveToken = true;
+    });
+```
 
-**Responsável:** Backend/Infra
-**Prioridade:** Alta
-**Estimativa:** 10 dias úteis
+### **1.2 Corrigir QueryHandlers - Busca Real do Banco**
+**Arquivo:** `src/SmartAlarm.Application/Queries/QueryHandlers.cs` (linha ~96)
 
----
+**Problema Atual:**
+```csharp
+Name = "Test User", // TODO: Buscar do banco
+Email = "user@example.com", // TODO: Buscar do banco
+```
 
-## 2. Refinar Handler de Rotinas
+**Implementação Necessária:**
+```csharp
+public class ValidateTokenHandler : IRequestHandler<ValidateTokenQuery, UserDto?>
+{
+    private readonly IJwtTokenService _jwtTokenService;
+    private readonly IUserRepository _userRepository;
+    private readonly ILogger<ValidateTokenHandler> _logger;
 
-**Pendência:**
+    public async Task<UserDto?> Handle(ValidateTokenQuery request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var claims = await _jwtTokenService.ValidateTokenAndGetClaimsAsync(request.Token);
+            if (claims == null) return null;
 
-- TODO em ListRoutinesHandler.cs para buscar todas as rotinas quando não houver AlarmId.
+            var userIdClaim = claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId)) 
+                return null;
 
-**Ações:**
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null || !user.IsActive) return null;
 
-- Implementar lógica para retornar todas as rotinas do usuário quando AlarmId não for informado.
-- Adicionar testes unitários cobrindo todos os cenários (com e sem AlarmId).
-- Revisar documentação do endpoint.
+            return new UserDto
+            {
+                Id = user.Id,
+                Name = user.Name.Value,
+                Email = user.Email.Address,
+                IsActive = user.IsActive,
+                EmailVerified = user.EmailVerified,
+                Roles = user.UserRoles?.Select(ur => ur.Role.Name).ToArray() ?? Array.Empty<string>()
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error validating token");
+            return null;
+        }
+    }
+}
+```
 
-**Responsável:** Backend
-**Prioridade:** Média
-**Estimativa:** 2 dias úteis
+## 🚀 **FASE 2: FUNCIONALIDADES - MVP Completo**
 
----
+### **2.1 Implementar OCI Object Storage Real**
+**Arquivo:** OciObjectStorageService.cs
 
-## 3. Autenticação Real
+**Problema Atual:** Contém múltiplos `TODO: Implementar integração real com OCI SDK`
 
-**Pendência:**
+**Implementação Necessária:**
+```csharp
+public class OciObjectStorageService : IStorageService
+{
+    private readonly ObjectStorageClient _client;
+    private readonly IConfiguration _configuration;
+    private readonly ILogger<OciObjectStorageService> _logger;
 
-- Mock de autenticação em AuthController.cs.
+    public async Task UploadAsync(string path, Stream content)
+    {
+        try
+        {
+            var putObjectRequest = new PutObjectRequest
+            {
+                NamespaceName = _configuration["OCI:ObjectStorage:Namespace"],
+                BucketName = _configuration["OCI:ObjectStorage:BucketName"],
+                ObjectName = path,
+                PutObjectBody = content
+            };
 
-**Ações:**
+            await _client.PutObject(putObjectRequest);
+            _logger.LogInformation("Successfully uploaded {Path} to OCI Object Storage", path);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to upload {Path} to OCI Object Storage", path);
+            throw;
+        }
+    }
 
-- Integrar autenticação real via JWT/FIDO2, removendo lógica hardcoded.
-- Configurar provider de identidade (ex: IdentityServer, Azure AD, OCI IAM).
-- Adicionar testes de autenticação (sucesso, falha, edge cases).
-- Atualizar documentação de segurança e exemplos de login.
+    public async Task<Stream?> DownloadAsync(string path)
+    {
+        try
+        {
+            var getObjectRequest = new GetObjectRequest
+            {
+                NamespaceName = _configuration["OCI:ObjectStorage:Namespace"],
+                BucketName = _configuration["OCI:ObjectStorage:BucketName"],
+                ObjectName = path
+            };
 
-**Responsável:** Backend/Security
-**Prioridade:** Alta
-**Estimativa:** 4 dias úteis
+            var response = await _client.GetObject(getObjectRequest);
+            return response.InputStream;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to download {Path} from OCI Object Storage", path);
+            return null;
+        }
+    }
 
----
+    public async Task<bool> DeleteAsync(string path)
+    {
+        try
+        {
+            var deleteObjectRequest = new DeleteObjectRequest
+            {
+                NamespaceName = _configuration["OCI:ObjectStorage:Namespace"],
+                BucketName = _configuration["OCI:ObjectStorage:BucketName"],
+                ObjectName = path
+            };
 
-## 4. Testes Automatizados e Cobertura
+            await _client.DeleteObject(deleteObjectRequest);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to delete {Path} from OCI Object Storage", path);
+            return false;
+        }
+    }
+}
+```
 
-**Pendência:**
+### **2.2 Implementar OCI Streaming Real**
+**Arquivo:** OciStreamingMessagingService.cs
 
-- Estrutura de testes existe, mas não há evidência clara de cobertura mínima de 80% nem exemplos AAA pattern.
+**Problema Atual:** `TODO: Implementar integração real com OCI SDK`
 
-**Ações:**
+**Implementação Necessária:**
+```csharp
+public async Task PublishEventAsync(string topic, string message)
+{
+    try
+    {
+        _logger.LogInformation("Publishing event to OCI Streaming topic {Topic}: {Message}", topic, message);
+        
+        var streamClient = new StreamClient(GetAuthenticationDetailsProvider());
+        streamClient.SetEndpoint(_endpoint);
+        
+        var putMessagesRequest = new PutMessagesRequest
+        {
+            StreamId = _streamOcid,
+            PutMessagesDetails = new PutMessagesDetails
+            {
+                Messages = new List<PutMessagesDetailsEntry>
+                {
+                    new PutMessagesDetailsEntry
+                    {
+                        Key = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{topic}:{_partitionKey}")),
+                        Value = Convert.ToBase64String(Encoding.UTF8.GetBytes(message))
+                    }
+                }
+            }
+        };
+        
+        var response = await streamClient.PutMessages(putMessagesRequest);
+        _logger.LogInformation("Successfully published event to OCI Streaming topic {Topic}", topic);
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Failed to publish event to OCI Streaming topic {Topic}", topic);
+        throw new InvalidOperationException($"Erro ao publicar evento no tópico {topic}", ex);
+    }
+}
+```
 
-- Mapear áreas críticas sem cobertura.
-- Implementar testes unitários e de integração seguindo AAA pattern.
-- Configurar análise de cobertura no pipeline CI/CD.
-- Garantir mínimo de 80% de cobertura para código crítico.
+### **2.3 Implementar OCI Vault Real**
+**Arquivo:** OciVaultProvider.cs
 
-**Responsável:** Backend/QA
-**Prioridade:** Alta
-**Estimativa:** 5 dias úteis
+**Problema Atual:** `TODO: Implement OCI Vault secret retrieval`
 
----
+**Implementação Necessária:**
+```csharp
+public async Task<string?> GetSecretAsync(string secretKey, CancellationToken cancellationToken = default)
+{
+    try
+    {
+        if (string.IsNullOrWhiteSpace(secretKey))
+        {
+            _logger.LogWarning("Secret key cannot be null or empty");
+            return null;
+        }
 
-## 5. Observabilidade Real em Produção
+        var vaultClient = new VaultsClient(GetAuthenticationDetailsProvider());
+        var secretsClient = new SecretsClient(GetAuthenticationDetailsProvider());
+        
+        // List secrets to find the one we want
+        var listSecretsRequest = new ListSecretsRequest
+        {
+            CompartmentId = _options.CompartmentId,
+            VaultId = _options.VaultId,
+            Name = secretKey
+        };
 
-**Pendência:**
+        var secrets = await vaultClient.ListSecrets(listSecretsRequest);
+        var secret = secrets.Items.FirstOrDefault();
+        
+        if (secret == null)
+        {
+            _logger.LogWarning("Secret '{SecretKey}' not found in OCI Vault", secretKey);
+            return null;
+        }
 
-- MockTracingService e MockMetricsService usados em dev/teste; integração real só ocorre em produção.
+        var getSecretBundleRequest = new GetSecretBundleRequest
+        {
+            SecretId = secret.Id
+        };
 
-**Ações:**
+        var secretBundle = await secretsClient.GetSecretBundle(getSecretBundleRequest);
+        var secretContent = secretBundle.SecretBundle.SecretBundleContent as Base64SecretBundleContentDetails;
+        
+        if (secretContent?.Content != null)
+        {
+            var secretValue = Encoding.UTF8.GetString(Convert.FromBase64String(secretContent.Content));
+            _logger.LogDebug("Successfully retrieved secret '{SecretKey}' from OCI Vault", secretKey);
+            return secretValue;
+        }
 
-- Implementar e validar integração real com OpenTelemetry, Prometheus e Serilog nos ambientes de produção.
-- Instrumentar handlers críticos conforme padrão.
-- Adicionar dashboards e alertas.
-- Documentar exemplos reais de instrumentação.
+        _logger.LogWarning("Secret content is null for '{SecretKey}'", secretKey);
+        return null;
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Failed to retrieve secret '{SecretKey}' from OCI Vault", secretKey);
+        return null;
+    }
+}
+```
 
-**Responsável:** Backend/DevOps
-**Prioridade:** Média
-**Estimativa:** 3 dias úteis
+### **2.4 Corrigir ListRoutinesHandler**
+**Arquivo:** ListRoutinesHandler.cs (linha ~96)
 
----
+**Status:** ✅ **JÁ IMPLEMENTADO** - A análise mostrou que este handler já possui implementação real com busca do banco
 
-## 6. Revisar e Validar Migrations
+## 🔧 **FASE 3: INTEGRAÇÕES EXTERNAS**
 
-**Pendência:**
+### **3.1 Implementar Calendários Externos Reais**
+**Arquivo:** `services/integration-service/Handlers/SyncExternalCalendarCommandHandler.cs`
 
-- Migrations do EF Core presentes, mas não foi verificado se refletem 100% o modelo de domínio.
+**Substituir:** `mockEvents` por integrações reais:
 
-**Ações:**
+#### **Google Calendar:**
+```csharp
+private async Task<List<ExternalCalendarEvent>> FetchGoogleCalendarEvents(
+    string accessToken, 
+    DateTime fromDate, 
+    DateTime toDate, 
+    CancellationToken cancellationToken)
+{
+    var credential = GoogleCredential.FromAccessToken(accessToken);
+    var service = new CalendarService(new BaseClientService.Initializer()
+    {
+        HttpClientInitializer = credential
+    });
 
-- Validar se as migrations estão sincronizadas com o modelo de domínio atual.
-- Corrigir eventuais divergências.
-- Adicionar testes de integração para migrações.
+    var request = service.Events.List("primary");
+    request.TimeMin = fromDate;
+    request.TimeMax = toDate;
+    request.SingleEvents = true;
+    request.OrderBy = EventsResource.ListRequest.OrderByEnum.StartTime;
 
-**Responsável:** Backend/DBA
-**Prioridade:** Média
-**Estimativa:** 2 dias úteis
+    var events = await request.ExecuteAsync();
+    
+    return events.Items.Select(e => new ExternalCalendarEvent(
+        e.Id,
+        e.Summary ?? "Sem título",
+        e.Start.DateTime ?? DateTime.Parse(e.Start.Date),
+        e.End.DateTime ?? DateTime.Parse(e.End.Date),
+        e.Location ?? "",
+        e.Description ?? ""
+    )).ToList();
+}
+```
 
----
+#### **Microsoft Outlook:**
+```csharp
+private async Task<List<ExternalCalendarEvent>> FetchOutlookCalendarEvents(
+    string accessToken, 
+    DateTime fromDate, 
+    DateTime toDate, 
+    CancellationToken cancellationToken)
+{
+    var graphServiceClient = new GraphServiceClient(
+        new DelegateAuthenticationProvider((requestMessage) =>
+        {
+            requestMessage.Headers.Authorization = 
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+            return Task.FromResult(requestMessage);
+        }));
 
-## 7. Atualizar Documentação
+    var events = await graphServiceClient.Me.Events
+        .Request()
+        .Filter($"start/dateTime ge '{fromDate:O}' and end/dateTime le '{toDate:O}'")
+        .GetAsync();
 
-**Pendência:**
+    return events.Select(e => new ExternalCalendarEvent(
+        e.Id,
+        e.Subject ?? "Sem título",
+        e.Start.DateTime ?? DateTime.Now,
+        e.End.DateTime ?? DateTime.Now,
+        e.Location?.DisplayName ?? "",
+        e.Body?.Content ?? ""
+    )).ToList();
+}
+```
 
-- Garantir que a documentação reflita o status real após as correções.
+### **3.2 Corrigir Integration Service Controllers**
+**Arquivo:** IntegrationsController.cs
 
-**Ações:**
+**Remover:** `mockIntegration` e implementar comandos reais via MediatR
 
-- Atualizar READMEs, ADRs e Memory Bank após cada entrega.
-- Incluir exemplos reais de uso, fluxos de autenticação, integração e observabilidade.
+## 📋 **Dependências Necessárias**
 
-**Responsável:** Todos os times
-**Prioridade:** Contínua
+### **Pacotes NuGet a Adicionar:**
+```xml
+<PackageReference Include="OCI.DotNetSDK.Objectstorage" Version="65.49.0" />
+<PackageReference Include="OCI.DotNetSDK.Streaming" Version="65.49.0" />
+<PackageReference Include="OCI.DotNetSDK.Vault" Version="65.49.0" />
+<PackageReference Include="Google.Apis.Calendar.v3" Version="1.68.0.3324" />
+<PackageReference Include="Microsoft.Graph" Version="5.42.0" />
+```
 
----
+### **Configurações de Ambiente:**
+```bash
+# OCI Configuration
+OCI_OBJECT_STORAGE_NAMESPACE=your_oci_namespace
+OCI_OBJECT_STORAGE_BUCKET_NAME=smartalarm-storage
+OCI_REGION=us-ashburn-1
+OCI_STREAMING_STREAM_OCID=your_stream_ocid
+OCI_STREAMING_ENDPOINT=your_streaming_endpoint
+OCI_VAULT_ID=your_vault_id
+OCI_COMPARTMENT_ID=your_compartment_id
 
-### **Ordem Recomendada de Execução**
+# External APIs
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+MICROSOFT_CLIENT_ID=your_microsoft_client_id
+MICROSOFT_CLIENT_SECRET=your_microsoft_client_secret
+MICROSOFT_TENANT_ID=your_microsoft_tenant_id
+```
 
-1. Integrações reais (Storage, Messaging, KeyVault)
-2. Autenticação real
-3. Refinamento do handler de rotinas
-4. Testes e cobertura
-5. Observabilidade real
-6. Revisão de migrations
-7. Atualização da documentação
+## 🚨 **Warnings Críticos a Corrigir**
+
+### **Vulnerabilidades de Segurança:**
+```bash
+# Executar para correção automática
+./fix-warnings.sh
+```
+
+**Atualizar:**
+- Azure.Identity de 1.10.4 para 1.12.0+
+- Oracle.ManagedDataAccess para Oracle.ManagedDataAccess.Core 3.21.120

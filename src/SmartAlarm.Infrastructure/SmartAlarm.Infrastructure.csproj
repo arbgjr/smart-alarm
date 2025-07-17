@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Azure.Identity" Version="1.12.0" />
     <PackageReference Include="Dapper" Version="2.1.42" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.7" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.7" />
@@ -27,6 +28,11 @@
     <PackageReference Include="Minio" Version="6.0.1" />
     <PackageReference Include="Serilog.Extensions.Logging" Version="9.0.2" />
     <PackageReference Include="CsvHelper" Version="32.0.3" />
+    <PackageReference Include="OCI.DotNetSDK.Objectstorage" Version="69.0.0" />
+    <PackageReference Include="OCI.DotNetSDK.Streaming" Version="69.0.0" />
+    <PackageReference Include="OCI.DotNetSDK.Vault" Version="69.0.0" />
+    <PackageReference Include="Google.Apis.Calendar.v3" Version="1.68.0.3374" />
+    <PackageReference Include="Microsoft.Graph" Version="5.42.0" />
   </ItemGroup>
 
   <ItemGroup>
