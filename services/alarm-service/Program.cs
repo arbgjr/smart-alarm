@@ -22,8 +22,12 @@ builder.Host.UseSerilog((context, configuration) =>
 // Adicionar observabilidade completa
 builder.Services.AddObservability(builder.Configuration, "SmartAlarm.AlarmService", "1.0.0");
 
-// Registrar MediatR apontando para a Application Layer
-builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(SmartAlarm.Application.Commands.CreateAlarmCommand).Assembly));
+// Registrar MediatR para handlers do próprio serviço
+builder.Services.AddMediatR(cfg => 
+{
+    cfg.RegisterServicesFromAssembly(typeof(Program).Assembly);
+    cfg.RegisterServicesFromAssembly(typeof(SmartAlarm.Application.Commands.CreateAlarmCommand).Assembly);
+});
 
 // Registrar infraestrutura
 if (!builder.Environment.IsEnvironment("Testing"))

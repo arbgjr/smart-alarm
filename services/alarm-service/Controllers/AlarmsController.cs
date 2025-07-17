@@ -3,6 +3,9 @@ using MediatR;
 using SmartAlarm.Observability.Context;
 using SmartAlarm.Observability.Tracing;
 using SmartAlarm.Observability.Metrics;
+using SmartAlarm.AlarmService.Application.Commands;
+using SmartAlarm.AlarmService.Application.Queries;
+using FluentValidation;
 using Hangfire;
 using System.Diagnostics;
 
@@ -40,13 +43,19 @@ namespace SmartAlarm.AlarmService.Controllers
         }
 
         /// <summary>
-        /// Lista alarmes do usuário
+        /// Lista alarmes do usuário usando MediatR
         /// </summary>
         /// <param name="userId">ID do usuário</param>
         /// <param name="active">Filtrar apenas alarmes ativos</param>
+        /// <param name="page">Número da página</param>
+        /// <param name="pageSize">Tamanho da página</param>
         /// <returns>Lista de alarmes</returns>
         [HttpGet("user/{userId:guid}")]
-        public async Task<IActionResult> GetUserAlarms(Guid userId, [FromQuery] bool? active = null)
+        public async Task<IActionResult> GetUserAlarms(
+            Guid userId, 
+            [FromQuery] bool? active = null,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10)
         {
             using var activity = _activitySource.StartActivity("AlarmsController.GetUserAlarms");
             var stopwatch = Stopwatch.StartNew();
@@ -55,51 +64,56 @@ namespace SmartAlarm.AlarmService.Controllers
             {
                 activity?.SetTag("user.id", userId.ToString());
                 activity?.SetTag("filter.active", active?.ToString() ?? "null");
+                activity?.SetTag("pagination.page", page.ToString());
+                activity?.SetTag("pagination.pageSize", pageSize.ToString());
                 activity?.SetTag("operation", "get_user_alarms");
                 
-                _logger.LogInformation("Listando alarmes do usuário {UserId} - Filtro ativo: {Active} - CorrelationId: {CorrelationId}", 
-                    userId, active, _correlationContext.CorrelationId);
+                _logger.LogInformation("Listando alarmes do usuário {UserId} - Filtro ativo: {Active}, Page: {Page}, PageSize: {PageSize} - CorrelationId: {CorrelationId}", 
+                    userId, active, page, pageSize, _correlationContext.CorrelationId);
 
-                // TODO: Implementar query real
-                // var alarms = await _mediator.Send(new GetUserAlarmsQuery(userId, active));
-                
-                var mockAlarms = new
-                {
-                    UserId = userId,
-                    Alarms = new[]
-                    {
-                        new 
-                        {
-                            Id = Guid.NewGuid(),
-                            Name = "Reunião diária",
-                            Time = "09:00",
-                            IsActive = true,
-                            DaysOfWeek = new[] { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday" },
-                            SmartFeatures = new { AdaptToCalendar = true, WeatherAdjustment = false },
-                            NextExecution = DateTime.Today.AddDays(1).AddHours(9)
-                        },
-                        new 
-                        {
-                            Id = Guid.NewGuid(),
-                            Name = "Exercício matinal",
-                            Time = "06:30",
-                            IsActive = active ?? true,
-                            DaysOfWeek = new[] { "Monday", "Wednesday", "Friday" },
-                            SmartFeatures = new { AdaptToCalendar = false, WeatherAdjustment = true },
-                            NextExecution = DateTime.Today.AddDays(2).AddHours(6.5)
-                        }
-                    }.Where(a => active == null || a.IsActive == active),
-                    TotalCount = 2,
-                    ActiveCount = 2
-                };
+                // Usar MediatR para processar a query
+                var query = new ListUserAlarmsQuery(
+                    UserId: userId,
+                    IsEnabled: active,
+                    Page: page,
+                    PageSize: pageSize
+                );
+
+                var response = await _mediator.Send(query);
 
                 stopwatch.Stop();
                 _meter.RecordRequestDuration(stopwatch.ElapsedMilliseconds, "get_user_alarms", "success", "200");
                 
-                _logger.LogInformation("Alarmes do usuário {UserId} listados com sucesso em {Duration}ms", 
-                    userId, stopwatch.ElapsedMilliseconds);
+                _logger.LogInformation("Alarmes do usuário {UserId} listados com sucesso - Total: {TotalCount}, Retornados: {ReturnedCount} em {Duration}ms", 
+                    userId, response.TotalCount, response.Alarms.Count(), stopwatch.ElapsedMilliseconds);
 
-                return Ok(mockAlarms);
+                return Ok(response);
+            }
+            catch (ValidationException ex)
+            {
+                stopwatch.Stop();
+                _meter.RecordRequestDuration(stopwatch.ElapsedMilliseconds, "get_user_alarms", "validation_error", "400");
+                
+                activity?.SetTag("error", true);
+                activity?.SetTag("error.message", ex.Message);
+                
+                _logger.LogWarning("Erro de validação ao listar alarmes do usuário {UserId}: {Error} - CorrelationId: {CorrelationId}", 
+                    userId, ex.Message, _correlationContext.CorrelationId);
+
+                return BadRequest(new { error = ex.Message, correlationId = _correlationContext.CorrelationId });
+            }
+            catch (InvalidOperationException ex)
+            {
+                stopwatch.Stop();
+                _meter.RecordRequestDuration(stopwatch.ElapsedMilliseconds, "get_user_alarms", "not_found", "404");
+                
+                activity?.SetTag("error", true);
+                activity?.SetTag("error.message", ex.Message);
+                
+                _logger.LogWarning("Usuário não encontrado ao listar alarmes {UserId}: {Error} - CorrelationId: {CorrelationId}", 
+                    userId, ex.Message, _correlationContext.CorrelationId);
+
+                return NotFound(new { error = ex.Message, correlationId = _correlationContext.CorrelationId });
             }
             catch (Exception ex)
             {
@@ -118,7 +132,80 @@ namespace SmartAlarm.AlarmService.Controllers
         }
 
         /// <summary>
-        /// Cria um novo alarme
+        /// Busca um alarme por ID usando MediatR
+        /// </summary>
+        /// <param name="alarmId">ID do alarme</param>
+        /// <returns>Dados do alarme</returns>
+        [HttpGet("{alarmId:guid}")]
+        public async Task<IActionResult> GetAlarmById(Guid alarmId)
+        {
+            using var activity = _activitySource.StartActivity("AlarmsController.GetAlarmById");
+            var stopwatch = Stopwatch.StartNew();
+
+            try
+            {
+                activity?.SetTag("alarm.id", alarmId.ToString());
+                activity?.SetTag("operation", "get_alarm_by_id");
+                
+                _logger.LogInformation("Buscando alarme por ID {AlarmId} - CorrelationId: {CorrelationId}", 
+                    alarmId, _correlationContext.CorrelationId);
+
+                // Usar MediatR para processar a query
+                var query = new GetAlarmByIdQuery(alarmId);
+                var response = await _mediator.Send(query);
+
+                stopwatch.Stop();
+                _meter.RecordRequestDuration(stopwatch.ElapsedMilliseconds, "get_alarm_by_id", "success", "200");
+                
+                _logger.LogInformation("Alarme {AlarmId} encontrado com sucesso em {Duration}ms", 
+                    alarmId, stopwatch.ElapsedMilliseconds);
+
+                return Ok(response);
+            }
+            catch (ValidationException ex)
+            {
+                stopwatch.Stop();
+                _meter.RecordRequestDuration(stopwatch.ElapsedMilliseconds, "get_alarm_by_id", "validation_error", "400");
+                
+                activity?.SetTag("error", true);
+                activity?.SetTag("error.message", ex.Message);
+                
+                _logger.LogWarning("Erro de validação ao buscar alarme {AlarmId}: {Error} - CorrelationId: {CorrelationId}", 
+                    alarmId, ex.Message, _correlationContext.CorrelationId);
+
+                return BadRequest(new { error = ex.Message, correlationId = _correlationContext.CorrelationId });
+            }
+            catch (InvalidOperationException ex)
+            {
+                stopwatch.Stop();
+                _meter.RecordRequestDuration(stopwatch.ElapsedMilliseconds, "get_alarm_by_id", "not_found", "404");
+                
+                activity?.SetTag("error", true);
+                activity?.SetTag("error.message", ex.Message);
+                
+                _logger.LogWarning("Alarme não encontrado {AlarmId}: {Error} - CorrelationId: {CorrelationId}", 
+                    alarmId, ex.Message, _correlationContext.CorrelationId);
+
+                return NotFound(new { error = ex.Message, correlationId = _correlationContext.CorrelationId });
+            }
+            catch (Exception ex)
+            {
+                stopwatch.Stop();
+                _meter.RecordRequestDuration(stopwatch.ElapsedMilliseconds, "get_alarm_by_id", "error", "500");
+                _meter.IncrementErrorCount("controller", "get_alarm", "exception");
+                
+                activity?.SetTag("error", true);
+                activity?.SetTag("error.message", ex.Message);
+                
+                _logger.LogError(ex, "Erro ao buscar alarme {AlarmId} - CorrelationId: {CorrelationId}", 
+                    alarmId, _correlationContext.CorrelationId);
+
+                return StatusCode(500, new { error = "Erro interno do servidor", correlationId = _correlationContext.CorrelationId });
+            }
+        }
+
+        /// <summary>
+        /// Cria um novo alarme usando MediatR
         /// </summary>
         /// <param name="request">Dados do alarme</param>
         /// <returns>Alarme criado</returns>
@@ -137,30 +224,24 @@ namespace SmartAlarm.AlarmService.Controllers
                 _logger.LogInformation("Criando alarme '{Name}' para usuário {UserId} - CorrelationId: {CorrelationId}", 
                     request.Name, request.UserId, _correlationContext.CorrelationId);
 
-                // TODO: Implementar comando real
-                // var alarm = await _mediator.Send(new CreateAlarmCommand(request));
-                
-                var alarmId = Guid.NewGuid();
-                var mockAlarm = new
-                {
-                    Id = alarmId,
-                    UserId = request.UserId,
-                    Name = request.Name,
-                    Time = request.Time,
-                    DaysOfWeek = request.DaysOfWeek,
-                    IsActive = true,
-                    SmartFeatures = request.SmartFeatures,
-                    CreatedAt = DateTime.UtcNow,
-                    NextExecution = CalculateNextExecution(request.Time, request.DaysOfWeek)
-                };
+                // Usar MediatR para processar o comando
+                var command = new CreateAlarmCommand(
+                    UserId: request.UserId,
+                    Name: request.Name,
+                    Time: DateTime.Now.Date.Add(TimeSpan.Parse(request.Time)),
+                    Enabled: true,
+                    Description: $"Alarme: {request.Name}"
+                );
+
+                var response = await _mediator.Send(command);
 
                 // Agendar job em background para o alarme
                 var jobId = _backgroundJobClient.Schedule(
-                    () => TriggerAlarm(alarmId, request.UserId),
-                    mockAlarm.NextExecution);
+                    () => TriggerAlarm(response.AlarmId, response.UserId),
+                    response.Time);
 
-                _logger.LogInformation("Job de alarme agendado: {JobId} para {NextExecution}", 
-                    jobId, mockAlarm.NextExecution);
+                _logger.LogInformation("Job de alarme agendado: {JobId} para {Time}", 
+                    jobId, response.Time);
 
                 stopwatch.Stop();
                 _meter.RecordRequestDuration(stopwatch.ElapsedMilliseconds, "create_alarm", "success", "201");
@@ -168,7 +249,7 @@ namespace SmartAlarm.AlarmService.Controllers
                 _logger.LogInformation("Alarme '{Name}' criado com sucesso para usuário {UserId} em {Duration}ms", 
                     request.Name, request.UserId, stopwatch.ElapsedMilliseconds);
 
-                return Created($"/api/v1/alarms/{alarmId}", mockAlarm);
+                return Created($"/api/v1/alarms/{response.AlarmId}", response);
             }
             catch (Exception ex)
             {
