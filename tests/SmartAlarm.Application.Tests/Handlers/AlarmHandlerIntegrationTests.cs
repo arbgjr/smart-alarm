@@ -10,6 +10,8 @@ using SmartAlarm.Application.Queries;
 using SmartAlarm.Application.Commands;
 using SmartAlarm.Domain.Entities;
 using SmartAlarm.Domain.Repositories;
+using SmartAlarm.Observability.Context;
+using SmartAlarm.Observability.Metrics;
 using Microsoft.Extensions.Logging;
 
 namespace SmartAlarm.Application.Tests.Handlers
@@ -82,7 +84,10 @@ namespace SmartAlarm.Application.Tests.Handlers
             var repoMock = new Mock<IAlarmRepository>();
             repoMock.Setup(r => r.GetByUserIdAsync(userId)).ReturnsAsync(new List<Alarm> { alarm1, alarm2 });
             var loggerMock = new Mock<ILogger<ListAlarmsHandler>>();
-            var handler = new ListAlarmsHandler(repoMock.Object, loggerMock.Object);
+            var meterMock = new Mock<SmartAlarmMeter>();
+            var businessMetricsMock = new Mock<BusinessMetrics>();
+            var correlationContextMock = new Mock<ICorrelationContext>();
+            var handler = new ListAlarmsHandler(repoMock.Object, loggerMock.Object, meterMock.Object, businessMetricsMock.Object, correlationContextMock.Object);
             var query = new ListAlarmsQuery(userId);
 
             // Act

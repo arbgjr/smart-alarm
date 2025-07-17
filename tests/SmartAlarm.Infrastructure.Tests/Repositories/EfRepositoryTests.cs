@@ -3,10 +3,15 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Moq;
 using SmartAlarm.Domain.Entities;
 using SmartAlarm.Domain.ValueObjects;
 using SmartAlarm.Infrastructure.Data;
 using SmartAlarm.Infrastructure.Repositories.EntityFramework;
+using SmartAlarm.Observability.Context;
+using SmartAlarm.Observability.Metrics;
+using SmartAlarm.Observability.Tracing;
 using Xunit;
 
 namespace SmartAlarm.Infrastructure.Tests.Repositories
@@ -32,7 +37,14 @@ namespace SmartAlarm.Infrastructure.Tests.Repositories
             _context = new SmartAlarmDbContext(options);
             _context.Database.EnsureCreated();
             _userRepository = new EfUserRepository(_context);
-            _alarmRepository = new EfAlarmRepository(_context);
+            
+            // Create mock dependencies for alarm repository
+            var logger = new Mock<ILogger<EfAlarmRepository>>();
+            var meter = new Mock<SmartAlarmMeter>();
+            var correlationContext = new Mock<ICorrelationContext>();
+            var activitySource = new Mock<SmartAlarmActivitySource>();
+            
+            _alarmRepository = new EfAlarmRepository(_context, logger.Object, meter.Object, correlationContext.Object, activitySource.Object);
         }
 
         [Fact]

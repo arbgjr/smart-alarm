@@ -98,9 +98,8 @@ namespace SmartAlarm.Application.Handlers
                 
                 _logger.LogError(LogTemplates.CommandFailed,
                     nameof(CreateAlarmCommand),
-                    correlationId,
-                    ex.Message,
-                    stopwatch.ElapsedMilliseconds);
+                    stopwatch.ElapsedMilliseconds,
+                    ex.Message);
                 
                 throw;
             }

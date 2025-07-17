@@ -3,9 +3,16 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Moq;
 using SmartAlarm.Domain.Entities;
+using SmartAlarm.Domain.Repositories;
 using SmartAlarm.Domain.ValueObjects;
 using SmartAlarm.Infrastructure.Data;
+using SmartAlarm.Infrastructure.Repositories.EntityFramework;
+using SmartAlarm.Observability.Context;
+using SmartAlarm.Observability.Metrics;
+using SmartAlarm.Observability.Tracing;
 using Xunit;
 
 namespace SmartAlarm.Infrastructure.Tests.UnitOfWork
@@ -29,7 +36,21 @@ namespace SmartAlarm.Infrastructure.Tests.UnitOfWork
 
             _context = new SmartAlarmDbContext(options);
             _context.Database.EnsureCreated();
-            _unitOfWork = new EfUnitOfWork(_context);
+            
+            // Create mock dependencies for observability
+            var logger = new Mock<ILogger<EfAlarmRepository>>();
+            var meter = new Mock<SmartAlarmMeter>();
+            var correlationContext = new Mock<ICorrelationContext>();
+            var activitySource = new Mock<SmartAlarmActivitySource>();
+            
+            // Create repositories with mock dependencies
+            var alarmRepository = new EfAlarmRepository(_context, logger.Object, meter.Object, correlationContext.Object, activitySource.Object);
+            var userRepository = new Mock<IUserRepository>().Object;
+            var scheduleRepository = new Mock<IScheduleRepository>().Object;
+            var routineRepository = new Mock<IRoutineRepository>().Object;
+            var integrationRepository = new Mock<IIntegrationRepository>().Object;
+            
+            _unitOfWork = new EfUnitOfWork(_context, alarmRepository, userRepository, scheduleRepository, routineRepository, integrationRepository);
         }
 
         [Fact]

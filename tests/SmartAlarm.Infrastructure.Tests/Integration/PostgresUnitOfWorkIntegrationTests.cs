@@ -3,9 +3,16 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Moq;
 using SmartAlarm.Domain.Entities;
+using SmartAlarm.Domain.Repositories;
 using SmartAlarm.Domain.ValueObjects;
 using SmartAlarm.Infrastructure.Data;
+using SmartAlarm.Infrastructure.Repositories.EntityFramework;
+using SmartAlarm.Observability.Context;
+using SmartAlarm.Observability.Metrics;
+using SmartAlarm.Observability.Tracing;
 using Xunit;
 
 namespace SmartAlarm.Infrastructure.Tests.Integration
@@ -80,11 +87,37 @@ namespace SmartAlarm.Infrastructure.Tests.Integration
                 _context = new SmartAlarmDbContext(options);
                 _useInMemory = true;
                 
-                _unitOfWork = new EfUnitOfWork(_context);
+                // Create mock dependencies for observability
+                var logger = new Mock<ILogger<EfAlarmRepository>>();
+                var meter = new Mock<SmartAlarmMeter>();
+                var correlationContext = new Mock<ICorrelationContext>();
+                var activitySource = new Mock<SmartAlarmActivitySource>();
+                
+                // Create repositories with mock dependencies
+                var alarmRepository = new EfAlarmRepository(_context, logger.Object, meter.Object, correlationContext.Object, activitySource.Object);
+                var userRepository = new Mock<IUserRepository>().Object;
+                var scheduleRepository = new Mock<IScheduleRepository>().Object;
+                var routineRepository = new Mock<IRoutineRepository>().Object;
+                var integrationRepository = new Mock<IIntegrationRepository>().Object;
+                
+                _unitOfWork = new EfUnitOfWork(_context, alarmRepository, userRepository, scheduleRepository, routineRepository, integrationRepository);
                 return;
             }
             
-            _unitOfWork = new EfUnitOfWork(_context);
+            // Create mock dependencies for observability
+            var pgLogger = new Mock<ILogger<EfAlarmRepository>>();
+            var pgMeter = new Mock<SmartAlarmMeter>();
+            var pgCorrelationContext = new Mock<ICorrelationContext>();
+            var pgActivitySource = new Mock<SmartAlarmActivitySource>();
+            
+            // Create repositories with mock dependencies
+            var pgAlarmRepository = new EfAlarmRepository(_context, pgLogger.Object, pgMeter.Object, pgCorrelationContext.Object, pgActivitySource.Object);
+            var pgUserRepository = new Mock<IUserRepository>().Object;
+            var pgScheduleRepository = new Mock<IScheduleRepository>().Object;
+            var pgRoutineRepository = new Mock<IRoutineRepository>().Object;
+            var pgIntegrationRepository = new Mock<IIntegrationRepository>().Object;
+            
+            _unitOfWork = new EfUnitOfWork(_context, pgAlarmRepository, pgUserRepository, pgScheduleRepository, pgRoutineRepository, pgIntegrationRepository);
         }
 
         [Fact(DisplayName = "Deve realizar CRUD completo no PostgreSQL")]
@@ -145,7 +178,20 @@ namespace SmartAlarm.Infrastructure.Tests.Integration
             
             using (var freshContext = new SmartAlarmDbContext(optionsBuilder.Options))
             {
-                var freshUow = new EfUnitOfWork(freshContext);
+                // Create mock dependencies for fresh UoW
+                var freshLogger = new Mock<ILogger<EfAlarmRepository>>();
+                var freshMeter = new Mock<SmartAlarmMeter>();
+                var freshCorrelationContext = new Mock<ICorrelationContext>();
+                var freshActivitySource = new Mock<SmartAlarmActivitySource>();
+                
+                // Create repositories with mock dependencies
+                var freshAlarmRepository = new EfAlarmRepository(freshContext, freshLogger.Object, freshMeter.Object, freshCorrelationContext.Object, freshActivitySource.Object);
+                var freshUserRepository = new Mock<IUserRepository>().Object;
+                var freshScheduleRepository = new Mock<IScheduleRepository>().Object;
+                var freshRoutineRepository = new Mock<IRoutineRepository>().Object;
+                var freshIntegrationRepository = new Mock<IIntegrationRepository>().Object;
+                
+                var freshUow = new EfUnitOfWork(freshContext, freshAlarmRepository, freshUserRepository, freshScheduleRepository, freshRoutineRepository, freshIntegrationRepository);
                 var userAfterRollback = await freshUow.Users.GetByIdAsync(user.Id);
                 userAfterRollback.Should().BeNull();
             }

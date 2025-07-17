@@ -112,6 +112,16 @@ namespace SmartAlarm.Observability.Logging
         public const string DatabaseQueryExecuted = "Database query executed: {Query} in {Duration}ms affecting {RowsAffected} rows";
 
         /// <summary>
+        /// Template para início de query SQL
+        /// </summary>
+        public const string DatabaseQueryStarted = "Database query {Query} started on table {Table} with parameters {@Parameters}";
+
+        /// <summary>
+        /// Template para falha de query SQL
+        /// </summary>
+        public const string DatabaseQueryFailed = "Database query {Query} failed on table {Table} after {Duration}ms with error {ErrorMessage}";
+
+        /// <summary>
         /// Template para chamada de serviço externo
         /// </summary>
         public const string ExternalServiceCall = "External service {ServiceName} called with {Method} {Endpoint} returning {StatusCode} in {Duration}ms";

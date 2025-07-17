@@ -18,42 +18,38 @@ namespace SmartAlarm.Infrastructure.Data
         private IDbContextTransaction? _transaction;
         private bool _disposed = false;
 
-        // Lazy-loaded repositories
-        protected IAlarmRepository? _alarms;
-        protected IUserRepository? _users;
-        protected IScheduleRepository? _schedules;
-        protected IRoutineRepository? _routines;
-        protected IIntegrationRepository? _integrations;
+        // Repositories from DI
+        private readonly IAlarmRepository _alarms;
+        private readonly IUserRepository _users;
+        private readonly IScheduleRepository _schedules;
+        private readonly IRoutineRepository _routines;
+        private readonly IIntegrationRepository _integrations;
 
-        public EfUnitOfWork(SmartAlarmDbContext context)
+        public EfUnitOfWork(
+            SmartAlarmDbContext context,
+            IAlarmRepository alarms,
+            IUserRepository users,
+            IScheduleRepository schedules,
+            IRoutineRepository routines,
+            IIntegrationRepository integrations)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
+            _alarms = alarms ?? throw new ArgumentNullException(nameof(alarms));
+            _users = users ?? throw new ArgumentNullException(nameof(users));
+            _schedules = schedules ?? throw new ArgumentNullException(nameof(schedules));
+            _routines = routines ?? throw new ArgumentNullException(nameof(routines));
+            _integrations = integrations ?? throw new ArgumentNullException(nameof(integrations));
         }
 
-        public virtual IAlarmRepository Alarms
-        {
-            get { return _alarms ??= new EfAlarmRepository(_context); }
-        }
+        public virtual IAlarmRepository Alarms => _alarms;
 
-        public virtual IUserRepository Users
-        {
-            get { return _users ??= new EfUserRepository(_context); }
-        }
+        public virtual IUserRepository Users => _users;
 
-        public virtual IScheduleRepository Schedules
-        {
-            get { return _schedules ??= new EfScheduleRepository(_context); }
-        }
+        public virtual IScheduleRepository Schedules => _schedules;
 
-        public virtual IRoutineRepository Routines
-        {
-            get { return _routines ??= new EfRoutineRepository(_context); }
-        }
+        public virtual IRoutineRepository Routines => _routines;
 
-        public virtual IIntegrationRepository Integrations
-        {
-            get { return _integrations ??= new EfIntegrationRepository(_context); }
-        }
+        public virtual IIntegrationRepository Integrations => _integrations;
 
         public async Task<int> SaveChangesAsync()
         {
