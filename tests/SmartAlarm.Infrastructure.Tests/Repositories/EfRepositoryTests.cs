@@ -36,7 +36,14 @@ namespace SmartAlarm.Infrastructure.Tests.Repositories
 
             _context = new SmartAlarmDbContext(options);
             _context.Database.EnsureCreated();
-            _userRepository = new EfUserRepository(_context);
+            
+            // Create mock dependencies for user repository
+            var userLogger = new Mock<ILogger<EfUserRepository>>();
+            var userMeter = new Mock<SmartAlarmMeter>();
+            var userCorrelationContext = new Mock<ICorrelationContext>();
+            var userActivitySource = new Mock<SmartAlarmActivitySource>();
+            
+            _userRepository = new EfUserRepository(_context, userLogger.Object, userMeter.Object, userCorrelationContext.Object, userActivitySource.Object);
             
             // Create mock dependencies for alarm repository
             var logger = new Mock<ILogger<EfAlarmRepository>>();

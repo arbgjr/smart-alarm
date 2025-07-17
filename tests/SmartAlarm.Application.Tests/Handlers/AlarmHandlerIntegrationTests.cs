@@ -12,6 +12,7 @@ using SmartAlarm.Domain.Entities;
 using SmartAlarm.Domain.Repositories;
 using SmartAlarm.Observability.Context;
 using SmartAlarm.Observability.Metrics;
+using SmartAlarm.Observability.Tracing;
 using Microsoft.Extensions.Logging;
 
 namespace SmartAlarm.Application.Tests.Handlers
@@ -31,7 +32,10 @@ namespace SmartAlarm.Application.Tests.Handlers
             var repoMock = new Mock<IAlarmRepository>();
             repoMock.Setup(r => r.GetByIdAsync(alarmId)).ReturnsAsync(alarm);
             var loggerMock = new Mock<ILogger<GetAlarmByIdHandler>>();
-            var handler = new GetAlarmByIdHandler(repoMock.Object, loggerMock.Object);
+            var meterMock = new Mock<SmartAlarmMeter>();
+            var correlationContextMock = new Mock<ICorrelationContext>();
+            var activitySourceMock = new Mock<SmartAlarmActivitySource>();
+            var handler = new GetAlarmByIdHandler(repoMock.Object, loggerMock.Object, meterMock.Object, correlationContextMock.Object, activitySourceMock.Object);
             var query = new GetAlarmByIdQuery(alarmId);
 
             // Act
@@ -56,7 +60,10 @@ namespace SmartAlarm.Application.Tests.Handlers
             var repoMock = new Mock<IAlarmRepository>();
             repoMock.Setup(r => r.GetByIdAsync(alarmId)).ReturnsAsync(alarm);
             var loggerMock = new Mock<ILogger<GetAlarmByIdHandler>>();
-            var handler = new GetAlarmByIdHandler(repoMock.Object, loggerMock.Object);
+            var meterMock = new Mock<SmartAlarmMeter>();
+            var correlationContextMock = new Mock<ICorrelationContext>();
+            var activitySourceMock = new Mock<SmartAlarmActivitySource>();
+            var handler = new GetAlarmByIdHandler(repoMock.Object, loggerMock.Object, meterMock.Object, correlationContextMock.Object, activitySourceMock.Object);
             var query = new GetAlarmByIdQuery(alarmId);
 
             // Act
@@ -84,10 +91,11 @@ namespace SmartAlarm.Application.Tests.Handlers
             var repoMock = new Mock<IAlarmRepository>();
             repoMock.Setup(r => r.GetByUserIdAsync(userId)).ReturnsAsync(new List<Alarm> { alarm1, alarm2 });
             var loggerMock = new Mock<ILogger<ListAlarmsHandler>>();
+            var activitySourceMock = new Mock<SmartAlarmActivitySource>();
             var meterMock = new Mock<SmartAlarmMeter>();
             var businessMetricsMock = new Mock<BusinessMetrics>();
             var correlationContextMock = new Mock<ICorrelationContext>();
-            var handler = new ListAlarmsHandler(repoMock.Object, loggerMock.Object, meterMock.Object, businessMetricsMock.Object, correlationContextMock.Object);
+            var handler = new ListAlarmsHandler(repoMock.Object, loggerMock.Object, activitySourceMock.Object, meterMock.Object, businessMetricsMock.Object, correlationContextMock.Object);
             var query = new ListAlarmsQuery(userId);
 
             // Act

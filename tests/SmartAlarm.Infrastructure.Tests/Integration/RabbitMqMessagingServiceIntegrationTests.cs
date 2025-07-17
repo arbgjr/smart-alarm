@@ -1,6 +1,10 @@
 using SmartAlarm.Infrastructure.Messaging;
+using SmartAlarm.Observability.Context;
+using SmartAlarm.Observability.Metrics;
+using SmartAlarm.Observability.Tracing;
 using Xunit;
 using Microsoft.Extensions.Logging;
+using Moq;
 
 namespace SmartAlarm.Infrastructure.Tests.Integration
 {
@@ -26,9 +30,17 @@ namespace SmartAlarm.Infrastructure.Tests.Integration
                 Environment.SetEnvironmentVariable("RABBITMQ_HOST", "localhost");
             }
             
-            // Criar serviço com logger
+            // Criar serviço com logger e observability mocks
             var loggerFactory = new LoggerFactory();
-            _service = new RabbitMqMessagingService(loggerFactory.CreateLogger<RabbitMqMessagingService>());
+            var meterMock = new Mock<SmartAlarmMeter>();
+            var correlationContextMock = new Mock<ICorrelationContext>();
+            var activitySourceMock = new Mock<SmartAlarmActivitySource>();
+            
+            _service = new RabbitMqMessagingService(
+                loggerFactory.CreateLogger<RabbitMqMessagingService>(),
+                meterMock.Object,
+                correlationContextMock.Object,
+                activitySourceMock.Object);
         }
 
         [Fact]

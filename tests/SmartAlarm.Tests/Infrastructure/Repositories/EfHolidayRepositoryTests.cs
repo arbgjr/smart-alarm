@@ -1,9 +1,14 @@
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Moq;
 using SmartAlarm.Domain.Abstractions;
 using SmartAlarm.Domain.Entities;
 using SmartAlarm.Infrastructure.Data;
 using SmartAlarm.Infrastructure.Repositories.EntityFramework;
+using SmartAlarm.Observability.Context;
+using SmartAlarm.Observability.Metrics;
+using SmartAlarm.Observability.Tracing;
 
 namespace SmartAlarm.Tests.Infrastructure.Repositories;
 
@@ -58,7 +63,14 @@ public class EfHolidayRepositoryTests : IDisposable
         }
 
         _context = new SmartAlarmDbContext(options);
-        _repository = new EfHolidayRepository(_context);
+        
+        // Create mock dependencies for holiday repository
+        var logger = new Mock<ILogger<EfHolidayRepository>>();
+        var meter = new Mock<SmartAlarmMeter>();
+        var correlationContext = new Mock<ICorrelationContext>();
+        var activitySource = new Mock<SmartAlarmActivitySource>();
+        
+        _repository = new EfHolidayRepository(_context, logger.Object, meter.Object, correlationContext.Object, activitySource.Object);
         
         // Garantir que o banco está criado
         _context.Database.EnsureCreated();

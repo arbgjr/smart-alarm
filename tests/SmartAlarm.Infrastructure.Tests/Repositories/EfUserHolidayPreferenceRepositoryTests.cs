@@ -4,9 +4,13 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Moq;
 using SmartAlarm.Domain.Entities;
 using SmartAlarm.Infrastructure.Data;
 using SmartAlarm.Infrastructure.Repositories;
+using SmartAlarm.Observability.Context;
+using SmartAlarm.Observability.Metrics;
+using SmartAlarm.Observability.Tracing;
 using Xunit;
 
 namespace SmartAlarm.Infrastructure.Tests.Repositories
@@ -33,7 +37,14 @@ namespace SmartAlarm.Infrastructure.Tests.Repositories
 
             _context = new SmartAlarmDbContext(options);
             _logger = new LoggerFactory().CreateLogger<EfUserHolidayPreferenceRepository>();
-            _repository = new EfUserHolidayPreferenceRepository(_context, _logger);
+            
+            // Create observability mocks
+            var meterMock = new Mock<SmartAlarmMeter>();
+            var correlationContextMock = new Mock<ICorrelationContext>();
+            var activitySourceMock = new Mock<SmartAlarmActivitySource>();
+            
+            _repository = new EfUserHolidayPreferenceRepository(_context, _logger, 
+                meterMock.Object, correlationContextMock.Object, activitySourceMock.Object);
 
             // Setup test data
             _testUser = new User(Guid.NewGuid(), "Test User", "test@example.com");

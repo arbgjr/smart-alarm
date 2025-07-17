@@ -1,6 +1,9 @@
 using System.Text;
 using Microsoft.Extensions.Logging;
 using SmartAlarm.Infrastructure.Storage;
+using SmartAlarm.Observability.Context;
+using SmartAlarm.Observability.Metrics;
+using SmartAlarm.Observability.Tracing;
 using Xunit;
 using Moq;
 
@@ -28,7 +31,13 @@ namespace SmartAlarm.Infrastructure.Tests.Integration
             _configResolverMock = new Mock<SmartAlarm.Infrastructure.Configuration.IConfigurationResolver>();
             _configResolverMock.Setup(x => x.GetConfigAsync("MINIO_ENDPOINT", It.IsAny<System.Threading.CancellationToken>())).ReturnsAsync(host);
             _configResolverMock.Setup(x => x.GetConfigAsync("MINIO_PORT", It.IsAny<System.Threading.CancellationToken>())).ReturnsAsync(port.ToString());
-            _service = new MinioStorageService(_logger, _configResolverMock.Object);
+            
+            // Create mock dependencies for observability
+            var meterMock = new Mock<SmartAlarmMeter>();
+            var correlationContextMock = new Mock<ICorrelationContext>();
+            var activitySourceMock = new Mock<SmartAlarmActivitySource>();
+            
+            _service = new MinioStorageService(_logger, _configResolverMock.Object, meterMock.Object, correlationContextMock.Object, activitySourceMock.Object);
         }
 
         public Task InitializeAsync() => Task.CompletedTask;

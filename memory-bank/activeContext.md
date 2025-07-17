@@ -2,13 +2,24 @@
 
 ## Current Focus
 
-- **✅ FASE 1 - Observabilidade Foundation CONCLUÍDA**: Base completa de observabilidade implementada
-- **🎯 PRÓXIMA FASE**: FASE 2 - Instrumentação nos Handlers e Logging Estruturado
+- **✅ FASE 4 - Application Layer Instrumentation CONCLUÍDA**: 12 handlers instrumentados com observabilidade completa
+- **🎯 PRÓXIMA FASE**: FASE 5 - Service Integration (ai-service, alarm-service, integration-service)
 - **PENDENTE**: Application Layer para ExceptionPeriod (Handlers, DTOs, Validators)
 - Manutenção da implementação dos endpoints principais do AlarmService (CRUD)
 - Preparação para testes automatizados e integração de autenticação JWT/FIDO2
 
 ## Recent Changes
+
+- **✅ FASE 4 - Application Layer Instrumentation CONCLUÍDA (17/07/2025)**:
+  - **12 Handlers Instrumentados**: Alarme (5), User (5), Routine (2) com observabilidade completa
+  - **Test Projects Updated**: 6 arquivos de teste atualizados com constructors instrumentados 
+  - **Critério de Aceite**: Solution compila 100% - Build succeeded in 9,5s
+  - **Padrão Aplicado**: SmartAlarmActivitySource, SmartAlarmMeter, BusinessMetrics, ICorrelationContext, ILogger
+  - **Structured Logging**: LogTemplates padronizados (CommandStarted/Completed, QueryStarted/Completed)
+  - **Distributed Tracing**: Activity tags específicos por domínio (alarm.id, user.id, routine.id)
+  - **Performance Metrics**: Duração e contadores por handler
+  - **Error Handling**: Categorização completa com correlation context
+  - **Lição Aprendida**: Testes DEVEM fazer parte do critério de aceite de TODAS as fases
 
 - **✅ FASE 1 - Observabilidade Foundation CONCLUÍDA**:
   - **Health Checks**: 5 health checks implementados (SmartAlarm, Database, Storage, KeyVault, MessageQueue)
