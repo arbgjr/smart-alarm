@@ -1,0 +1,202 @@
+groups:
+  - name: smartalarm.critical
+    interval: 30s
+    rules:
+      - alert: ServiceDown
+        expr: up{job=~"alarm-service|ai-service|integration-service"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: smart-alarm
+        annotations:
+          summary: "SmartAlarm service {{ $labels.job }} is down"
+          description: "Service {{ $labels.job }} has been down for more than 1 minute. Instance: {{ $labels.instance }}"
+          runbook: "https://wiki.smartalarm.com/runbooks/service-down"
+
+      - alert: HighErrorRate
+        expr: |
+          (
+            rate(smartalarm_requests_total{status_code=~"5.."}[5m]) /
+            rate(smartalarm_requests_total[5m])
+          ) * 100 > 5
+        for: 2m
+        labels:
+          severity: critical
+          team: smart-alarm
+        annotations:
+          summary: "High error rate on {{ $labels.service }}"
+          description: "Error rate is {{ $value | humanizePercentage }} on service {{ $labels.service }}"
+          runbook: "https://wiki.smartalarm.com/runbooks/high-error-rate"
+
+      - alert: HighResponseTime
+        expr: |
+          histogram_quantile(0.95, 
+            rate(smartalarm_request_duration_seconds_bucket[5m])
+          ) > 2
+        for: 3m
+        labels:
+          severity: warning
+          team: smart-alarm
+        annotations:
+          summary: "High response time on {{ $labels.service }}"
+          description: "95th percentile response time is {{ $value }}s on service {{ $labels.service }}"
+          runbook: "https://wiki.smartalarm.com/runbooks/high-latency"
+
+      - alert: DatabaseConnectionsHigh
+        expr: smartalarm_database_connections_active > 80
+        for: 2m
+        labels:
+          severity: warning
+          team: smart-alarm
+        annotations:
+          summary: "High database connections on {{ $labels.service }}"
+          description: "Active database connections: {{ $value }} on service {{ $labels.service }}"
+          runbook: "https://wiki.smartalarm.com/runbooks/database-connections"
+
+  - name: smartalarm.business
+    interval: 1m
+    rules:
+      - alert: LowUserActivity
+        expr: |
+          smartalarm_users_active_today < 10 AND 
+          hour() >= 6 AND hour() <= 22
+        for: 10m
+        labels:
+          severity: warning
+          team: smart-alarm
+        annotations:
+          summary: "Low user activity detected"
+          description: "Only {{ $value }} active users today during business hours"
+          runbook: "https://wiki.smartalarm.com/runbooks/low-user-activity"
+
+      - alert: AlarmCreationFailures
+        expr: |
+          rate(smartalarm_alarms_creation_failures_total[10m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          team: smart-alarm
+        annotations:
+          summary: "High alarm creation failure rate"
+          description: "Alarm creation failure rate: {{ $value | humanizePercentage }}"
+          runbook: "https://wiki.smartalarm.com/runbooks/alarm-failures"
+
+      - alert: NoAlarmsTriggeredToday
+        expr: |
+          smartalarm_alarm_triggers_total == 0 AND 
+          hour() >= 8
+        for: 1h
+        labels:
+          severity: info
+          team: smart-alarm
+        annotations:
+          summary: "No alarms triggered today"
+          description: "Zero alarms have been triggered today after 8 AM"
+          runbook: "https://wiki.smartalarm.com/runbooks/no-alarms"
+
+  - name: smartalarm.infrastructure
+    interval: 1m
+    rules:
+      - alert: HighMemoryUsage
+        expr: |
+          (
+            container_memory_working_set_bytes{pod=~"alarm-service.*|ai-service.*|integration-service.*"} /
+            container_spec_memory_limit_bytes{pod=~"alarm-service.*|ai-service.*|integration-service.*"}
+          ) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          team: smart-alarm
+        annotations:
+          summary: "High memory usage on {{ $labels.pod }}"
+          description: "Memory usage is {{ $value | humanizePercentage }} on pod {{ $labels.pod }}"
+          runbook: "https://wiki.smartalarm.com/runbooks/high-memory"
+
+      - alert: HighCPUUsage
+        expr: |
+          (
+            rate(container_cpu_usage_seconds_total{pod=~"alarm-service.*|ai-service.*|integration-service.*"}[5m]) /
+            container_spec_cpu_quota{pod=~"alarm-service.*|ai-service.*|integration-service.*"} * 
+            container_spec_cpu_period{pod=~"alarm-service.*|ai-service.*|integration-service.*"}
+          ) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          team: smart-alarm
+        annotations:
+          summary: "High CPU usage on {{ $labels.pod }}"
+          description: "CPU usage is {{ $value | humanizePercentage }} on pod {{ $labels.pod }}"
+          runbook: "https://wiki.smartalarm.com/runbooks/high-cpu"
+
+      - alert: PodRestartingFrequently
+        expr: |
+          rate(kube_pod_container_status_restarts_total{pod=~"alarm-service.*|ai-service.*|integration-service.*"}[1h]) * 3600 > 3
+        for: 0m
+        labels:
+          severity: warning
+          team: smart-alarm
+        annotations:
+          summary: "Pod {{ $labels.pod }} restarting frequently"
+          description: "Pod {{ $labels.pod }} has restarted {{ $value }} times in the last hour"
+          runbook: "https://wiki.smartalarm.com/runbooks/pod-restarts"
+
+      - alert: StorageSpaceHigh
+        expr: |
+          (
+            (node_filesystem_size_bytes{mountpoint="/"} - node_filesystem_free_bytes{mountpoint="/"}) /
+            node_filesystem_size_bytes{mountpoint="/"}
+          ) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          team: smart-alarm
+        annotations:
+          summary: "High storage usage on {{ $labels.instance }}"
+          description: "Storage usage is {{ $value | humanizePercentage }} on {{ $labels.instance }}"
+          runbook: "https://wiki.smartalarm.com/runbooks/high-storage"
+
+  - name: smartalarm.sli-slo
+    interval: 1m
+    rules:
+      - alert: SLOAvailabilityBreached
+        expr: |
+          (
+            avg_over_time(up{job=~"alarm-service|ai-service|integration-service"}[30d]) < 0.999
+          )
+        for: 0m
+        labels:
+          severity: critical
+          team: smart-alarm
+        annotations:
+          summary: "SLO availability breached for {{ $labels.job }}"
+          description: "30-day availability is {{ $value | humanizePercentage }}, below 99.9% SLO"
+          runbook: "https://wiki.smartalarm.com/runbooks/slo-breach"
+
+      - alert: SLOLatencyBreached
+        expr: |
+          histogram_quantile(0.95,
+            rate(smartalarm_request_duration_seconds_bucket[30d])
+          ) > 1
+        for: 0m
+        labels:
+          severity: critical
+          team: smart-alarm
+        annotations:
+          summary: "SLO latency breached for {{ $labels.service }}"
+          description: "30-day P95 latency is {{ $value }}s, above 1s SLO"
+          runbook: "https://wiki.smartalarm.com/runbooks/slo-latency-breach"
+
+      - alert: SLOErrorRateBreached
+        expr: |
+          (
+            rate(smartalarm_requests_total{status_code=~"5.."}[30d]) /
+            rate(smartalarm_requests_total[30d])
+          ) > 0.001
+        for: 0m
+        labels:
+          severity: critical
+          team: smart-alarm
+        annotations:
+          summary: "SLO error rate breached for {{ $labels.service }}"
+          description: "30-day error rate is {{ $value | humanizePercentage }}, above 0.1% SLO"
+          runbook: "https://wiki.smartalarm.com/runbooks/slo-error-breach"

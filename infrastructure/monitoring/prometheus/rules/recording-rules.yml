@@ -1,0 +1,51 @@
+groups:
+  - name: smartalarm.recording
+    interval: 30s
+    rules:
+      # Request rate per service
+      - record: smartalarm:request_rate_5m
+        expr: rate(smartalarm_requests_total[5m])
+        labels:
+          aggregation: "5m"
+
+      # Error rate per service
+      - record: smartalarm:error_rate_5m
+        expr: |
+          rate(smartalarm_requests_total{status_code=~"5.."}[5m]) /
+          rate(smartalarm_requests_total[5m])
+        labels:
+          aggregation: "5m"
+
+      # P95 latency per service
+      - record: smartalarm:latency_p95_5m
+        expr: |
+          histogram_quantile(0.95,
+            rate(smartalarm_request_duration_seconds_bucket[5m])
+          )
+        labels:
+          aggregation: "5m"
+
+      # Business metrics aggregations
+      - record: smartalarm:daily_active_users
+        expr: max(smartalarm_users_active_today)
+
+      - record: smartalarm:daily_alarms_created
+        expr: increase(smartalarm_alarms_created_total[24h])
+
+      - record: smartalarm:daily_alarm_triggers
+        expr: increase(smartalarm_alarm_triggers_total[24h])
+
+      # SLI metrics
+      - record: smartalarm:availability_30d
+        expr: avg_over_time(up{job=~"alarm-service|ai-service|integration-service"}[30d])
+
+      - record: smartalarm:error_rate_30d
+        expr: |
+          rate(smartalarm_requests_total{status_code=~"5.."}[30d]) /
+          rate(smartalarm_requests_total[30d])
+
+      - record: smartalarm:latency_p95_30d
+        expr: |
+          histogram_quantile(0.95,
+            rate(smartalarm_request_duration_seconds_bucket[30d])
+          )

@@ -1,0 +1,244 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Smart Alarm - Microservices Health",
+    "tags": ["smart-alarm", "microservices", "health"],
+    "timezone": "browser",
+    "templating": {
+      "list": [
+        {
+          "name": "service",
+          "type": "query",
+          "query": "label_values(up{job=~\"alarm-service|ai-service|integration-service\"}, job)",
+          "multi": false,
+          "current": {"text": "All", "value": "$__all"},
+          "options": []
+        }
+      ]
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Service Uptime",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "avg_over_time(up{job=\"$service\"}[24h]) * 100",
+            "legendFormat": "Uptime %",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "yellow", "value": 95},
+                {"color": "green", "value": 99}
+              ]
+            },
+            "unit": "percent"
+          }
+        },
+        "gridPos": {"h": 8, "w": 6, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "Request Throughput",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(smartalarm_requests_total{service=\"$service\"}[5m])",
+            "legendFormat": "{{method}} {{endpoint}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {"label": "Requests/sec", "show": true, "min": 0},
+          {"show": true}
+        ],
+        "gridPos": {"h": 8, "w": 9, "x": 6, "y": 0}
+      },
+      {
+        "id": 3,
+        "title": "Error Rate Breakdown",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(smartalarm_requests_total{service=\"$service\", status_code=~\"4..\"}[5m])",
+            "legendFormat": "4xx Errors",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(smartalarm_requests_total{service=\"$service\", status_code=~\"5..\"}[5m])",
+            "legendFormat": "5xx Errors",
+            "refId": "B"
+          }
+        ],
+        "yAxes": [
+          {"label": "Errors/sec", "show": true, "min": 0},
+          {"show": true}
+        ],
+        "gridPos": {"h": 8, "w": 9, "x": 15, "y": 0}
+      },
+      {
+        "id": 4,
+        "title": "Response Time Distribution",
+        "type": "heatmap",
+        "targets": [
+          {
+            "expr": "rate(smartalarm_request_duration_seconds_bucket{service=\"$service\"}[5m])",
+            "legendFormat": "{{le}}",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+      },
+      {
+        "id": 5,
+        "title": "Health Check Status",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "smartalarm_health_check_status{service=\"$service\"}",
+            "legendFormat": "",
+            "refId": "A",
+            "format": "table"
+          }
+        ],
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "columns": [
+                {"text": "Component", "value": "component"},
+                {"text": "Status", "value": "Value"},
+                {"text": "Last Check", "value": "Time"}
+              ]
+            }
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+      },
+      {
+        "id": 6,
+        "title": "Pod Resource Usage",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "container_memory_working_set_bytes{pod=~\"$service.*\"} / 1024 / 1024",
+            "legendFormat": "{{pod}} - Memory (MB)",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {"label": "Memory (MB)", "show": true, "min": 0},
+          {"show": true}
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16}
+      },
+      {
+        "id": 7,
+        "title": "Pod CPU Usage",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(container_cpu_usage_seconds_total{pod=~\"$service.*\"}[5m]) * 100",
+            "legendFormat": "{{pod}} - CPU %",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {"label": "CPU %", "show": true, "min": 0},
+          {"show": true}
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16}
+      },
+      {
+        "id": 8,
+        "title": "Business Metrics",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "smartalarm_alarms_created_total{service=\"$service\"}",
+            "legendFormat": "Alarms Created",
+            "refId": "A"
+          },
+          {
+            "expr": "smartalarm_user_registrations_total{service=\"$service\"}",
+            "legendFormat": "User Registrations",
+            "refId": "B"
+          },
+          {
+            "expr": "smartalarm_alarm_triggers_total{service=\"$service\"}",
+            "legendFormat": "Alarm Triggers",
+            "refId": "C"
+          }
+        ],
+        "yAxes": [
+          {"label": "Count", "show": true, "min": 0},
+          {"show": true}
+        ],
+        "gridPos": {"h": 8, "w": 8, "x": 0, "y": 24}
+      },
+      {
+        "id": 9,
+        "title": "Database Connections",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "smartalarm_database_connections_active{service=\"$service\"}",
+            "legendFormat": "Active Connections",
+            "refId": "A"
+          },
+          {
+            "expr": "smartalarm_database_connections_idle{service=\"$service\"}",
+            "legendFormat": "Idle Connections",
+            "refId": "B"
+          }
+        ],
+        "yAxes": [
+          {"label": "Connections", "show": true, "min": 0},
+          {"show": true}
+        ],
+        "gridPos": {"h": 8, "w": 8, "x": 8, "y": 24}
+      },
+      {
+        "id": 10,
+        "title": "Top Slow Endpoints",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "topk(10, histogram_quantile(0.95, rate(smartalarm_request_duration_seconds_bucket{service=\"$service\"}[5m])))",
+            "legendFormat": "",
+            "refId": "A",
+            "format": "table"
+          }
+        ],
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "columns": [
+                {"text": "Endpoint", "value": "endpoint"},
+                {"text": "Method", "value": "method"},
+                {"text": "P95 Latency", "value": "Value"}
+              ]
+            }
+          }
+        ],
+        "gridPos": {"h": 8, "w": 8, "x": 16, "y": 24}
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "refresh": "30s",
+    "schemaVersion": 27,
+    "version": 1
+  }
+}

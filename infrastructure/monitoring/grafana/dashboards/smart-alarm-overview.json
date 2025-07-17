@@ -1,0 +1,239 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Smart Alarm - Overview Dashboard",
+    "tags": ["smart-alarm", "microservices", "overview"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Service Health Status",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "up{job=~\"alarm-service|ai-service|integration-service\"}",
+            "legendFormat": "{{job}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "green", "value": 1}
+              ]
+            },
+            "mappings": [
+              {"options": {"0": {"text": "DOWN"}}, "type": "value"},
+              {"options": {"1": {"text": "UP"}}, "type": "value"}
+            ]
+          }
+        },
+        "gridPos": {"h": 8, "w": 8, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "Request Rate (req/min)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(smartalarm_requests_total[5m]) * 60",
+            "legendFormat": "{{service}} - {{method}}",
+            "refId": "A"
+          }
+        ],
+        "xAxis": {"show": true},
+        "yAxes": [
+          {"label": "Requests/min", "show": true},
+          {"show": true}
+        ],
+        "gridPos": {"h": 8, "w": 8, "x": 8, "y": 0}
+      },
+      {
+        "id": 3,
+        "title": "Error Rate (%)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(smartalarm_requests_total{status_code=~\"4..|5..\"}[5m]) / rate(smartalarm_requests_total[5m]) * 100",
+            "legendFormat": "{{service}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {"label": "Error %", "show": true, "min": 0, "max": 100},
+          {"show": true}
+        ],
+        "gridPos": {"h": 8, "w": 8, "x": 16, "y": 0}
+      },
+      {
+        "id": 4,
+        "title": "Response Time (P95)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(smartalarm_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "{{service}} - P95",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.50, rate(smartalarm_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "{{service}} - P50",
+            "refId": "B"
+          }
+        ],
+        "yAxes": [
+          {"label": "Seconds", "show": true, "min": 0},
+          {"show": true}
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+      },
+      {
+        "id": 5,
+        "title": "Active Users (Last 24h)",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "smartalarm_users_active_today",
+            "legendFormat": "Active Users",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "short"
+          }
+        },
+        "gridPos": {"h": 8, "w": 6, "x": 12, "y": 8}
+      },
+      {
+        "id": 6,
+        "title": "Alarms Created Today",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "increase(smartalarm_alarms_created_total[24h])",
+            "legendFormat": "Alarms Created",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "short"
+          }
+        },
+        "gridPos": {"h": 8, "w": 6, "x": 18, "y": 8}
+      },
+      {
+        "id": 7,
+        "title": "Database Query Performance",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(smartalarm_database_query_duration_seconds_bucket[5m]))",
+            "legendFormat": "{{operation}} - P95",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {"label": "Seconds", "show": true, "min": 0},
+          {"show": true}
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16}
+      },
+      {
+        "id": 8,
+        "title": "Memory Usage",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "process_resident_memory_bytes{job=~\"alarm-service|ai-service|integration-service\"} / 1024 / 1024",
+            "legendFormat": "{{job}} - Memory (MB)",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {"label": "MB", "show": true, "min": 0},
+          {"show": true}
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16}
+      },
+      {
+        "id": 9,
+        "title": "CPU Usage",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(process_cpu_seconds_total{job=~\"alarm-service|ai-service|integration-service\"}[5m]) * 100",
+            "legendFormat": "{{job}} - CPU %",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {"label": "CPU %", "show": true, "min": 0, "max": 100},
+          {"show": true}
+        ],
+        "gridPos": {"h": 8, "w": 8, "x": 0, "y": 24}
+      },
+      {
+        "id": 10,
+        "title": "Storage Operations",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(smartalarm_storage_operations_total[5m])",
+            "legendFormat": "{{operation}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {"label": "Ops/sec", "show": true, "min": 0},
+          {"show": true}
+        ],
+        "gridPos": {"h": 8, "w": 8, "x": 8, "y": 24}
+      },
+      {
+        "id": 11,
+        "title": "Message Queue Health",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "smartalarm_messaging_queue_size",
+            "legendFormat": "Queue Size",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(smartalarm_messaging_operations_total[5m])",
+            "legendFormat": "{{operation}}/sec",
+            "refId": "B"
+          }
+        ],
+        "yAxes": [
+          {"label": "Count", "show": true, "min": 0},
+          {"show": true}
+        ],
+        "gridPos": {"h": 8, "w": 8, "x": 16, "y": 24}
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "refresh": "30s",
+    "schemaVersion": 27,
+    "version": 1,
+    "links": [
+      {
+        "title": "Smart Alarm Microservices",
+        "type": "dashboards",
+        "tags": ["smart-alarm", "microservices"]
+      }
+    ]
+  }
+}
