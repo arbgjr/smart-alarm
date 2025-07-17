@@ -8,6 +8,9 @@ using SmartAlarm.Observability.Tracing;
 
 namespace SmartAlarm.Infrastructure.KeyVault
 {
+    // STUB DE INTEGRAÇÃO
+    // Integração real com o serviço cloud ainda não implementada.
+    // TODO: Substituir por implementação real antes do deploy em produção.
     /// <summary>
     /// Stub para integração futura com Azure Key Vault (opcional).
     /// </summary>

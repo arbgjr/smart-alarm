@@ -1,5 +1,45 @@
 # Smart Alarm — Progress
 
+## ✅ NOVA IMPLEMENTAÇÃO - Padronização de Comentários (Julho 2025)
+
+**Refatoração completa de comentários em código fonte para clarificar mocks, stubs e implementações:**
+
+#### **Mocks e Stubs de Desenvolvimento ✅**
+- **MockStorageService.cs**: Adicionado comentário padrão IMPLEMENTAÇÃO MOCK/STUB
+- **MockTracingService.cs**: Identificado claramente como exclusivo para dev/teste
+- **MockMetricsService.cs**: Sinalizado como não-produção
+- **MockKeyVaultProvider.cs**: Documentado o propósito de desenvolvimento
+- **MockMessagingService.cs**: Marcado como implementação mock para teste
+
+#### **Stubs de Integração Cloud ✅**
+- **OciObjectStorageService.cs**: Marcado como STUB DE INTEGRAÇÃO 
+- **OciStreamingMessagingService.cs**: Identificado como integração pendente
+- **OciVaultProvider.cs**: Sinalizado para substituição em produção
+- **AzureKeyVaultProvider.cs**: Documentado como stub para Azure
+- **AwsSecretsManagerProvider.cs**: Marcado como integração futura
+
+#### **Documentação Atualizada ✅**
+- **Storage/README.md**: Adicionada observação sobre mocks/stubs
+- **Messaging/README.md**: Clarificado ambiente de desenvolvimento vs produção
+- **Observability/README.md**: Documentado uso de mocks para teste
+
+#### **Testes Unitários ✅**
+- **MockStorageServiceTests.cs**: Comentário "Mock utilizado exclusivamente para testes"
+- **MockMessagingServiceTests.cs**: Identificado como não representando lógica de produção
+- **MockTracingServiceTests.cs**: Documentado propósito de teste automatizado
+- **MockMetricsServiceTests.cs**: Clarificado como exclusivo para testes
+
+#### **Padronização de Logs ✅**
+- **KeyVaultMiddleware.cs**: Log de debug padronizado com comentário explicativo
+- Removidos comentários ambíguos que poderiam ser interpretados como débito técnico
+
+#### **Resultado**
+- ✅ Clareza total sobre propósito de cada implementação mock/stub
+- ✅ Eliminação de confusão entre código de produção e desenvolvimento
+- ✅ Documentação consistente em todos os READMEs relevantes
+- ✅ Comentários AAA adicionados em métodos de teste
+- ✅ Padronização completa seguindo as diretrizes do prompt
+
 ## ✅ FASES COMPLETADAS
 
 ### ✅ FASE 8 - Monitoramento e Observabilidade Avançada COMPLETADA (Julho 2025)

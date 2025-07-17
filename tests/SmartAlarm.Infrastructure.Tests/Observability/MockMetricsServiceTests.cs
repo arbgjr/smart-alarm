@@ -1,4 +1,6 @@
-﻿using System.Threading.Tasks;
+﻿// Mock utilizado exclusivamente para testes automatizados.
+// Não representa lógica de produção.
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Moq;
 using SmartAlarm.Infrastructure.Observability;

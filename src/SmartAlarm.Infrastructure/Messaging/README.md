@@ -1,5 +1,8 @@
 # Messaging Layer
 
+> Observação: Qualquer referência a mocks/stubs refere-se apenas ao ambiente de desenvolvimento/teste.
+> Para produção, utilize sempre as integrações reais conforme documentação.
+
 Esta pasta contém a abstração, mock e integrações reais para mensageria/eventos do Smart Alarm.
 
 ## Serviços Disponíveis

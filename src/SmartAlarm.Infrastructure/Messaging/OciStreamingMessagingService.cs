@@ -4,6 +4,9 @@ using Microsoft.Extensions.Logging;
 
 namespace SmartAlarm.Infrastructure.Messaging
 {
+    // STUB DE INTEGRAÇÃO
+    // Integração real com o serviço cloud ainda não implementada.
+    // TODO: Substituir por implementação real antes do deploy em produção.
     /// <summary>
     /// Stub para integração futura com OCI Streaming (produção).
     /// </summary>

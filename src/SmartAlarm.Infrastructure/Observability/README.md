@@ -1,5 +1,8 @@
 # Observability Layer (Tracing & Metrics)
 
+> Observação: Qualquer referência a mocks/stubs refere-se apenas ao ambiente de desenvolvimento/teste.
+> Para produção, utilize sempre as integrações reais conforme documentação.
+
 Esta pasta contém as abstrações, mocks e orientações para tracing (rastreamento distribuído) e métricas customizadas do Smart Alarm.
 
 ## Serviços Disponíveis

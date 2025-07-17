@@ -1,4 +1,6 @@
-﻿using System.IO;
+﻿// Mock utilizado exclusivamente para testes automatizados.
+// Não representa lógica de produção.
+using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -23,6 +25,7 @@ namespace SmartAlarm.Infrastructure.Tests.Storage
         [Trait("Category", "Unit")]
         public async Task UploadAsync_Should_LogInformation()
         {
+            // AAA: Arrange, Act, Assert - padrão obrigatório para todos os testes.
             // Arrange
             var testPath = "/test.txt";
             using var testStream = new MemoryStream();

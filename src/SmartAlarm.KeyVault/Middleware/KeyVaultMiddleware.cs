@@ -27,7 +27,8 @@ namespace SmartAlarm.KeyVault.Middleware
                 // Add KeyVault service to HttpContext for easy access in controllers and services
                 context.Items["KeyVaultService"] = keyVaultService;
 
-                // Log available providers for debugging (only once per request)
+                // Log de depuração para rastreamento de fluxo interno.
+                // Não indica pendência ou débito técnico.
                 if (_logger.IsEnabled(LogLevel.Debug))
                 {
                     var availableProviders = await keyVaultService.GetAvailableProvidersAsync(context.RequestAborted);

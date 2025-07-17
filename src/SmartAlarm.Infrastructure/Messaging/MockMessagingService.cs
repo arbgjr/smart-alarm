@@ -4,6 +4,9 @@ using Microsoft.Extensions.Logging;
 
 namespace SmartAlarm.Infrastructure.Messaging
 {
+    // IMPLEMENTAÇÃO MOCK/STUB
+    // Esta classe é destinada exclusivamente para ambientes de desenvolvimento e testes.
+    // Não utilizar em produção. A implementação real será ativada por configuração.
     /// <summary>
     /// Implementação mock de IMessagingService para desenvolvimento e testes.
     /// </summary>
