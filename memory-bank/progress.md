@@ -1,6 +1,6 @@
 # Smart Alarm — Progress
 
-## Completed Features
+## ✅ FASES COMPLETADAS
 
 ### ✅ FASE 1 - Observabilidade Foundation & Health Checks (Janeiro 2025)
 
@@ -29,28 +29,153 @@
 - **BusinessMetrics**: Métricas de negócio (snooze, uploads, sessões, health score)
 - **Contadores**: 13 contadores específicos (alarms_created_total, user_registrations_total, etc.)
 
-### ✅ FASE 2 - Handler Instrumentation (Janeiro 2025)
+### ✅ FASE 2 - Logging Estratégico (Janeiro 2025)
 
-**Instrumentação completa dos handlers principais com nova infraestrutura de observabilidade:**
+**Structured logging completo implementado em todas as camadas:**
 
-#### **Handlers Instrumentados**
-- **CreateAlarmHandler**: Instrumentação completa com métricas técnicas e de negócio
-  - Logging estruturado com correlationId
-  - Métricas: IncrementAlarmCount, RecordAlarmCreationDuration
-  - Business metrics: RecordAlarmProcessingTime
-  - Tratamento de exceções com métricas de erro
-- **UpdateAlarmHandler**: Atualização modernizada
-  - Validação com métricas de erro específicas
-  - Logging de entidades não encontradas
-  - Métricas de duração e processamento
-- **DeleteAlarmHandler**: Instrumentação de exclusão
-  - Métricas de exclusão com contexto de usuário
-  - Business metrics com motivo da exclusão
-  - Tratamento de entidades não encontradas
-- **ListAlarmsHandler**: Query instrumentada
-  - Métricas de listagem com contagem de resultados
-  - Business metrics de acesso a dados
-  - Tracking de alarmes ativos
+#### **LogTemplates Estruturados**
+- **Command/Query Operations**: Templates para CommandStarted, CommandCompleted, QueryStarted, QueryCompleted
+- **Database Operations**: DatabaseQueryStarted, DatabaseQueryExecuted, DatabaseQueryFailed
+- **Storage Operations**: StorageOperationCompleted, StorageOperationFailed
+- **KeyVault Operations**: KeyVaultOperationCompleted, KeyVaultOperationFailed
+- **Messaging Operations**: MessagingOperationStarted, MessagingOperationCompleted, MessagingOperationFailed
+- **Business Events**: AlarmCreated, AlarmTriggered, UserAuthenticated
+- **Infrastructure**: ExternalServiceCall, FileProcessed, DataImported
+
+### ✅ FASE 3 - Infrastructure Instrumentation (Janeiro 2025)
+
+**Instrumentação completa de toda a camada de infraestrutura:**
+
+#### **EF Repositories Instrumentados**
+- **EfAlarmRepository**, **EfUserRepository**, **EfScheduleRepository**
+- **EfRoutineRepository**, **EfIntegrationRepository**, **EfHolidayRepository**
+- **EfUserHolidayPreferenceRepository**
+- **Instrumentação**: Distributed tracing, metrics de duração, structured logging, error categorization
+
+#### **External Services Instrumentados**
+- **MinioStorageService**: Upload/Download/Delete com observabilidade completa
+- **AzureKeyVaultProvider**: GetSecret/SetSecret instrumentados
+- **RabbitMqMessagingService**: Publish/Subscribe instrumentados
+
+### ✅ FASE 4 - Application Layer Instrumentation (17/07/2025) - 100% COMPLETO ✅
+
+**Instrumentação completa de todos os Command/Query Handlers principais:**
+
+#### **12 Handlers Instrumentados com Observabilidade Completa**
+
+**🔥 Alarme Handlers (5/5):**
+1. **CreateAlarmHandler** ✅
+2. **GetAlarmByIdHandler** ✅  
+3. **UpdateAlarmHandler** ✅
+4. **DeleteAlarmHandler** ✅
+5. **ListAlarmsHandler** ✅
+
+**👤 User Handlers (5/5):**
+6. **GetUserByIdHandler** ✅
+7. **CreateUserHandler** ✅
+8. **UpdateUserHandler** ✅  
+9. **DeleteUserHandler** ✅
+10. **ListUsersHandler** ✅
+
+**🔄 Routine Handlers (2/2):**
+11. **GetRoutineByIdHandler** ✅
+12. **ListRoutinesHandler** ✅
+
+#### **Padrão de Instrumentação Aplicado**
+- **Distributed Tracing**: SmartAlarmActivitySource com activity tags específicos
+- **Structured Logging**: LogTemplates padronizados
+- **Performance Metrics**: SmartAlarmMeter para duração e contadores
+- **Business Metrics**: Contadores de negócio específicos por domínio
+- **Error Handling**: Categorização completa com correlation context
+- **Activity Tags**: Tags específicos por handler (alarm.id, user.id, routine.id, etc.)
+
+#### **Critério de Aceite Atendido**
+- **✅ Solution compilando**: SmartAlarm.sln compila sem erros
+- **✅ 12 handlers instrumentados**: Todos com observabilidade completa
+- **✅ Padrão consistente**: Aplicado uniformemente em todos os handlers
+
+## 🚀 PRÓXIMAS FASES
+
+### 🔄 FASE 5 - Service Integration (PRÓXIMO)
+- **ai-service**: Implementar observabilidade no serviço de IA
+- **alarm-service**: Implementar observabilidade no serviço de alarmes  
+- **integration-service**: Implementar observabilidade no serviço de integrações
+- **End-to-end tracing**: Validação de tracing distribuído entre serviços
+
+### 🔄 FASE 6 - Business Metrics & Dashboards
+- **Dashboards Grafana**: Painéis customizados para Smart Alarm
+- **Alerting automatizado**: Configuração de alertas críticos
+- **Performance profiling**: Application Insights integration
+
+### ✅ FASE 2 - Handler Instrumentation (17/07/2025) - 83% COMPLETO
+
+**Instrumentação sistemática dos handlers da Application Layer com observabilidade completa:**
+
+#### **✅ Handlers Instrumentados (10/12)**
+
+**Alarm Handlers (5/5) ✅ CONCLUÍDO:**
+- **CreateAlarmHandler**: ✅ Comando de criação com validação e business metrics
+- **GetAlarmByIdHandler**: ✅ Query com performance tracking e NotFound scenarios
+- **UpdateAlarmHandler**: ✅ Comando de atualização com validation tracking
+- **DeleteAlarmHandler**: ✅ Comando de exclusão com business event logging
+- **ListAlarmsHandler**: ✅ Query de listagem com contagem de resultados
+
+**User Handlers (5/5) ✅ CONCLUÍDO:**
+- **CreateUserHandler**: ✅ Comando de criação com business metrics
+- **GetUserByIdHandler**: ✅ Query com null safety e activity tags
+- **UpdateUserHandler**: ✅ Comando de atualização com validation tracking
+- **DeleteUserHandler**: ✅ Comando de exclusão com business event logging  
+- **ListUsersHandler**: ✅ Query de listagem com contagem de usuários ativos
+
+#### **🔄 Handlers Pendentes (2/12)**
+
+**Routine Handlers (2/5):**
+- **GetRoutineByIdHandler**: Precisa instrumentação completa
+- **ListRoutinesHandler**: Precisa instrumentação completa
+
+#### **🎯 Padrão de Instrumentação Consolidado**
+
+**Dependencies:**
+```csharp
+SmartAlarmActivitySource _activitySource
+SmartAlarmMeter _meter  
+BusinessMetrics _businessMetrics
+ICorrelationContext _correlationContext
+ILogger<THandler> _logger
+```
+
+**Handler Pattern Refinado:**
+1. **Timing & Context**: Stopwatch.StartNew() + CorrelationId
+2. **Structured Logging**: LogTemplates.QueryStarted/CommandStarted
+3. **Distributed Tracing**: Activity com tags específicos por domínio
+4. **Business Logic**: Try/catch com comprehensive error handling
+5. **Success Metrics**: Duration recording + business event logging
+6. **Activity Tags**: correlation.id, operation, handler + domínio específico
+
+#### **🚀 Métricas Implementadas**
+
+**Técnicas (SmartAlarmMeter):**
+- `RecordDatabaseQueryDuration(duration, operation, table)`
+- `RecordRequestDuration(duration, operation, status, statusCode)`
+- `IncrementErrorCount(type, entity, errorType)`
+
+**Negócio (BusinessMetrics):**
+- `UpdateUsersActiveToday(count)`
+- `RecordAlarmProcessingTime(duration, type, operation)`
+- `UpdateAlarmsPendingToday(count)`
+- `IncrementAlarmDeleted(userId, type, reason)`
+
+#### **📊 Activity Tags por Domínio**
+
+**Alarm Tags:**
+- `alarm.id`, `alarm.updated`, `alarm.deleted`, `alarms.count`, `alarms.active`
+
+**User Tags:**  
+- `user.id`, `user.email`, `user.name`, `user.active`, `user.created`, `user.updated`, `user.deleted`
+- `users.count`, `users.active`, `record.found`
+
+**Common Tags:**
+- `correlation.id`, `operation`, `handler`
 
 #### **Logging Templates Expandidos**
 - **LogTemplates**: 50+ templates estruturados organizados por categoria

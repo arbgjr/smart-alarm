@@ -189,37 +189,90 @@ _logger.LogInfo(LogTemplates.DatabaseQueryExecuted, operation, duration, recordC
 
 ---
 
-## 🚀 **FASE 4: Métricas de Negócio (Prioridade ALTA)**
+## 🚀 **FASE 4: Application Layer Instrumentation (CONCLUÍDA - 17/07/2025) - 100% COMPLETO**
 
-### **3.1 Business Metrics**
+### **4.1 ✅ Command/Query Handlers Instrumentados (12/12) - FINALIZADA**
 
-**Arquivo**: `src/SmartAlarm.Observability/Metrics/BusinessMetrics.cs`
+**Padrão de Instrumentação Estabelecido:**
+- **Distributed Tracing**: SmartAlarmActivitySource com activity tags específicos
+- **Structured Logging**: LogTemplates padronizados (QueryStarted, CommandStarted, etc.)
+- **Metrics**: SmartAlarmMeter para métricas técnicas + BusinessMetrics para negócio
+- **Error Handling**: Categorização completa de erros com correlation context
+- **Performance Tracking**: Stopwatch + duration recording para todas as operações
 
+#### **✅ Handlers Completados (12/12) - TODOS FINALIZADOS**
+
+**🔥 Alarme Handlers (5/5):**
+1. **CreateAlarmHandler**: ✅ Comando de criação com validação e business metrics
+2. **GetAlarmByIdHandler**: ✅ Query com performance tracking e NotFound scenarios  
+3. **UpdateAlarmHandler**: ✅ Comando de atualização com validation tracking
+4. **DeleteAlarmHandler**: ✅ Comando de exclusão com business event logging
+5. **ListAlarmsHandler**: ✅ Query de listagem com contagem de resultados 
+
+**👤 User Handlers (5/5):**
+6. **GetUserByIdHandler**: ✅ Query de usuário com null safety e activity tags
+7. **CreateUserHandler**: ✅ Command de criação de usuário com observabilidade completa
+8. **UpdateUserHandler**: ✅ Command de atualização de usuário com business events  
+9. **DeleteUserHandler**: ✅ Command de exclusão de usuário com tracking
+10. **ListUsersHandler**: ✅ Query de listagem de usuários com metrics
+
+**🔄 Routine Handlers (2/2):**
+11. **GetRoutineByIdHandler**: ✅ Query de rotina com performance tracking e NotFound scenarios
+12. **ListRoutinesHandler**: ✅ Query de listagem de rotinas com contagem ativa
+
+### **4.2 📊 Métricas Implementadas**
+
+**Métricas Técnicas (SmartAlarmMeter):**
 ```csharp
-// Contadores
-- alarms_created_total
-- alarms_triggered_total  
-- user_registrations_total
-- authentication_attempts_total
+// Database Operations
+RecordDatabaseQueryDuration(duration, operation, table)
+IncrementErrorCount(type, entity, errorType)
 
-// Gauges
-- active_alarms_count
-- online_users_count
-- system_memory_usage
-- database_connections_active
+// Request Operations  
+RecordRequestDuration(duration, operation, status, statusCode)
 
-// Histogramas
-- alarm_creation_duration
-- api_request_duration
-- database_query_duration
-- external_service_call_duration
+// Business Operations
+IncrementAlarmCount(type, userId)
 ```
 
-### **3.2 Custom Metrics Controller**
+**Métricas de Negócio (BusinessMetrics):**
+```csharp
+// User Activity
+UpdateUsersActiveToday(count)
+RecordAlarmProcessingTime(duration, type, operation)
 
-**Endpoint**: `/api/monitoramento/metrics`
-- Métricas customizadas em formato Prometheus
-- Agregações de negócio em tempo real
+// Alarm Metrics
+UpdateAlarmsPendingToday(count)
+IncrementAlarmDeleted(userId, type, reason)
+```
+
+### **4.3 🎯 Activity Tags Padronizados**
+
+**Tags Comuns:**
+- `operation`: Tipo de operação (CreateAlarm, GetUserById, etc.)
+- `handler`: Nome específico do handler
+- `record.found`: Status de encontrado em queries
+
+**Tags Específicos por Domínio:**
+- **Alarms**: `alarm.id`, `alarm.updated`, `alarm.deleted`, `alarms.count`, `alarms.active`
+- **Users**: `user.id`, `user.active`, `user.email`
+- **Routines**: `routine.id`, `routine.active`, `alarm.id`, `routines.count`, `routines.active`
+
+### **4.4 ✅ Critério de Aceite - ATENDIDO**
+
+**✅ Solution compilando sem erros**: SmartAlarm.Application compila com sucesso
+**✅ 12 handlers instrumentados**: Todos os handlers principais com observabilidade completa
+**✅ Padrão consistente**: Distributed tracing, structured logging, metrics e error handling
+**✅ Build validation**: Projeto SmartAlarm.Application compila sem erros de instrumentação
+
+### **4.5 🚀 FASE 4 FINALIZADA - Próximos Passos**
+
+**Próxima Prioridade - FASE 5: Service Integration**
+1. **ai-service**: Implementar observabilidade no serviço de IA
+2. **alarm-service**: Implementar observabilidade no serviço de alarmes
+3. **integration-service**: Implementar observabilidade no serviço de integrações
+4. Business Metrics dashboard implementation
+5. End-to-end tracing validation
 
 ---
 

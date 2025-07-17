@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
@@ -8,6 +9,7 @@ using SmartAlarm.Domain.Repositories;
 using SmartAlarm.Observability.Context;
 using SmartAlarm.Observability.Logging;
 using SmartAlarm.Observability.Metrics;
+using SmartAlarm.Observability.Tracing;
 
 namespace SmartAlarm.Application.Handlers
 {
@@ -18,6 +20,7 @@ namespace SmartAlarm.Application.Handlers
     {
         private readonly IAlarmRepository _alarmRepository;
         private readonly ILogger<DeleteAlarmHandler> _logger;
+        private readonly SmartAlarmActivitySource _activitySource;
         private readonly SmartAlarmMeter _meter;
         private readonly BusinessMetrics _businessMetrics;
         private readonly ICorrelationContext _correlationContext;
@@ -25,12 +28,14 @@ namespace SmartAlarm.Application.Handlers
         public DeleteAlarmHandler(
             IAlarmRepository alarmRepository, 
             ILogger<DeleteAlarmHandler> logger,
+            SmartAlarmActivitySource activitySource,
             SmartAlarmMeter meter,
             BusinessMetrics businessMetrics,
             ICorrelationContext correlationContext)
         {
             _alarmRepository = alarmRepository;
             _logger = logger;
+            _activitySource = activitySource;
             _meter = meter;
             _businessMetrics = businessMetrics;
             _correlationContext = correlationContext;
@@ -38,25 +43,28 @@ namespace SmartAlarm.Application.Handlers
 
         public async Task<bool> Handle(DeleteAlarmCommand request, CancellationToken cancellationToken)
         {
-            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            var stopwatch = Stopwatch.StartNew();
             var correlationId = _correlationContext.CorrelationId;
             
-            _logger.LogInformation(LogTemplates.CommandStarted, 
+            _logger.LogDebug(LogTemplates.CommandStarted, 
                 nameof(DeleteAlarmCommand), 
-                correlationId, 
-                request.AlarmId);
+                request.AlarmId,
+                correlationId);
 
-            using var activity = SmartAlarmTracing.ActivitySource.StartActivity("DeleteAlarmHandler.Handle");
+            using var activity = _activitySource.StartActivity("DeleteAlarmHandler.Handle");
             activity?.SetTag("alarm.id", request.AlarmId.ToString());
             activity?.SetTag("correlation.id", correlationId);
+            activity?.SetTag("operation", "DeleteAlarm");
+            activity?.SetTag("handler", "DeleteAlarmHandler");
             
             try
             {
                 var existing = await _alarmRepository.GetByIdAsync(request.AlarmId);
                 if (existing == null)
                 {
-                    activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Error, "Alarm not found");
-                    _meter.IncrementErrorCount("DELETE", "/alarms", "NotFoundError");
+                    stopwatch.Stop();
+                    activity?.SetStatus(ActivityStatusCode.Error, "Alarm not found");
+                    _meter.IncrementErrorCount("COMMAND", "Alarms", "NotFound");
                     
                     _logger.LogWarning(LogTemplates.EntityNotFound,
                         "Alarm",
@@ -68,20 +76,21 @@ namespace SmartAlarm.Application.Handlers
                 
                 await _alarmRepository.DeleteAsync(request.AlarmId);
                 
-                activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Ok);
+                stopwatch.Stop();
+                activity?.SetStatus(ActivityStatusCode.Ok);
+                activity?.SetTag("alarm.deleted", true);
                 
                 // Métricas técnicas
-                _meter.IncrementAlarmCount("standard", existing.UserId.ToString());
-                _meter.RecordAlarmCreationDuration(stopwatch.ElapsedMilliseconds, "standard", true);
+                _meter.RecordRequestDuration(stopwatch.ElapsedMilliseconds, "DeleteAlarm", "Success", "200");
                 
                 // Métricas de negócio
                 _businessMetrics.IncrementAlarmDeleted(existing.UserId.ToString(), "standard", "user_request");
                 _businessMetrics.RecordAlarmProcessingTime(stopwatch.ElapsedMilliseconds, "standard", "deletion");
                 
-                _logger.LogInformation(LogTemplates.CommandCompleted, 
+                _logger.LogDebug(LogTemplates.CommandCompleted, 
                     nameof(DeleteAlarmCommand), 
-                    correlationId, 
-                    stopwatch.ElapsedMilliseconds);
+                    stopwatch.ElapsedMilliseconds,
+                    "Success");
 
                 _logger.LogInformation(LogTemplates.BusinessEventOccurred,
                     "AlarmDeleted",
@@ -92,8 +101,9 @@ namespace SmartAlarm.Application.Handlers
             }
             catch (Exception ex)
             {
-                activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Error, ex.Message);
-                _meter.IncrementErrorCount("DELETE", "/alarms", "AlarmDeletionError");
+                stopwatch.Stop();
+                activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+                _meter.IncrementErrorCount("COMMAND", "Alarms", "DeleteError");
                 
                 _logger.LogError(LogTemplates.CommandFailed,
                     nameof(DeleteAlarmCommand),

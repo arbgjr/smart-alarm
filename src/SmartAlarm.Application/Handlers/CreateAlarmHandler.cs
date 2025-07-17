@@ -10,6 +10,7 @@ using SmartAlarm.Domain.Repositories;
 using SmartAlarm.Observability.Context;
 using SmartAlarm.Observability.Logging;
 using SmartAlarm.Observability.Metrics;
+using SmartAlarm.Observability.Tracing;
 
 namespace SmartAlarm.Application.Handlers
 {
@@ -23,19 +24,22 @@ namespace SmartAlarm.Application.Handlers
         private readonly SmartAlarmMeter _meter;
         private readonly BusinessMetrics _businessMetrics;
         private readonly ICorrelationContext _correlationContext;
+        private readonly SmartAlarmActivitySource _activitySource;
 
         public CreateAlarmHandler(
             IAlarmRepository alarmRepository, 
             ILogger<CreateAlarmHandler> logger,
             SmartAlarmMeter meter,
             BusinessMetrics businessMetrics,
-            ICorrelationContext correlationContext)
+            ICorrelationContext correlationContext,
+            SmartAlarmActivitySource activitySource)
         {
             _alarmRepository = alarmRepository;
             _logger = logger;
             _meter = meter;
             _businessMetrics = businessMetrics;
             _correlationContext = correlationContext;
+            _activitySource = activitySource;
         }
 
         public async Task<AlarmResponseDto> Handle(CreateAlarmCommand request, CancellationToken cancellationToken)
@@ -48,10 +52,12 @@ namespace SmartAlarm.Application.Handlers
                 correlationId, 
                 request.Alarm.UserId);
 
-            using var activity = SmartAlarmTracing.ActivitySource.StartActivity("CreateAlarmHandler.Handle");
+            using var activity = _activitySource.StartActivity("CreateAlarmHandler.Handle");
             activity?.SetTag("user.id", request.Alarm.UserId.ToString());
             activity?.SetTag("alarm.name", request.Alarm.Name);
             activity?.SetTag("correlation.id", correlationId);
+            activity?.SetTag("operation", "CreateAlarm");
+            activity?.SetTag("handler", "CreateAlarmHandler");
 
             try
             {

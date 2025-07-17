@@ -12,6 +12,7 @@ using SmartAlarm.Domain.Repositories;
 using SmartAlarm.Observability.Context;
 using SmartAlarm.Observability.Logging;
 using SmartAlarm.Observability.Metrics;
+using SmartAlarm.Observability.Tracing;
 
 namespace SmartAlarm.Application.Handlers
 {
@@ -22,6 +23,7 @@ namespace SmartAlarm.Application.Handlers
     {
         private readonly IAlarmRepository _alarmRepository;
         private readonly ILogger<ListAlarmsHandler> _logger;
+        private readonly SmartAlarmActivitySource _activitySource;
         private readonly SmartAlarmMeter _meter;
         private readonly BusinessMetrics _businessMetrics;
         private readonly ICorrelationContext _correlationContext;
@@ -29,12 +31,14 @@ namespace SmartAlarm.Application.Handlers
         public ListAlarmsHandler(
             IAlarmRepository alarmRepository, 
             ILogger<ListAlarmsHandler> logger,
+            SmartAlarmActivitySource activitySource,
             SmartAlarmMeter meter,
             BusinessMetrics businessMetrics,
             ICorrelationContext correlationContext)
         {
             _alarmRepository = alarmRepository;
             _logger = logger;
+            _activitySource = activitySource;
             _meter = meter;
             _businessMetrics = businessMetrics;
             _correlationContext = correlationContext;
@@ -42,16 +46,18 @@ namespace SmartAlarm.Application.Handlers
 
         public async Task<IList<AlarmResponseDto>> Handle(ListAlarmsQuery request, CancellationToken cancellationToken)
         {
-            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            var stopwatch = Stopwatch.StartNew();
             var correlationId = _correlationContext.CorrelationId;
             
-            _logger.LogInformation(LogTemplates.QueryStarted, 
+            _logger.LogDebug(LogTemplates.QueryStarted, 
                 nameof(ListAlarmsQuery), 
-                request.UserId);
+                new { UserId = request.UserId });
 
-            using var activity = SmartAlarmTracing.ActivitySource.StartActivity("ListAlarmsHandler.Handle");
+            using var activity = _activitySource.StartActivity("ListAlarmsHandler.Handle");
             activity?.SetTag("user.id", request.UserId.ToString());
             activity?.SetTag("correlation.id", correlationId);
+            activity?.SetTag("operation", "ListAlarms");
+            activity?.SetTag("handler", "ListAlarmsHandler");
             
             try
             {
@@ -69,21 +75,22 @@ namespace SmartAlarm.Application.Handlers
                     return dto;
                 }).ToList();
                 
+                stopwatch.Stop();
                 activity?.SetTag("alarms.count", result.Count);
+                activity?.SetTag("alarms.active", result.Count(a => a.Enabled));
                 activity?.SetStatus(ActivityStatusCode.Ok);
                 
                 // Métricas técnicas
-                _meter.IncrementRequestCount("GET", "/alarms");
-                _meter.RecordRequestDuration(stopwatch.ElapsedMilliseconds, "GET", "/alarms", "200");
+                _meter.RecordDatabaseQueryDuration(stopwatch.ElapsedMilliseconds, "ListAlarms", "Alarms");
                 
                 // Métricas de negócio
                 _businessMetrics.UpdateUsersActiveToday(1);
                 _businessMetrics.UpdateAlarmsPendingToday(result.Count(a => a.Enabled && a.CanTriggerNow));
                 
-                _logger.LogInformation(LogTemplates.QueryCompleted, 
+                _logger.LogDebug(LogTemplates.QueryCompleted, 
                     nameof(ListAlarmsQuery), 
-                    correlationId, 
-                    stopwatch.ElapsedMilliseconds);
+                    stopwatch.ElapsedMilliseconds,
+                    result.Count);
 
                 _logger.LogInformation(LogTemplates.BusinessEventOccurred,
                     "AlarmsListed",
@@ -94,14 +101,14 @@ namespace SmartAlarm.Application.Handlers
             }
             catch (Exception ex)
             {
+                stopwatch.Stop();
                 activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
-                _meter.IncrementErrorCount("GET", "/alarms", "AlarmListError");
+                _meter.IncrementErrorCount("QUERY", "Alarms", "ListError");
                 
                 _logger.LogError(LogTemplates.QueryFailed,
                     nameof(ListAlarmsQuery),
-                    correlationId,
-                    ex.Message,
-                    stopwatch.ElapsedMilliseconds);
+                    stopwatch.ElapsedMilliseconds,
+                    ex.Message);
                 
                 throw;
             }
