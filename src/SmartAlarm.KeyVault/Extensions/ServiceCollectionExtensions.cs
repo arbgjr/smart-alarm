@@ -35,7 +35,17 @@ namespace SmartAlarm.KeyVault.Extensions
             services.AddSingleton<ISecretProvider, AzureKeyVaultProvider>();
             services.AddSingleton<ISecretProvider, AwsSecretsManagerProvider>();
             services.AddSingleton<ISecretProvider, GcpSecretManagerProvider>();
-            services.AddSingleton<ISecretProvider, OciVaultProvider>();
+            
+            // Register OCI provider based on environment configuration
+            var ociEnvironment = configuration["OciVault:Environment"] ?? "Simulated";
+            if (ociEnvironment.Equals("Real", StringComparison.OrdinalIgnoreCase))
+            {
+                services.AddSingleton<ISecretProvider, RealOciVaultProvider>();
+            }
+            else
+            {
+                services.AddSingleton<ISecretProvider, OciVaultProvider>();
+            }
 
             // Register main service
             services.AddSingleton<IKeyVaultService, KeyVaultService>();
@@ -89,6 +99,40 @@ namespace SmartAlarm.KeyVault.Extensions
             services.Configure<AwsSecretsManagerOptions>(options => configuration.GetSection(AwsSecretsManagerOptions.ConfigSection).Bind(options));
 
             services.AddSingleton<ISecretProvider, AwsSecretsManagerProvider>();
+            services.AddSingleton<IKeyVaultService, KeyVaultService>();
+
+            return services;
+        }
+
+        /// <summary>
+        /// Adds only OCI Vault provider with real implementation (useful for OCI-only production setups).
+        /// </summary>
+        /// <param name="services">The service collection.</param>
+        /// <param name="configuration">The configuration to bind options from.</param>
+        /// <returns>The service collection for chaining.</returns>
+        public static IServiceCollection AddOciVaultReal(this IServiceCollection services, IConfiguration configuration)
+        {
+            services.Configure<KeyVaultOptions>(options => configuration.GetSection(KeyVaultOptions.ConfigSection).Bind(options));
+            services.Configure<OciVaultOptions>(options => configuration.GetSection(OciVaultOptions.ConfigSection).Bind(options));
+
+            services.AddSingleton<ISecretProvider, RealOciVaultProvider>();
+            services.AddSingleton<IKeyVaultService, KeyVaultService>();
+
+            return services;
+        }
+
+        /// <summary>
+        /// Adds only OCI Vault provider with simulated implementation (useful for development/testing).
+        /// </summary>
+        /// <param name="services">The service collection.</param>
+        /// <param name="configuration">The configuration to bind options from.</param>
+        /// <returns>The service collection for chaining.</returns>
+        public static IServiceCollection AddOciVaultSimulated(this IServiceCollection services, IConfiguration configuration)
+        {
+            services.Configure<KeyVaultOptions>(options => configuration.GetSection(KeyVaultOptions.ConfigSection).Bind(options));
+            services.Configure<OciVaultOptions>(options => configuration.GetSection(OciVaultOptions.ConfigSection).Bind(options));
+
+            services.AddSingleton<ISecretProvider, OciVaultProvider>();
             services.AddSingleton<IKeyVaultService, KeyVaultService>();
 
             return services;
