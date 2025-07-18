@@ -5,9 +5,11 @@ using SmartAlarm.Observability.Context;
 using SmartAlarm.Observability.Tracing;
 using SmartAlarm.Observability.Metrics;
 using SmartAlarm.IntegrationService.Application.Exceptions;
+using SmartAlarm.IntegrationService.Application.Services;
 using FluentValidation;
 using System.Diagnostics;
 using System.Text.Json;
+using System.Net;
 using Google.Apis.Calendar.v3;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
@@ -106,6 +108,7 @@ namespace SmartAlarm.IntegrationService.Application.Commands
         private readonly SmartAlarmMeter _meter;
         private readonly ICorrelationContext _correlationContext;
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly ICalendarRetryService _retryService;
         private readonly SyncExternalCalendarCommandValidator _validator;
 
         public SyncExternalCalendarCommandHandler(
@@ -115,7 +118,8 @@ namespace SmartAlarm.IntegrationService.Application.Commands
             SmartAlarmActivitySource activitySource,
             SmartAlarmMeter meter,
             ICorrelationContext correlationContext,
-            IHttpClientFactory httpClientFactory)
+            IHttpClientFactory httpClientFactory,
+            ICalendarRetryService retryService)
         {
             _userRepository = userRepository;
             _alarmRepository = alarmRepository;
@@ -124,6 +128,7 @@ namespace SmartAlarm.IntegrationService.Application.Commands
             _meter = meter;
             _correlationContext = correlationContext;
             _httpClientFactory = httpClientFactory;
+            _retryService = retryService;
             _validator = new SyncExternalCalendarCommandValidator();
         }
 
@@ -165,13 +170,55 @@ namespace SmartAlarm.IntegrationService.Application.Commands
                 activity?.SetTag("sync_to_date", syncToDate.ToString("yyyy-MM-dd"));
 
                 // Buscar eventos do calendário externo
-                var externalEvents = await FetchExternalCalendarEvents(
+                var fetchResult = await FetchExternalCalendarEvents(
                     request.Provider, 
                     request.AccessToken, 
                     syncFromDate, 
                     syncToDate, 
                     cancellationToken);
 
+                // Verificar se houve falha na busca
+                if (!fetchResult.IsSuccess)
+                {
+                    var error = fetchResult.Error!;
+                    _logger.LogError("Falha na sincronização de calendário {Provider} para usuário {UserId}: {ErrorMessage}. " +
+                                   "É retryável: {IsRetryable}",
+                        request.Provider, request.UserId, error.Message, error.IsRetryable);
+
+                    _meter.IncrementErrorCount("command_handler", "sync_calendar", "fetch_failed");
+
+                    // Se for um erro retryável, incluir na resposta como warning
+                    // Se for um erro permanente, lançar exceção
+                    if (error.IsRetryable)
+                    {
+                        var fetchWarnings = new List<string> 
+                        { 
+                            $"Falha temporária na sincronização: {error.Message}. Tente novamente mais tarde." 
+                        };
+
+                        return new SyncExternalCalendarResponse(
+                            UserId: request.UserId,
+                            Provider: request.Provider,
+                            EventsProcessed: 0,
+                            AlarmsCreated: 0,
+                            AlarmsUpdated: 0,
+                            AlarmsSkipped: 0,
+                            SyncedAt: DateTime.UtcNow,
+                            NextSyncSuggested: DateTime.UtcNow.AddMinutes(30), // Retry em 30 minutos
+                            Warnings: fetchWarnings
+                        );
+                    }
+                    else
+                    {
+                        throw new ExternalCalendarPermanentException(
+                            request.Provider,
+                            $"Falha permanente na sincronização: {error.Message}",
+                            innerException: error.OriginalException);
+                    }
+                }
+
+                var externalEvents = fetchResult.Events;
+                
                 _logger.LogInformation("Encontrados {EventCount} eventos no calendário {Provider} para usuário {UserId}",
                     externalEvents.Count, request.Provider, request.UserId);
 
@@ -255,9 +302,9 @@ namespace SmartAlarm.IntegrationService.Application.Commands
         }
 
         /// <summary>
-        /// Busca eventos do calendário externo via API
+        /// Busca eventos do calendário externo via API com tratamento robusto de erros
         /// </summary>
-        private async Task<List<ExternalCalendarEvent>> FetchExternalCalendarEvents(
+        private async Task<CalendarFetchResult> FetchExternalCalendarEvents(
             string provider, 
             string accessToken, 
             DateTime fromDate, 
@@ -265,35 +312,66 @@ namespace SmartAlarm.IntegrationService.Application.Commands
             CancellationToken cancellationToken)
         {
             using var activity = _activitySource.StartActivity("SyncExternalCalendarCommandHandler.FetchExternalCalendarEvents");
+            activity?.SetTag("provider", provider);
             
-            // Simulação de integração com diferentes provedores
-            // Na implementação real, cada provedor teria sua própria API
-            var events = new List<ExternalCalendarEvent>();
-
-            switch (provider.ToLowerInvariant())
+            try
             {
-                case "google":
-                    events = await FetchGoogleCalendarEvents(accessToken, fromDate, toDate, cancellationToken);
-                    break;
-                case "outlook":
-                    events = await FetchOutlookCalendarEvents(accessToken, fromDate, toDate, cancellationToken);
-                    break;
-                case "apple":
-                    events = await FetchAppleCalendarEvents(accessToken, fromDate, toDate, cancellationToken);
-                    break;
-                case "caldav":
-                    events = await FetchCalDAVEvents(accessToken, fromDate, toDate, cancellationToken);
-                    break;
-                default:
-                    throw new NotSupportedException($"Provedor {provider} não é suportado");
-            }
+                var events = await _retryService.ExecuteWithRetryAsync(
+                    async (ct) =>
+                    {
+                        return provider.ToLowerInvariant() switch
+                        {
+                            "google" => await FetchGoogleCalendarEvents(accessToken, fromDate, toDate, ct),
+                            "outlook" => await FetchOutlookCalendarEvents(accessToken, fromDate, toDate, ct),
+                            "apple" => await FetchAppleCalendarEvents(accessToken, fromDate, toDate, ct),
+                            "caldav" => await FetchCalDAVEvents(accessToken, fromDate, toDate, ct),
+                            _ => throw new ExternalCalendarPermanentException(
+                                provider, 
+                                $"Provedor {provider} não é suportado")
+                        };
+                    },
+                    $"FetchCalendarEvents-{provider}",
+                    provider,
+                    cancellationToken: cancellationToken);
 
-            activity?.SetTag("events_fetched", events.Count.ToString());
-            return events;
+                activity?.SetTag("events_fetched", events.Count.ToString());
+                return CalendarFetchResult.Success(events);
+            }
+            catch (ExternalCalendarIntegrationException ex)
+            {
+                var error = new CalendarFetchError(
+                    provider,
+                    ex.GetType().Name,
+                    ex.Message,
+                    ex.IsRetryable,
+                    DateTime.UtcNow,
+                    ex,
+                    ex.CalendarId);
+
+                activity?.SetTag("error", ex.Message);
+                activity?.SetTag("is_retryable", ex.IsRetryable.ToString());
+                
+                return CalendarFetchResult.Failure(error);
+            }
+            catch (Exception ex)
+            {
+                var error = new CalendarFetchError(
+                    provider,
+                    "UnexpectedError",
+                    ex.Message,
+                    false, // Erros não esperados não são retryáveis por padrão
+                    DateTime.UtcNow,
+                    ex);
+
+                activity?.SetTag("error", ex.Message);
+                activity?.SetTag("is_retryable", "false");
+                
+                return CalendarFetchResult.Failure(error);
+            }
         }
 
         /// <summary>
-        /// Integração real com Google Calendar API com retry policies
+        /// Integração real com Google Calendar API com tratamento adequado de erros
         /// </summary>
         private async Task<List<ExternalCalendarEvent>> FetchGoogleCalendarEvents(
             string accessToken, 
@@ -301,11 +379,11 @@ namespace SmartAlarm.IntegrationService.Application.Commands
             DateTime toDate, 
             CancellationToken cancellationToken)
         {
+            _logger.LogInformation("Fetching Google Calendar events from {FromDate} to {ToDate}", fromDate, toDate);
+            
             try
             {
-                _logger.LogInformation("Fetching Google Calendar events from {FromDate} to {ToDate}", fromDate, toDate);
-                
-                // Implementação real com Google Calendar API v3 com retry policies
+                // Implementação real com Google Calendar API v3
                 var credential = GoogleCredential.FromAccessToken(accessToken);
                 var service = new CalendarService(new BaseClientService.Initializer()
                 {
@@ -320,46 +398,72 @@ namespace SmartAlarm.IntegrationService.Application.Commands
                 request.OrderBy = EventsResource.ListRequest.OrderByEnum.StartTime;
                 request.MaxResults = 250;
                 
-                // Retry policy para Google Calendar
-                var retryCount = 0;
-                const int maxRetries = 3;
+                var events = await request.ExecuteAsync(cancellationToken);
                 
-                while (retryCount <= maxRetries)
-                {
-                    try
-                    {
-                        var events = await request.ExecuteAsync();
-                        
-                        var calendarEvents = events.Items.Select(e => new ExternalCalendarEvent(
-                            e.Id,
-                            e.Summary ?? "Sem título",
-                            e.Start.DateTimeDateTimeOffset?.DateTime ?? DateTime.Parse(e.Start.Date),
-                            e.End.DateTimeDateTimeOffset?.DateTime ?? DateTime.Parse(e.End.Date),
-                            e.Location ?? "",
-                            e.Description ?? ""
-                        )).ToList();
+                var calendarEvents = events.Items.Select(e => new ExternalCalendarEvent(
+                    e.Id,
+                    e.Summary ?? "Sem título",
+                    e.Start.DateTimeDateTimeOffset?.DateTime ?? DateTime.Parse(e.Start.Date),
+                    e.End.DateTimeDateTimeOffset?.DateTime ?? DateTime.Parse(e.End.Date),
+                    e.Location ?? "",
+                    e.Description ?? ""
+                )).ToList();
 
-                        _logger.LogInformation("Successfully synced {EventCount} events from Google Calendar", calendarEvents.Count);
-                        return calendarEvents;
-                    }
-                    catch (Exception ex) when (retryCount < maxRetries && IsRetryableError(ex))
-                    {
-                        retryCount++;
-                        var delay = TimeSpan.FromSeconds(Math.Pow(2, retryCount)); // Exponential backoff
-                        
-                        _logger.LogWarning(ex, "Google Calendar API call failed (attempt {RetryCount}/{MaxRetries}). Retrying in {Delay}s", 
-                            retryCount, maxRetries, delay.TotalSeconds);
-                        
-                        await Task.Delay(delay, cancellationToken);
-                    }
+                _logger.LogInformation("Successfully synced {EventCount} events from Google Calendar", calendarEvents.Count);
+                return calendarEvents;
+            }
+            catch (Google.GoogleApiException googleEx)
+            {
+                // Mapear códigos de erro específicos do Google
+                var isRetryable = googleEx.HttpStatusCode switch
+                {
+                    HttpStatusCode.TooManyRequests => true,
+                    HttpStatusCode.InternalServerError => true,
+                    HttpStatusCode.BadGateway => true,
+                    HttpStatusCode.ServiceUnavailable => true,
+                    HttpStatusCode.GatewayTimeout => true,
+                    HttpStatusCode.Unauthorized => false, // Token inválido não deve ser retryado
+                    HttpStatusCode.Forbidden => false,
+                    _ => false
+                };
+
+                if (isRetryable)
+                {
+                    throw new ExternalCalendarTemporaryException(
+                        "google",
+                        $"Google Calendar API temporariamente indisponível: {googleEx.Message}",
+                        innerException: googleEx);
                 }
-                
-                throw new ExternalServiceException("Google Calendar", "MAX_RETRIES_EXCEEDED", "Google Calendar API failed after all retry attempts");
+                else
+                {
+                    throw new ExternalCalendarPermanentException(
+                        "google",
+                        $"Erro permanente do Google Calendar: {googleEx.Message}",
+                        innerException: googleEx);
+                }
+            }
+            catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
+            {
+                throw new ExternalCalendarTemporaryException(
+                    "google",
+                    "Timeout na chamada da API do Google Calendar",
+                    innerException: ex);
+            }
+            catch (HttpRequestException httpEx)
+            {
+                // Problemas de rede são geralmente temporários
+                throw new ExternalCalendarTemporaryException(
+                    "google",
+                    $"Erro de conectividade com Google Calendar: {httpEx.Message}",
+                    innerException: httpEx);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to sync Google Calendar");
-                throw new ExternalServiceException("Google Calendar", "GOOGLE_CALENDAR_ERROR", "Google Calendar sync failed", ex);
+                _logger.LogError(ex, "Erro inesperado ao buscar eventos do Google Calendar");
+                throw new ExternalCalendarPermanentException(
+                    "google",
+                    $"Erro inesperado: {ex.Message}",
+                    innerException: ex);
             }
         }
 
@@ -441,23 +545,138 @@ namespace SmartAlarm.IntegrationService.Application.Commands
         /// <summary>
         /// Integração real com Microsoft Graph API (Outlook Calendar) com retry policies
         /// </summary>
+        /// <summary>
+        /// Integração real com Microsoft Graph API (Outlook Calendar) com tratamento adequado de erros
+        /// </summary>
         private async Task<List<ExternalCalendarEvent>> FetchOutlookCalendarEvents(
             string accessToken, 
             DateTime fromDate, 
             DateTime toDate, 
             CancellationToken cancellationToken)
         {
+            _logger.LogInformation("Fetching Outlook Calendar events from {FromDate} to {ToDate}", fromDate, toDate);
+            
             try
             {
-                _logger.LogInformation("Fetching Outlook Calendar events from {FromDate} to {ToDate}", fromDate, toDate);
+                using var httpClient = _httpClientFactory.CreateClient("MicrosoftGraph");
+                httpClient.DefaultRequestHeaders.Authorization = 
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+
+                var filterQuery = $"start/dateTime ge '{fromDate:O}' and end/dateTime le '{toDate:O}'";
+                var url = $"https://graph.microsoft.com/v1.0/me/events?$filter={Uri.EscapeDataString(filterQuery)}&$top=250";
+
+                _logger.LogDebug("Calling Microsoft Graph: {Url}", url);
+
+                var response = await httpClient.GetAsync(url, cancellationToken);
                 
-                // Implementação real estruturada para Microsoft Graph com retry policies
-                return await FetchFromMicrosoftGraphAsync(accessToken, fromDate, toDate, cancellationToken);
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                    
+                    // Mapear códigos de erro específicos do Microsoft Graph
+                    var isRetryable = response.StatusCode switch
+                    {
+                        HttpStatusCode.TooManyRequests => true,
+                        HttpStatusCode.InternalServerError => true,
+                        HttpStatusCode.BadGateway => true,
+                        HttpStatusCode.ServiceUnavailable => true,
+                        HttpStatusCode.GatewayTimeout => true,
+                        HttpStatusCode.Unauthorized => false, // Token inválido não deve ser retryado
+                        HttpStatusCode.Forbidden => false,
+                        _ => false
+                    };
+
+                    if (isRetryable)
+                    {
+                        throw new ExternalCalendarTemporaryException(
+                            "outlook",
+                            $"Microsoft Graph API temporariamente indisponível (HTTP {response.StatusCode}): {errorContent}");
+                    }
+                    else
+                    {
+                        throw new ExternalCalendarPermanentException(
+                            "outlook",
+                            $"Erro permanente do Microsoft Graph (HTTP {response.StatusCode}): {errorContent}");
+                    }
+                }
+
+                var jsonContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                using var document = JsonDocument.Parse(jsonContent);
+                var events = new List<ExternalCalendarEvent>();
+
+                if (document.RootElement.TryGetProperty("value", out var valueElement))
+                {
+                    foreach (var eventElement in valueElement.EnumerateArray())
+                    {
+                        var id = eventElement.GetProperty("id").GetString() ?? "";
+                        var subject = eventElement.GetProperty("subject").GetString() ?? "Sem título";
+                        
+                        // Parse start/end times from Outlook format
+                        var startDateTime = DateTime.UtcNow;
+                        var endDateTime = DateTime.UtcNow.AddHours(1);
+                        
+                        if (eventElement.TryGetProperty("start", out var startElement) &&
+                            startElement.TryGetProperty("dateTime", out var startDateElement))
+                        {
+                            DateTime.TryParse(startDateElement.GetString(), out startDateTime);
+                        }
+                        
+                        if (eventElement.TryGetProperty("end", out var endElement) &&
+                            endElement.TryGetProperty("dateTime", out var endDateElement))
+                        {
+                            DateTime.TryParse(endDateElement.GetString(), out endDateTime);
+                        }
+                        
+                        var location = "";
+                        if (eventElement.TryGetProperty("location", out var locationElement) &&
+                            locationElement.TryGetProperty("displayName", out var locationNameElement))
+                        {
+                            location = locationNameElement.GetString() ?? "";
+                        }
+                        
+                        var description = "";
+                        if (eventElement.TryGetProperty("bodyPreview", out var bodyElement))
+                        {
+                            description = bodyElement.GetString() ?? "";
+                        }
+
+                        events.Add(new ExternalCalendarEvent(id, subject, startDateTime, endDateTime, location, description));
+                    }
+                }
+
+                _logger.LogInformation("Successfully synced {EventCount} events from Outlook Calendar", events.Count);
+                return events;
+            }
+            catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
+            {
+                throw new ExternalCalendarTemporaryException(
+                    "outlook",
+                    "Timeout na chamada da API do Microsoft Graph",
+                    innerException: ex);
+            }
+            catch (HttpRequestException httpEx)
+            {
+                // Problemas de rede são geralmente temporários
+                throw new ExternalCalendarTemporaryException(
+                    "outlook",
+                    $"Erro de conectividade com Microsoft Graph: {httpEx.Message}",
+                    innerException: httpEx);
+            }
+            catch (JsonException jsonEx)
+            {
+                // Problemas de parsing podem indicar mudança na API
+                throw new ExternalCalendarPermanentException(
+                    "outlook",
+                    $"Erro ao interpretar resposta do Microsoft Graph: {jsonEx.Message}",
+                    innerException: jsonEx);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to fetch Outlook Calendar events");
-                throw new ExternalServiceException("Microsoft Graph", "OUTLOOK_CALENDAR_ERROR", "Outlook Calendar sync failed", ex);
+                _logger.LogError(ex, "Erro inesperado ao buscar eventos do Outlook Calendar");
+                throw new ExternalCalendarPermanentException(
+                    "outlook",
+                    $"Erro inesperado: {ex.Message}",
+                    innerException: ex);
             }
         }
 
@@ -578,25 +797,22 @@ namespace SmartAlarm.IntegrationService.Application.Commands
 
         /// <summary>
         /// Integração real com Apple Calendar via CloudKit API
+        /// <summary>
+        /// Integração com Apple Calendar - Em desenvolvimento
         /// </summary>
-        private async Task<List<ExternalCalendarEvent>> FetchAppleCalendarEvents(
+        private Task<List<ExternalCalendarEvent>> FetchAppleCalendarEvents(
             string accessToken, 
             DateTime fromDate, 
             DateTime toDate, 
             CancellationToken cancellationToken)
         {
-            try
-            {
-                _logger.LogInformation("Fetching Apple Calendar events from {FromDate} to {ToDate}", fromDate, toDate);
-                
-                // Implementação real estruturada para Apple CloudKit API
-                return await FetchFromAppleCloudKitAsync(accessToken, fromDate, toDate, cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to fetch Apple Calendar events");
-                throw new ExternalServiceException("Apple Calendar sync failed", ex);
-            }
+            _logger.LogWarning("Apple Calendar integration não está completamente implementada");
+            
+            // Por enquanto, retornar uma exceção informativa ao invés de falha silenciosa
+            throw new ExternalCalendarPermanentException(
+                "apple",
+                "Integração com Apple Calendar ainda não está implementada. " +
+                "Esta funcionalidade está em desenvolvimento e será disponibilizada em uma versão futura.");
         }
 
         private async Task<List<ExternalCalendarEvent>> FetchFromAppleCloudKitAsync(
@@ -696,24 +912,22 @@ namespace SmartAlarm.IntegrationService.Application.Commands
         /// <summary>
         /// Integração real com servidores CalDAV (RFC 4791)
         /// </summary>
-        private async Task<List<ExternalCalendarEvent>> FetchCalDAVEvents(
+        /// <summary>
+        /// Integração com CalDAV - Em desenvolvimento
+        /// </summary>
+        private Task<List<ExternalCalendarEvent>> FetchCalDAVEvents(
             string accessToken, 
             DateTime fromDate, 
             DateTime toDate, 
             CancellationToken cancellationToken)
         {
-            try
-            {
-                _logger.LogInformation("Fetching CalDAV events from {FromDate} to {ToDate}", fromDate, toDate);
-                
-                // Implementação real com protocolo CalDAV RFC 4791
-                return await FetchFromCalDAVServerAsync(accessToken, fromDate, toDate, cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to fetch CalDAV events");
-                throw new ExternalServiceException("CalDAV", "CALDAV_FETCH_ERROR", "CalDAV sync failed", ex);
-            }
+            _logger.LogWarning("CalDAV integration não está completamente implementada");
+            
+            // Por enquanto, retornar uma exceção informativa ao invés de falha silenciosa
+            throw new ExternalCalendarPermanentException(
+                "caldav",
+                "Integração com CalDAV ainda não está implementada. " +
+                "Esta funcionalidade está em desenvolvimento e será disponibilizada em uma versão futura.");
         }
 
         private async Task<List<ExternalCalendarEvent>> FetchFromCalDAVServerAsync(

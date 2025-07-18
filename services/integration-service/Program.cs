@@ -32,6 +32,10 @@ builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssembly(typeof(SmartAlarm.IntegrationService.Application.Commands.SyncExternalCalendarCommand).Assembly);
 });
 
+// Registrar serviços específicos do Integration Service
+builder.Services.AddScoped<SmartAlarm.IntegrationService.Application.Services.ICalendarRetryService, 
+                           SmartAlarm.IntegrationService.Application.Services.CalendarRetryService>();
+
 // Registrar infraestrutura
 if (!builder.Environment.IsEnvironment("Testing"))
 {

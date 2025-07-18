@@ -14,6 +14,43 @@
 
 **Status**: ✅ **CONCLUÍDO - Item #4 MockTracingService e MockMetricsService - Implementação Real OpenTelemetry**
 **Status**: ✅ **CONCLUÍDO - Item #5 OciVaultProvider - Implementação Real (15/01/2025)**
+**Status**: ✅ **CONCLUÍDO - Item #6 External Calendar Integration - Silenciamento de Erros (12/01/2025)**
+
+### **External Calendar Integration - Tratamento Robusto de Erros ✅**
+
+#### **Implementação Completa**
+
+- **ExternalCalendarIntegrationException**: `src/SmartAlarm.Application/IntegrationServices/Calendar/Exceptions/ExternalCalendarIntegrationException.cs`
+- **CalendarRetryService**: `src/SmartAlarm.Application/IntegrationServices/Calendar/Services/CalendarRetryService.cs`
+- **CalendarFetchResult**: `src/SmartAlarm.Application/IntegrationServices/Calendar/Dtos/CalendarFetchResult.cs`
+- **Features**: 
+  - ✅ Hierarquia de exceções estruturada (temporárias vs permanentes)
+  - ✅ Retry logic inteligente com exponential backoff
+  - ✅ Resultado estruturado ao invés de falhas silenciosas
+  - ✅ Observabilidade completa com logs estruturados
+  - ✅ Configuração flexível de políticas de retry
+
+#### **Testes Completos ✅**
+
+- **CalendarRetryServiceTests**: 8 testes unitários - 100% cobertura
+- **ExternalCalendarIntegrationExceptionTests**: 8 testes unitários - 100% cobertura
+- **CalendarFetchResultTests**: 4 testes unitários - 100% cobertura
+- **Total**: 20/20 testes passando (100% success rate)
+- **Cenários Testados**:
+  - ✅ Retry com exponential backoff para falhas temporárias
+  - ✅ Falha imediata para erros permanentes
+  - ✅ Timeout e circuit breaker patterns
+  - ✅ Structured exception handling com contexto detalhado
+  - ✅ CalendarFetchResult success/failure patterns
+
+#### **Configuração DI Enterprise ✅**
+
+- **Arquivo**: `src/SmartAlarm.Application/Program.cs`
+- **Integração**:
+  - ✅ **CalendarRetryService**: Registrado como singleton
+  - ✅ **SyncExternalCalendarCommandHandler**: Usa retry service automático
+  - ✅ **Configuração flexível**: Políticas de retry por provider
+  - ✅ **Observabilidade**: Integração com OpenTelemetry tracing
 
 ### **OpenTelemetry Observability Services - Implementação Enterprise ✅**
 

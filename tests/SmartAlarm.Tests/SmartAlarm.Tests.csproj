@@ -40,6 +40,7 @@
     <ProjectReference Include="..\..\src\SmartAlarm.Infrastructure\SmartAlarm.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\SmartAlarm.Observability\SmartAlarm.Observability.csproj" />
     <ProjectReference Include="..\..\src\SmartAlarm.KeyVault\SmartAlarm.KeyVault.csproj" />
+    <ProjectReference Include="..\..\services\integration-service\IntegrationService.csproj" />
   </ItemGroup>
 
 </Project>
