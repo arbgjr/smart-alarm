@@ -129,13 +129,79 @@ namespace SmartAlarm.Infrastructure
             // Register repositories
             services.AddSingleton<Domain.Repositories.IWebhookRepository, Repositories.InMemoryWebhookRepository>();
             
-            // Register security services
-            services.AddScoped<IJwtTokenService, JwtTokenService>();
-            services.AddSingleton<Security.ITokenStorage, Security.InMemoryTokenStorage>();
+            // Register security services with environment-based configuration
+            services.AddScoped<IJwtTokenService>(provider =>
+            {
+                var keyVault = provider.GetRequiredService<SmartAlarm.KeyVault.Abstractions.IKeyVaultService>();
+                var logger = provider.GetRequiredService<ILogger<JwtTokenService>>();
+                var tokenStorage = provider.GetRequiredService<Security.ITokenStorage>();
+                
+                return new JwtTokenService(keyVault, logger, tokenStorage);
+            });
+            
+            // Token storage with distributed revocation support
+            services.AddScoped<Security.ITokenStorage>(provider =>
+            {
+                var config = provider.GetRequiredService<IConfiguration>();
+                var environment = config["Environment"] ?? config["ASPNETCORE_ENVIRONMENT"] ?? "Development";
+                var logger = provider.GetRequiredService<ILogger<Security.InMemoryTokenStorage>>();
+                
+                return environment switch
+                {
+                    "Production" => new Security.DistributedTokenStorage(
+                        provider.GetRequiredService<ILogger<Security.DistributedTokenStorage>>(),
+                        config.GetConnectionString("Redis") ?? throw new InvalidOperationException("Redis connection string required for production")
+                    ),
+                    "Staging" => new Security.DistributedTokenStorage(
+                        provider.GetRequiredService<ILogger<Security.DistributedTokenStorage>>(),
+                        config.GetConnectionString("Redis") ?? "localhost:6379"
+                    ),
+                    _ => new Security.InMemoryTokenStorage(logger) // Para desenvolvimento e testes
+                };
+            });
 
-            // Register messaging, storage services with real implementations
-            services.AddSingleton<Messaging.IMessagingService, Messaging.RabbitMqMessagingService>();
-            services.AddSingleton<Storage.IStorageService, Storage.MinioStorageService>();
+            // Register messaging service with production-ready configuration
+            services.AddScoped<Messaging.IMessagingService>(provider =>
+            {
+                var config = provider.GetRequiredService<IConfiguration>();
+                var environment = config["Environment"] ?? config["ASPNETCORE_ENVIRONMENT"] ?? "Development";
+                var logger = provider.GetRequiredService<ILogger<Messaging.RabbitMqMessagingService>>();
+                var meter = provider.GetRequiredService<SmartAlarm.Observability.Metrics.SmartAlarmMeter>();
+                var correlationContext = provider.GetRequiredService<SmartAlarm.Observability.Context.ICorrelationContext>();
+                var activitySource = provider.GetRequiredService<SmartAlarm.Observability.Tracing.SmartAlarmActivitySource>();
+                
+                // Todos os ambientes usam a mesma implementação RabbitMQ
+                // A diferença está na configuração de SSL/clustering via variáveis de ambiente
+                return new Messaging.RabbitMqMessagingService(
+                    logger, meter, correlationContext, activitySource
+                );
+            });
+            
+            // Register storage service with environment-based providers
+            services.AddScoped<Storage.IStorageService>(provider =>
+            {
+                var config = provider.GetRequiredService<IConfiguration>();
+                var environment = config["Environment"] ?? config["ASPNETCORE_ENVIRONMENT"] ?? "Development";
+                var configResolver = provider.GetRequiredService<SmartAlarm.Infrastructure.Configuration.IConfigurationResolver>();
+                var meter = provider.GetRequiredService<SmartAlarm.Observability.Metrics.SmartAlarmMeter>();
+                var correlationContext = provider.GetRequiredService<SmartAlarm.Observability.Context.ICorrelationContext>();
+                var activitySource = provider.GetRequiredService<SmartAlarm.Observability.Tracing.SmartAlarmActivitySource>();
+                
+                return environment switch
+                {
+                    "Production" => new Storage.OciObjectStorageService(
+                        config,
+                        provider.GetRequiredService<ILogger<Storage.OciObjectStorageService>>(),
+                        meter, 
+                        activitySource,
+                        provider.GetRequiredService<HttpClient>()
+                    ),
+                    "Staging" or _ => new Storage.MinioStorageService(
+                        provider.GetRequiredService<ILogger<Storage.MinioStorageService>>(),
+                        configResolver, meter, correlationContext, activitySource
+                    )
+                };
+            });
             
             // Note: Observability services (Tracing and Metrics) are handled by SmartAlarm.Observability package
             // SmartAlarmActivitySource, SmartAlarmMeter, and BusinessMetrics are registered via AddSmartAlarmObservability()

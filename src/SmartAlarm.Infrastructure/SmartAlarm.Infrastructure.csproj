@@ -37,6 +37,7 @@
     <PackageReference Include="RabbitMQ.Client" />
     <PackageReference Include="Minio" />
     <PackageReference Include="VaultSharp" />
+    <PackageReference Include="StackExchange.Redis" />
     
     <!-- External SDKs -->
     <PackageReference Include="OCI.DotNetSDK.Objectstorage" />
