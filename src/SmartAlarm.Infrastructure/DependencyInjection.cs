@@ -204,7 +204,7 @@ namespace SmartAlarm.Infrastructure
                 );
             });
             
-            // Register storage service with environment-based providers
+            // Register storage service with smart provider that detects MinIO availability
             services.AddScoped<Storage.IStorageService>(provider =>
             {
                 var config = provider.GetRequiredService<IConfiguration>();
@@ -223,9 +223,15 @@ namespace SmartAlarm.Infrastructure
                         activitySource,
                         provider.GetRequiredService<HttpClient>()
                     ),
-                    "Staging" or _ => new Storage.MinioStorageService(
+                    // Para Development/Staging, usa SmartStorageService que detecta MinIO automaticamente
+                    _ => new Storage.SmartStorageService(
+                        provider.GetRequiredService<ILogger<Storage.SmartStorageService>>(),
                         provider.GetRequiredService<ILogger<Storage.MinioStorageService>>(),
-                        configResolver, meter, correlationContext, activitySource
+                        provider.GetRequiredService<ILogger<Storage.MockStorageService>>(),
+                        configResolver, 
+                        meter, 
+                        correlationContext, 
+                        activitySource
                     )
                 };
             });
