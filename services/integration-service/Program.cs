@@ -46,6 +46,34 @@ builder.Services.AddHttpClient("ExternalIntegrations", client =>
 .AddPolicyHandler(GetRetryPolicy())
 .AddPolicyHandler(GetCircuitBreakerPolicy());
 
+// Configurar HttpClients específicos para cada provedor de API externa
+builder.Services.AddHttpClient("MicrosoftGraph", client =>
+{
+    client.BaseAddress = new Uri("https://graph.microsoft.com/");
+    client.Timeout = TimeSpan.FromSeconds(60);
+    client.DefaultRequestHeaders.Add("User-Agent", "SmartAlarm-Integration-Service/1.0");
+})
+.AddPolicyHandler(GetRetryPolicy())
+.AddPolicyHandler(GetCircuitBreakerPolicy());
+
+builder.Services.AddHttpClient("AppleCloudKit", client =>
+{
+    client.BaseAddress = new Uri("https://api.apple-cloudkit.com/");
+    client.Timeout = TimeSpan.FromSeconds(45);
+    client.DefaultRequestHeaders.Add("User-Agent", "SmartAlarm-Integration-Service/1.0");
+})
+.AddPolicyHandler(GetRetryPolicy())
+.AddPolicyHandler(GetCircuitBreakerPolicy());
+
+builder.Services.AddHttpClient("CalDAV", client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(30);
+    client.DefaultRequestHeaders.Add("User-Agent", "SmartAlarm-Integration-Service/1.0");
+    // Base address será configurada dinamicamente baseada no endpoint do usuário
+})
+.AddPolicyHandler(GetRetryPolicy())
+.AddPolicyHandler(GetCircuitBreakerPolicy());
+
 // Configurar autenticação JWT
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>

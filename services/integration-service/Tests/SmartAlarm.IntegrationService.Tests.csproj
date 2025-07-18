@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <RootNamespace>SmartAlarm.IntegrationService.Tests</RootNamespace>
+    <AssemblyName>SmartAlarm.IntegrationService.Tests</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.Extensions.Logging" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" />
+    <PackageReference Include="Microsoft.Extensions.Http" />
+    <PackageReference Include="Moq" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\IntegrationService.csproj" />
+    <ProjectReference Include="..\..\src\SmartAlarm.Domain\SmartAlarm.Domain.csproj" />
+    <ProjectReference Include="..\..\src\SmartAlarm.Application\SmartAlarm.Application.csproj" />
+    <ProjectReference Include="..\..\src\SmartAlarm.Observability\SmartAlarm.Observability.csproj" />
+  </ItemGroup>
+
+</Project>

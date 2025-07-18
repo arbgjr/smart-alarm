@@ -4,6 +4,7 @@ using SmartAlarm.Domain.Repositories;
 using SmartAlarm.Observability.Context;
 using SmartAlarm.Observability.Tracing;
 using SmartAlarm.Observability.Metrics;
+using SmartAlarm.IntegrationService.Application.Exceptions;
 using FluentValidation;
 using System.Diagnostics;
 using System.Text.Json;
@@ -292,7 +293,7 @@ namespace SmartAlarm.IntegrationService.Application.Commands
         }
 
         /// <summary>
-        /// Integração real com Google Calendar API
+        /// Integração real com Google Calendar API com retry policies
         /// </summary>
         private async Task<List<ExternalCalendarEvent>> FetchGoogleCalendarEvents(
             string accessToken, 
@@ -304,7 +305,7 @@ namespace SmartAlarm.IntegrationService.Application.Commands
             {
                 _logger.LogInformation("Fetching Google Calendar events from {FromDate} to {ToDate}", fromDate, toDate);
                 
-                // Implementação real com Google Calendar API
+                // Implementação real com Google Calendar API v3 com retry policies
                 var credential = GoogleCredential.FromAccessToken(accessToken);
                 var service = new CalendarService(new BaseClientService.Initializer()
                 {
@@ -319,21 +320,46 @@ namespace SmartAlarm.IntegrationService.Application.Commands
                 request.OrderBy = EventsResource.ListRequest.OrderByEnum.StartTime;
                 request.MaxResults = 250;
                 
-                var events = await request.ExecuteAsync();
+                // Retry policy para Google Calendar
+                var retryCount = 0;
+                const int maxRetries = 3;
                 
-                return events.Items.Select(e => new ExternalCalendarEvent(
-                    e.Id,
-                    e.Summary ?? "Sem título",
-                    e.Start.DateTimeDateTimeOffset?.DateTime ?? DateTime.Parse(e.Start.Date),
-                    e.End.DateTimeDateTimeOffset?.DateTime ?? DateTime.Parse(e.End.Date),
-                    e.Location ?? "",
-                    e.Description ?? ""
-                )).ToList();
+                while (retryCount <= maxRetries)
+                {
+                    try
+                    {
+                        var events = await request.ExecuteAsync();
+                        
+                        var calendarEvents = events.Items.Select(e => new ExternalCalendarEvent(
+                            e.Id,
+                            e.Summary ?? "Sem título",
+                            e.Start.DateTimeDateTimeOffset?.DateTime ?? DateTime.Parse(e.Start.Date),
+                            e.End.DateTimeDateTimeOffset?.DateTime ?? DateTime.Parse(e.End.Date),
+                            e.Location ?? "",
+                            e.Description ?? ""
+                        )).ToList();
+
+                        _logger.LogInformation("Successfully synced {EventCount} events from Google Calendar", calendarEvents.Count);
+                        return calendarEvents;
+                    }
+                    catch (Exception ex) when (retryCount < maxRetries && IsRetryableError(ex))
+                    {
+                        retryCount++;
+                        var delay = TimeSpan.FromSeconds(Math.Pow(2, retryCount)); // Exponential backoff
+                        
+                        _logger.LogWarning(ex, "Google Calendar API call failed (attempt {RetryCount}/{MaxRetries}). Retrying in {Delay}s", 
+                            retryCount, maxRetries, delay.TotalSeconds);
+                        
+                        await Task.Delay(delay, cancellationToken);
+                    }
+                }
+                
+                throw new ExternalServiceException("Google Calendar", "MAX_RETRIES_EXCEEDED", "Google Calendar API failed after all retry attempts");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to fetch Google Calendar events");
-                return new List<ExternalCalendarEvent>(); // Return empty list on error
+                _logger.LogError(ex, "Failed to sync Google Calendar");
+                throw new ExternalServiceException("Google Calendar", "GOOGLE_CALENDAR_ERROR", "Google Calendar sync failed", ex);
             }
         }
 
@@ -413,7 +439,7 @@ namespace SmartAlarm.IntegrationService.Application.Commands
         }
 
         /// <summary>
-        /// Integração real com Microsoft Graph API (Outlook Calendar)
+        /// Integração real com Microsoft Graph API (Outlook Calendar) com retry policies
         /// </summary>
         private async Task<List<ExternalCalendarEvent>> FetchOutlookCalendarEvents(
             string accessToken, 
@@ -425,13 +451,13 @@ namespace SmartAlarm.IntegrationService.Application.Commands
             {
                 _logger.LogInformation("Fetching Outlook Calendar events from {FromDate} to {ToDate}", fromDate, toDate);
                 
-                // Implementação real estruturada para Microsoft Graph
+                // Implementação real estruturada para Microsoft Graph com retry policies
                 return await FetchFromMicrosoftGraphAsync(accessToken, fromDate, toDate, cancellationToken);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to fetch Outlook Calendar events");
-                return new List<ExternalCalendarEvent>(); // Return empty list on error
+                throw new ExternalServiceException("Microsoft Graph", "OUTLOOK_CALENDAR_ERROR", "Outlook Calendar sync failed", ex);
             }
         }
 
@@ -441,22 +467,183 @@ namespace SmartAlarm.IntegrationService.Application.Commands
             DateTime toDate, 
             CancellationToken cancellationToken)
         {
+            var retryCount = 0;
+            const int maxRetries = 3;
+            
+            while (retryCount <= maxRetries)
+            {
+                try
+                {
+                    using var httpClient = _httpClientFactory.CreateClient("MicrosoftGraph");
+                    httpClient.DefaultRequestHeaders.Authorization = 
+                        new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+
+                    var filterQuery = $"start/dateTime ge '{fromDate:O}' and end/dateTime le '{toDate:O}'";
+                    var url = $"https://graph.microsoft.com/v1.0/me/events?$filter={Uri.EscapeDataString(filterQuery)}&$top=250";
+
+                    _logger.LogDebug("Calling Microsoft Graph: {Url}", url);
+
+                    var response = await httpClient.GetAsync(url, cancellationToken);
+                    
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                        
+                        // Check for retryable HTTP status codes
+                        if (IsRetryableHttpStatusCode(response.StatusCode) && retryCount < maxRetries)
+                        {
+                            retryCount++;
+                            var delay = TimeSpan.FromSeconds(Math.Pow(2, retryCount));
+                            
+                            _logger.LogWarning("Microsoft Graph API call failed with status {StatusCode} (attempt {RetryCount}/{MaxRetries}). Retrying in {Delay}s: {Error}", 
+                                response.StatusCode, retryCount, maxRetries, delay.TotalSeconds, errorContent);
+                            
+                            await Task.Delay(delay, cancellationToken);
+                            continue;
+                        }
+                        
+                        _logger.LogError("Microsoft Graph API failed with status {StatusCode}: {Error}", 
+                            response.StatusCode, errorContent);
+                        return new List<ExternalCalendarEvent>();
+                    }
+
+                    var jsonContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                    using var document = JsonDocument.Parse(jsonContent);
+                    var events = new List<ExternalCalendarEvent>();
+
+                    if (document.RootElement.TryGetProperty("value", out var valueElement))
+                    {
+                        foreach (var eventElement in valueElement.EnumerateArray())
+                        {
+                            var id = eventElement.GetProperty("id").GetString() ?? "";
+                            var subject = eventElement.GetProperty("subject").GetString() ?? "Sem título";
+                            
+                            var start = eventElement.GetProperty("start");
+                            var startDateTime = DateTime.Parse(start.GetProperty("dateTime").GetString() ?? DateTime.Now.ToString());
+                            
+                            var end = eventElement.GetProperty("end");
+                            var endDateTime = DateTime.Parse(end.GetProperty("dateTime").GetString() ?? DateTime.Now.ToString());
+                            
+                            var location = "";
+                            if (eventElement.TryGetProperty("location", out var locationElement) &&
+                                locationElement.TryGetProperty("displayName", out var displayNameElement))
+                            {
+                                location = displayNameElement.GetString() ?? "";
+                            }
+                            
+                            var description = "";
+                            if (eventElement.TryGetProperty("body", out var bodyElement) &&
+                                bodyElement.TryGetProperty("content", out var contentElement))
+                            {
+                                description = contentElement.GetString() ?? "";
+                            }
+
+                            events.Add(new ExternalCalendarEvent(id, subject, startDateTime, endDateTime, location, description));
+                        }
+                    }
+
+                    _logger.LogInformation("Retrieved {EventCount} events from Microsoft Graph", events.Count);
+                    return events;
+                }
+                catch (Exception ex) when (retryCount < maxRetries && IsRetryableError(ex))
+                {
+                    retryCount++;
+                    var delay = TimeSpan.FromSeconds(Math.Pow(2, retryCount));
+                    
+                    _logger.LogWarning(ex, "Microsoft Graph API call failed (attempt {RetryCount}/{MaxRetries}). Retrying in {Delay}s", 
+                        retryCount, maxRetries, delay.TotalSeconds);
+                    
+                    await Task.Delay(delay, cancellationToken);
+                }
+            }
+            
+            throw new ExternalServiceException("Microsoft Graph", "MAX_RETRIES_EXCEEDED", "Microsoft Graph API failed after all retry attempts");
+        }
+
+        /// <summary>
+        /// Determina se um status HTTP é elegível para retry
+        /// </summary>
+        private bool IsRetryableHttpStatusCode(System.Net.HttpStatusCode statusCode)
+        {
+            return statusCode switch
+            {
+                System.Net.HttpStatusCode.TooManyRequests => true, // 429
+                System.Net.HttpStatusCode.InternalServerError => true, // 500
+                System.Net.HttpStatusCode.BadGateway => true, // 502
+                System.Net.HttpStatusCode.ServiceUnavailable => true, // 503
+                System.Net.HttpStatusCode.GatewayTimeout => true, // 504
+                _ => false
+            };
+        }
+
+        /// <summary>
+        /// Integração real com Apple Calendar via CloudKit API
+        /// </summary>
+        private async Task<List<ExternalCalendarEvent>> FetchAppleCalendarEvents(
+            string accessToken, 
+            DateTime fromDate, 
+            DateTime toDate, 
+            CancellationToken cancellationToken)
+        {
             try
             {
-                using var httpClient = new HttpClient();
+                _logger.LogInformation("Fetching Apple Calendar events from {FromDate} to {ToDate}", fromDate, toDate);
+                
+                // Implementação real estruturada para Apple CloudKit API
+                return await FetchFromAppleCloudKitAsync(accessToken, fromDate, toDate, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to fetch Apple Calendar events");
+                throw new ExternalServiceException("Apple Calendar sync failed", ex);
+            }
+        }
+
+        private async Task<List<ExternalCalendarEvent>> FetchFromAppleCloudKitAsync(
+            string accessToken, 
+            DateTime fromDate, 
+            DateTime toDate, 
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                using var httpClient = _httpClientFactory.CreateClient("AppleCloudKit");
                 httpClient.DefaultRequestHeaders.Authorization = 
                     new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
 
-                var filterQuery = $"start/dateTime ge '{fromDate:O}' and end/dateTime le '{toDate:O}'";
-                var url = $"https://graph.microsoft.com/v1.0/me/events?$filter={Uri.EscapeDataString(filterQuery)}&$top=250";
+                // Apple CloudKit Web Services API para EventKit
+                var queryData = new
+                {
+                    query = new
+                    {
+                        recordType = "CalendarEvent",
+                        filterBy = new[]
+                        {
+                            new {
+                                fieldName = "startDate",
+                                fieldValue = new { value = fromDate.ToString("yyyy-MM-ddTHH:mm:ssZ"), type = "TIMESTAMP" },
+                                comparator = "GREATER_THAN_OR_EQUALS"
+                            },
+                            new {
+                                fieldName = "endDate", 
+                                fieldValue = new { value = toDate.ToString("yyyy-MM-ddTHH:mm:ssZ"), type = "TIMESTAMP" },
+                                comparator = "LESS_THAN_OR_EQUALS"
+                            }
+                        }
+                    }
+                };
 
-                _logger.LogDebug("Calling Microsoft Graph: {Url}", url);
+                var json = JsonSerializer.Serialize(queryData);
+                var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
-                var response = await httpClient.GetAsync(url, cancellationToken);
+                _logger.LogDebug("Calling Apple CloudKit API with query: {Query}", json);
+
+                var response = await httpClient.PostAsync("https://api.apple-cloudkit.com/database/1/_defaultZone/records/query", content, cancellationToken);
+                
                 if (!response.IsSuccessStatusCode)
                 {
                     var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
-                    _logger.LogError("Microsoft Graph API failed with status {StatusCode}: {Error}", 
+                    _logger.LogError("Apple CloudKit API failed with status {StatusCode}: {Error}", 
                         response.StatusCode, errorContent);
                     return new List<ExternalCalendarEvent>();
                 }
@@ -465,68 +652,49 @@ namespace SmartAlarm.IntegrationService.Application.Commands
                 using var document = JsonDocument.Parse(jsonContent);
                 var events = new List<ExternalCalendarEvent>();
 
-                if (document.RootElement.TryGetProperty("value", out var valueElement))
+                if (document.RootElement.TryGetProperty("records", out var recordsElement))
                 {
-                    foreach (var eventElement in valueElement.EnumerateArray())
+                    foreach (var recordElement in recordsElement.EnumerateArray())
                     {
-                        var id = eventElement.GetProperty("id").GetString() ?? "";
-                        var subject = eventElement.GetProperty("subject").GetString() ?? "Sem título";
+                        var fields = recordElement.GetProperty("fields");
                         
-                        var start = eventElement.GetProperty("start");
-                        var startDateTime = DateTime.Parse(start.GetProperty("dateTime").GetString() ?? DateTime.Now.ToString());
+                        var recordName = recordElement.GetProperty("recordName").GetString() ?? "";
+                        var title = fields.TryGetProperty("title", out var titleElement) 
+                            ? titleElement.GetProperty("value").GetString() ?? "Sem título"
+                            : "Evento sem título";
                         
-                        var end = eventElement.GetProperty("end");
-                        var endDateTime = DateTime.Parse(end.GetProperty("dateTime").GetString() ?? DateTime.Now.ToString());
+                        var startTime = fields.TryGetProperty("startDate", out var startElement)
+                            ? DateTime.Parse(startElement.GetProperty("value").GetString() ?? DateTime.Now.ToString())
+                            : DateTime.Now;
                         
-                        var location = "";
-                        if (eventElement.TryGetProperty("location", out var locationElement) &&
-                            locationElement.TryGetProperty("displayName", out var displayNameElement))
-                        {
-                            location = displayNameElement.GetString() ?? "";
-                        }
+                        var endTime = fields.TryGetProperty("endDate", out var endElement)
+                            ? DateTime.Parse(endElement.GetProperty("value").GetString() ?? DateTime.Now.ToString())
+                            : startTime.AddHours(1);
                         
-                        var description = "";
-                        if (eventElement.TryGetProperty("body", out var bodyElement) &&
-                            bodyElement.TryGetProperty("content", out var contentElement))
-                        {
-                            description = contentElement.GetString() ?? "";
-                        }
+                        var location = fields.TryGetProperty("location", out var locationElement)
+                            ? locationElement.GetProperty("value").GetString() ?? ""
+                            : "";
+                        
+                        var notes = fields.TryGetProperty("notes", out var notesElement)
+                            ? notesElement.GetProperty("value").GetString() ?? ""
+                            : "";
 
-                        events.Add(new ExternalCalendarEvent(id, subject, startDateTime, endDateTime, location, description));
+                        events.Add(new ExternalCalendarEvent(recordName, title, startTime, endTime, location, notes));
                     }
                 }
 
-                _logger.LogInformation("Retrieved {EventCount} events from Microsoft Graph", events.Count);
+                _logger.LogInformation("Retrieved {EventCount} events from Apple CloudKit", events.Count);
                 return events;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error calling Microsoft Graph API");
-                return new List<ExternalCalendarEvent>();
+                _logger.LogError(ex, "Error calling Apple CloudKit API");
+                throw new ExternalServiceException("Apple CloudKit API call failed", ex);
             }
         }
 
         /// <summary>
-        /// Simulação de busca no Apple Calendar
-        /// </summary>
-        private async Task<List<ExternalCalendarEvent>> FetchAppleCalendarEvents(
-            string accessToken, 
-            DateTime fromDate, 
-            DateTime toDate, 
-            CancellationToken cancellationToken)
-        {
-            await Task.Delay(120, cancellationToken);
-
-            var mockEvents = new List<ExternalCalendarEvent>
-            {
-                new("apple_event_1", "Aniversário", fromDate.AddDays(3), fromDate.AddDays(3).AddHours(2), "Casa", "Celebração familiar")
-            };
-
-            return mockEvents.Where(e => e.StartTime >= fromDate && e.StartTime <= toDate).ToList();
-        }
-
-        /// <summary>
-        /// Simulação de busca via CalDAV
+        /// Integração real com servidores CalDAV (RFC 4791)
         /// </summary>
         private async Task<List<ExternalCalendarEvent>> FetchCalDAVEvents(
             string accessToken, 
@@ -534,14 +702,230 @@ namespace SmartAlarm.IntegrationService.Application.Commands
             DateTime toDate, 
             CancellationToken cancellationToken)
         {
-            await Task.Delay(200, cancellationToken);
-
-            var mockEvents = new List<ExternalCalendarEvent>
+            try
             {
-                new("caldav_event_1", "Backup de sistemas", fromDate.AddHours(2), fromDate.AddHours(3), "Datacenter", "Manutenção programada")
-            };
+                _logger.LogInformation("Fetching CalDAV events from {FromDate} to {ToDate}", fromDate, toDate);
+                
+                // Implementação real com protocolo CalDAV RFC 4791
+                return await FetchFromCalDAVServerAsync(accessToken, fromDate, toDate, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to fetch CalDAV events");
+                throw new ExternalServiceException("CalDAV", "CALDAV_FETCH_ERROR", "CalDAV sync failed", ex);
+            }
+        }
 
-            return mockEvents.Where(e => e.StartTime >= fromDate && e.StartTime <= toDate).ToList();
+        private async Task<List<ExternalCalendarEvent>> FetchFromCalDAVServerAsync(
+            string accessToken, 
+            DateTime fromDate, 
+            DateTime toDate, 
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                using var httpClient = _httpClientFactory.CreateClient("CalDAV");
+                
+                // CalDAV usa Basic Auth ou Bearer token dependendo do servidor
+                if (accessToken.Contains(":"))
+                {
+                    // Basic Auth para servidores como Nextcloud, ownCloud
+                    var authBytes = System.Text.Encoding.ASCII.GetBytes(accessToken);
+                    httpClient.DefaultRequestHeaders.Authorization = 
+                        new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", Convert.ToBase64String(authBytes));
+                }
+                else
+                {
+                    // Bearer token para servidores modernos
+                    httpClient.DefaultRequestHeaders.Authorization = 
+                        new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+                }
+
+                // CalDAV REPORT query para buscar eventos em intervalo específico
+                var calendarQuery = $@"<?xml version=""1.0"" encoding=""utf-8""?>
+<C:calendar-query xmlns:D=""DAV:"" xmlns:C=""urn:ietf:params:xml:ns:caldav"">
+  <D:prop>
+    <D:getetag/>
+    <C:calendar-data/>
+  </D:prop>
+  <C:filter>
+    <C:comp-filter name=""VCALENDAR"">
+      <C:comp-filter name=""VEVENT"">
+        <C:time-range start=""{fromDate:yyyyMMddTHHmmssZ}"" end=""{toDate:yyyyMMddTHHmmssZ}""/>
+      </C:comp-filter>
+    </C:comp-filter>
+  </C:filter>
+</C:calendar-query>";
+
+                var content = new StringContent(calendarQuery, System.Text.Encoding.UTF8, "application/xml");
+                
+                _logger.LogDebug("Sending CalDAV REPORT query to calendar server");
+
+                // Assumindo que o endpoint CalDAV está configurado via appsettings
+                var calDAVEndpoint = httpClient.BaseAddress ?? new Uri("https://calendar.example.com/remote.php/dav/calendars/username/personal/");
+                
+                var request = new HttpRequestMessage(HttpMethod.Post, calDAVEndpoint)
+                {
+                    Content = content
+                };
+                request.Headers.Add("Depth", "1");
+                request.Method = new HttpMethod("REPORT");
+
+                var response = await httpClient.SendAsync(request, cancellationToken);
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                    _logger.LogError("CalDAV REPORT failed with status {StatusCode}: {Error}", 
+                        response.StatusCode, errorContent);
+                    return new List<ExternalCalendarEvent>();
+                }
+
+                var xmlContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                var events = ParseCalDAVResponse(xmlContent);
+
+                _logger.LogInformation("Retrieved {EventCount} events from CalDAV server", events.Count);
+                return events;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error calling CalDAV server");
+                throw new ExternalServiceException("CalDAV", "CALDAV_REQUEST_ERROR", "CalDAV server request failed", ex);
+            }
+        }
+
+        /// <summary>
+        /// Analisa a resposta XML do CalDAV e extrai eventos
+        /// </summary>
+        private List<ExternalCalendarEvent> ParseCalDAVResponse(string xmlContent)
+        {
+            var events = new List<ExternalCalendarEvent>();
+
+            try
+            {
+                using var xmlReader = System.Xml.XmlReader.Create(new StringReader(xmlContent));
+                var xmlDoc = new System.Xml.XmlDocument();
+                xmlDoc.LoadXml(xmlContent);
+
+                var namespaceManager = new System.Xml.XmlNamespaceManager(xmlDoc.NameTable);
+                namespaceManager.AddNamespace("D", "DAV:");
+                namespaceManager.AddNamespace("C", "urn:ietf:params:xml:ns:caldav");
+
+                var responseNodes = xmlDoc.SelectNodes("//D:response", namespaceManager);
+                if (responseNodes == null) return events;
+
+                foreach (System.Xml.XmlNode responseNode in responseNodes)
+                {
+                    var calendarDataNode = responseNode.SelectSingleNode(".//C:calendar-data", namespaceManager);
+                    if (calendarDataNode?.InnerText == null) continue;
+
+                    var icalData = calendarDataNode.InnerText;
+                    var parsedEvent = ParseICalendarEvent(icalData);
+                    if (parsedEvent != null)
+                    {
+                        events.Add(parsedEvent);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error parsing CalDAV XML response");
+            }
+
+            return events;
+        }
+
+        /// <summary>
+        /// Analisa dados iCalendar (RFC 5545) e extrai evento
+        /// </summary>
+        private ExternalCalendarEvent? ParseICalendarEvent(string icalData)
+        {
+            try
+            {
+                var lines = icalData.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+                string? uid = null, summary = null, location = null, description = null;
+                DateTime? dtStart = null, dtEnd = null;
+
+                foreach (var line in lines)
+                {
+                    var cleanLine = line.Trim();
+                    
+                    if (cleanLine.StartsWith("UID:"))
+                        uid = cleanLine.Substring(4);
+                    else if (cleanLine.StartsWith("SUMMARY:"))
+                        summary = cleanLine.Substring(8);
+                    else if (cleanLine.StartsWith("LOCATION:"))
+                        location = cleanLine.Substring(9);
+                    else if (cleanLine.StartsWith("DESCRIPTION:"))
+                        description = cleanLine.Substring(12);
+                    else if (cleanLine.StartsWith("DTSTART"))
+                    {
+                        var dateValue = ExtractDateTimeFromICalLine(cleanLine);
+                        if (dateValue.HasValue) dtStart = dateValue.Value;
+                    }
+                    else if (cleanLine.StartsWith("DTEND"))
+                    {
+                        var dateValue = ExtractDateTimeFromICalLine(cleanLine);
+                        if (dateValue.HasValue) dtEnd = dateValue.Value;
+                    }
+                }
+
+                if (uid != null && summary != null && dtStart.HasValue)
+                {
+                    return new ExternalCalendarEvent(
+                        uid, 
+                        summary, 
+                        dtStart.Value, 
+                        dtEnd, 
+                        location ?? "", 
+                        description ?? ""
+                    );
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error parsing individual iCalendar event");
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Extrai DateTime de linha iCalendar (DTSTART/DTEND)
+        /// </summary>
+        private DateTime? ExtractDateTimeFromICalLine(string icalLine)
+        {
+            try
+            {
+                var colonIndex = icalLine.IndexOf(':');
+                if (colonIndex == -1) return null;
+
+                var dateTimeString = icalLine.Substring(colonIndex + 1);
+                
+                // Formato típico: 20240720T140000Z ou 20240720T140000
+                if (dateTimeString.Length >= 15)
+                {
+                    var year = int.Parse(dateTimeString.Substring(0, 4));
+                    var month = int.Parse(dateTimeString.Substring(4, 2));
+                    var day = int.Parse(dateTimeString.Substring(6, 2));
+                    var hour = int.Parse(dateTimeString.Substring(9, 2));
+                    var minute = int.Parse(dateTimeString.Substring(11, 2));
+                    var second = int.Parse(dateTimeString.Substring(13, 2));
+
+                    var dateTime = new DateTime(year, month, day, hour, minute, second);
+                    
+                    // Se termina com Z, é UTC
+                    return dateTimeString.EndsWith('Z') ? 
+                        DateTime.SpecifyKind(dateTime, DateTimeKind.Utc) : 
+                        dateTime;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error parsing iCalendar date/time: {DateTimeString}", icalLine);
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -634,6 +1018,33 @@ namespace SmartAlarm.IntegrationService.Application.Commands
             }
 
             return DateTime.UtcNow.Add(baseInterval);
+        }
+
+        /// <summary>
+        /// Determina se uma exceção é elegível para retry
+        /// </summary>
+        private bool IsRetryableError(Exception ex)
+        {
+            return ex switch
+            {
+                HttpRequestException httpEx => true, // Network issues
+                TaskCanceledException timeoutEx when !timeoutEx.CancellationToken.IsCancellationRequested => true, // Timeout
+                Google.GoogleApiException googleEx => googleEx.HttpStatusCode switch
+                {
+                    System.Net.HttpStatusCode.TooManyRequests => true, // Rate limiting
+                    System.Net.HttpStatusCode.InternalServerError => true, // 500
+                    System.Net.HttpStatusCode.BadGateway => true, // 502
+                    System.Net.HttpStatusCode.ServiceUnavailable => true, // 503
+                    System.Net.HttpStatusCode.GatewayTimeout => true, // 504
+                    _ => false
+                },
+                Microsoft.Graph.ServiceException msGraphEx when msGraphEx.Message.Contains("429") => true, // Rate limiting
+                Microsoft.Graph.ServiceException msGraphEx when msGraphEx.Message.Contains("500") => true, // Internal server error
+                Microsoft.Graph.ServiceException msGraphEx when msGraphEx.Message.Contains("502") => true, // Bad gateway
+                Microsoft.Graph.ServiceException msGraphEx when msGraphEx.Message.Contains("503") => true, // Service unavailable
+                Microsoft.Graph.ServiceException msGraphEx when msGraphEx.Message.Contains("504") => true, // Gateway timeout
+                _ => false
+            };
         }
 
         /// <summary>
