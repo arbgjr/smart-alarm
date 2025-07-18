@@ -43,7 +43,7 @@ builder.Host.UseSerilog((context, services, configuration) =>
 });
 
 // Registrar MediatR apontando para a Application Layer
-builder.Services.AddMediatR(typeof(SmartAlarm.Application.Commands.CreateAlarmCommand).Assembly);
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(SmartAlarm.Application.Commands.CreateAlarmCommand).Assembly));
 
 // Registrar infraestrutura (repositories e serviços) - evitar em ambiente de teste
 if (!builder.Environment.IsEnvironment("Testing"))
@@ -161,7 +161,7 @@ if (!builder.Environment.IsEnvironment("Testing"))
 }
 
 // Configurar MediatR
-builder.Services.AddMediatR(typeof(SmartAlarm.Application.Handlers.Auth.LoginHandler).Assembly);
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(SmartAlarm.Application.Handlers.Auth.LoginHandler).Assembly));
 
 // Configurar FIDO2
 builder.Services.AddFido2Services(builder.Configuration);

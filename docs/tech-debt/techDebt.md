@@ -99,7 +99,25 @@
 
 **Estimativa Total**: 17 dias para produção completa
 
-## 📊 Status Geral do Projeto
+## � Issues Detalhadas
+
+**Status Atual**: 6 de 7 issues originais foram **RESOLVIDAS** e arquivadas em 17/07/2025.  
+**Restante**: 1 issue de melhoramento opcional permanece ativa.
+
+### ✅ **ISSUES ARQUIVADAS** (Resolvidas e removidas)
+- ~~01-implementar-classes-base-dominio.md~~ ✅ **Domain layer completo**
+- ~~02-implementar-infraestrutura-completa.md~~ ✅ **EF Core + repositórios implementados**  
+- ~~03-aumentar-cobertura-testes.md~~ ✅ **94.7% cobertura (520/549 passando)**
+- ~~04-aprimorar-observabilidade.md~~ ✅ **Serilog + OpenTelemetry completos**
+- ~~05-padronizar-validacao-erros.md~~ ✅ **FluentValidation + middleware implementados**
+- ~~07-implementar-seguranca.md~~ ✅ **JWT + FIDO2 + RBAC implementados**
+
+### 🔄 **ISSUES ATIVAS** (1 restante)
+1. [Documentar API](./issues/06-documentar-api.md) - 🔄 **Swagger implementado, melhoramentos opcionais**
+
+**Detalhes completos**: [Ver pasta issues](./issues/README.md)
+
+## �📊 Status Geral do Projeto
 
 - ✅ **94% PRONTO PARA PRODUÇÃO**
 - 🔍 **8 pendências específicas identificadas**

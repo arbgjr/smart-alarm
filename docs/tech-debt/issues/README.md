@@ -1,28 +1,37 @@
-# Resumo de Issues de Débito Técnico
+# Issues de Débito Técnico - Smart Alarm
 
-Este diretório contém especificações detalhadas para issues do GitHub relacionadas a débitos técnicos e oportunidades de melhoria identificados no backend do Smart Alarm.
+**Atualizado em**: 17/07/2025  
+**Status do Projeto**: 94% pronto para produção
 
-## Issues Disponíveis
+## 🔄 **ISSUES PENDENTES** (1 restante)
 
-1. [Implementar Classes Base do Domínio](./01-implementar-classes-base-dominio.md) - Prioridade: Alta
-2. [Implementar Camada de Infraestrutura Completa](./02-implementar-infraestrutura-completa.md) - Prioridade: Alta
-3. [Aumentar Cobertura de Testes](./03-aumentar-cobertura-testes.md) - Prioridade: Média
-4. [Aprimorar Observabilidade](./04-aprimorar-observabilidade.md) - Prioridade: Média
-5. [Padronizar Validação e Erros](./05-padronizar-validacao-erros.md) - Prioridade: Média
-6. [Documentar API](./06-documentar-api.md) - Prioridade: Baixa
-7. [Implementar Segurança](./07-implementar-seguranca.md) - Prioridade: Alta
+### 🔄 **MELHORAMENTOS OPCIONAIS** 
+1. [Documentar API](./06-documentar-api.md) - 🔄 **Swagger implementado, melhoramentos opcionais**
 
-## Como Utilizar
+## 🆕 **PENDÊNCIAS IDENTIFICADAS** (Auditoria 17/07/2025)
 
-1. Utilize estas especificações como base para criar issues no GitHub
-2. Adicione links para estas especificações nas respectivas issues
-3. Priorize os itens de acordo com as informações técnicas fornecidas
-4. Atualize o arquivo principal de débito técnico (`techDebt.md`) conforme as issues forem sendo resolvidas
+### 🔴 **CRÍTICAS** (Impedem produção)
+1. **Corrigir Serviços Mock em Produção** - `DependencyInjection.cs:133-136`
+2. **Implementar WebhookController Completo** - `WebhookController.cs:39`
+3. **Finalizar OCI Vault Provider** - `OciVaultProvider.cs:148-208`
+4. **Resolver Conflitos NU1107** - `System.Diagnostics.DiagnosticSource`
 
-## Estimativa Total
+### 🟡 **IMPORTANTES** (Funcionalidade reduzida)
+5. **Configurar APIs Externas Reais** - Google Calendar + Microsoft Graph
+6. **Implementar Azure KeyVault Real** - Remover implementação mock
+7. **Implementar JWT Blacklist** - Validação de revogação
+8. **Implementar Fallback de Notificações** - Email backup
 
-32 dias de desenvolvimento para resolver todos os débitos técnicos e implementar as melhorias identificadas.
+### 🔄 **MELHORAMENTOS DISPONÍVEIS**
+- **Documentação API**: Mais exemplos e detalhamento (opcional)
 
-## Última Atualização
+### 🔴 **PENDÊNCIAS CRÍTICAS**
+- **8 itens específicos** identificados na auditoria (ver lista acima)
 
-03/07/2025
+## 🎯 **Próximos Passos**
+
+1. **Criar issues específicas** para as 8 pendências críticas/importantes
+2. **Priorizar issues críticas** (1-4) para produção
+3. **Issue 06-documentar-api.md** pode permanecer como melhoramento opcional
+
+**Status Final**: Projeto 94% pronto, apenas ajustes finais necessários

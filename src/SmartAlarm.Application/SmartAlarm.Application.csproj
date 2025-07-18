@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -7,11 +7,19 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
-    <PackageReference Include="MediatR" Version="11.1.0" />
-    <PackageReference Include="FluentValidation" Version="11.7.0" />
-    <PackageReference Include="Fido2" Version="3.0.1" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.7" />
+    <!-- Security & Authentication -->
+    <PackageReference Include="BCrypt.Net-Next" />
+    <PackageReference Include="Fido2" />
+    
+    <!-- Application Framework -->
+    <PackageReference Include="MediatR" />
+    <PackageReference Include="FluentValidation" />
+    
+    <!-- Microsoft Extensions -->
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    
+    <!-- System Dependencies (Resolução NU1107) -->
+    <PackageReference Include="System.Diagnostics.DiagnosticSource" />
   </ItemGroup>
 
   <ItemGroup>

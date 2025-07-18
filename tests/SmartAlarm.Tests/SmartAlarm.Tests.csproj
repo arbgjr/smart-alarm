@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -8,17 +8,25 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
-    <PackageReference Include="coverlet.collector" Version="6.0.2" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
-    <PackageReference Include="xunit" Version="2.9.2" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.6" />
-    <PackageReference Include="FluentAssertions" Version="7.0.0" />
-    <PackageReference Include="Moq" Version="4.20.70" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.7" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.7" />
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.8" />
+    <!-- Security -->
+    <PackageReference Include="BCrypt.Net-Next" />
+    
+    <!-- Testing Framework -->
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="Moq" />
+    
+    <!-- Database Testing -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    
+    <!-- System Dependencies (Resolução NU1107) -->
+    <PackageReference Include="System.Diagnostics.DiagnosticSource" />
   </ItemGroup>
 
   <ItemGroup>
@@ -30,6 +38,8 @@
     <ProjectReference Include="..\..\src\SmartAlarm.Application\SmartAlarm.Application.csproj" />
     <ProjectReference Include="..\..\src\SmartAlarm.Domain\SmartAlarm.Domain.csproj" />
     <ProjectReference Include="..\..\src\SmartAlarm.Infrastructure\SmartAlarm.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\SmartAlarm.Observability\SmartAlarm.Observability.csproj" />
+    <ProjectReference Include="..\..\src\SmartAlarm.KeyVault\SmartAlarm.KeyVault.csproj" />
   </ItemGroup>
 
 </Project>
