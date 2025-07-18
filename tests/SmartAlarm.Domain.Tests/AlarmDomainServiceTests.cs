@@ -119,5 +119,111 @@ namespace SmartAlarm.Domain.Tests
             // Assert
             Assert.True(result);
         }
+
+        [Fact]
+        public async Task GetAlarmsDueForTriggeringAsync_Should_Use_Optimized_Repository_Method_When_Available()
+        {
+            // Arrange
+            var now = DateTime.Now;
+            var expectedAlarms = new List<Alarm>
+            {
+                new Alarm(Guid.NewGuid(), "Test Alarm 1", now, true, Guid.NewGuid()),
+                new Alarm(Guid.NewGuid(), "Test Alarm 2", now, true, Guid.NewGuid())
+            };
+
+            _alarmRepositoryMock.Setup(r => r.GetDueForTriggeringAsync(It.IsAny<DateTime>()))
+                .ReturnsAsync(expectedAlarms);
+
+            // Act
+            var result = await _service.GetAlarmsDueForTriggeringAsync();
+
+            // Assert
+            Assert.Equal(2, result.Count());
+            _alarmRepositoryMock.Verify(r => r.GetDueForTriggeringAsync(It.IsAny<DateTime>()), Times.Once);
+            _alarmRepositoryMock.Verify(r => r.GetAllEnabledAsync(), Times.Never);
+        }
+
+        [Fact]
+        public async Task GetAlarmsDueForTriggeringAsync_Should_Fallback_To_GetAllEnabled_When_Optimized_Returns_Empty()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var alarmDue = new AlarmTestWithTrigger(Guid.NewGuid(), "Test Alarm", DateTime.Now, true, userId, true);
+            var alarmNotDue = new AlarmTestWithTrigger(Guid.NewGuid(), "Test Alarm 2", DateTime.Now, true, userId, false);
+            
+            var allEnabledAlarms = new List<Alarm> { alarmDue, alarmNotDue };
+
+            _alarmRepositoryMock.Setup(r => r.GetDueForTriggeringAsync(It.IsAny<DateTime>()))
+                .ReturnsAsync(new List<Alarm>());
+                
+            _alarmRepositoryMock.Setup(r => r.GetAllEnabledAsync())
+                .ReturnsAsync(allEnabledAlarms);
+
+            // Act
+            var result = await _service.GetAlarmsDueForTriggeringAsync();
+
+            // Assert
+            Assert.Single(result);
+            Assert.Equal(alarmDue.Id, result.First().Id);
+            _alarmRepositoryMock.Verify(r => r.GetDueForTriggeringAsync(It.IsAny<DateTime>()), Times.Once);
+            _alarmRepositoryMock.Verify(r => r.GetAllEnabledAsync(), Times.Once);
+        }
+
+        [Fact]
+        public async Task GetAlarmsDueForTriggeringAsync_Should_Handle_Exception_In_ShouldTriggerNow_Gracefully()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var alarmWithException = new AlarmTestWithException(Guid.NewGuid(), "Faulty Alarm", DateTime.Now, true, userId);
+            var alarmDue = new AlarmTestWithTrigger(Guid.NewGuid(), "Good Alarm", DateTime.Now, true, userId, true);
+            
+            var allEnabledAlarms = new List<Alarm> { alarmWithException, alarmDue };
+
+            _alarmRepositoryMock.Setup(r => r.GetDueForTriggeringAsync(It.IsAny<DateTime>()))
+                .ReturnsAsync(new List<Alarm>());
+                
+            _alarmRepositoryMock.Setup(r => r.GetAllEnabledAsync())
+                .ReturnsAsync(allEnabledAlarms);
+
+            // Act
+            var result = await _service.GetAlarmsDueForTriggeringAsync();
+
+            // Assert
+            Assert.Single(result);
+            Assert.Equal(alarmDue.Id, result.First().Id);
+        }
+
+        [Fact]
+        public async Task GetAlarmsDueForTriggeringAsync_Should_Throw_When_Repository_Throws()
+        {
+            // Arrange
+            _alarmRepositoryMock.Setup(r => r.GetDueForTriggeringAsync(It.IsAny<DateTime>()))
+                .ThrowsAsync(new Exception("Database error"));
+
+            // Act & Assert
+            await Assert.ThrowsAsync<Exception>(() => _service.GetAlarmsDueForTriggeringAsync());
+        }
+
+        // Helper classes for testing
+        private class AlarmTestWithTrigger : Alarm
+        {
+            private readonly bool _shouldTrigger;
+
+            public AlarmTestWithTrigger(Guid id, string name, DateTime time, bool enabled, Guid userId, bool shouldTrigger)
+                : base(id, name, time, enabled, userId)
+            {
+                _shouldTrigger = shouldTrigger;
+            }
+
+            public override bool ShouldTriggerNow() => _shouldTrigger;
+        }
+
+        private class AlarmTestWithException : Alarm
+        {
+            public AlarmTestWithException(Guid id, string name, DateTime time, bool enabled, Guid userId)
+                : base(id, name, time, enabled, userId) { }
+
+            public override bool ShouldTriggerNow() => throw new Exception("ShouldTriggerNow exception");
+        }
     }
 }

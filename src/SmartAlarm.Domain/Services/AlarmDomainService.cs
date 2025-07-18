@@ -41,17 +41,51 @@ namespace SmartAlarm.Domain.Services
             return alarm.Enabled && alarm.ShouldTriggerNow();
         }
 
-        public Task<IEnumerable<Alarm>> GetAlarmsDueForTriggeringAsync()
+        public async Task<IEnumerable<Alarm>> GetAlarmsDueForTriggeringAsync()
         {
-            // Busca todos os alarmes habilitados e verifica se devem disparar agora
-            // (Idealmente, otimizar para buscar apenas os necessários)
-            var allAlarms = new List<Alarm>();
-            // Este método deve ser otimizado na infraestrutura para grandes volumes
-            // Exemplo: buscar todos os alarmes e filtrar
-            // allAlarms = await _alarmRepository.GetAllEnabledAsync();
-            // Aqui, simulação:
-            var due = allAlarms.Where(a => a.ShouldTriggerNow());
-            return Task.FromResult(due);
+            try
+            {
+                var now = DateTime.Now;
+                _logger.LogDebug("Searching for alarms due for triggering at {Time}", now);
+
+                // Primeira tentativa: usar método otimizado do repository
+                var alarmsFromRepository = await _alarmRepository.GetDueForTriggeringAsync(now);
+                
+                // Se o método otimizado retornar resultados, usar diretamente
+                if (alarmsFromRepository.Any())
+                {
+                    _logger.LogInformation("Found {Count} alarms due for triggering via optimized query", alarmsFromRepository.Count());
+                    return alarmsFromRepository;
+                }
+
+                // Fallback: buscar todos os alarmes habilitados e filtrar em memória
+                // (Para compatibilidade com implementações que não suportam o método otimizado)
+                _logger.LogDebug("Fallback: checking all enabled alarms for triggering conditions");
+                var allEnabledAlarms = await _alarmRepository.GetAllEnabledAsync();
+                
+                var dueAlarms = allEnabledAlarms.Where(alarm => 
+                {
+                    try
+                    {
+                        return alarm.ShouldTriggerNow();
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Error checking if alarm {AlarmId} should trigger", alarm.Id);
+                        return false;
+                    }
+                }).ToList();
+
+                _logger.LogInformation("Found {Count} alarms due for triggering via fallback method from {Total} enabled alarms", 
+                    dueAlarms.Count, allEnabledAlarms.Count());
+                
+                return dueAlarms;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving alarms due for triggering");
+                throw;
+            }
         }
 
         public bool IsValidAlarmTime(DateTime time)

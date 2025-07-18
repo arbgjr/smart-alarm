@@ -40,6 +40,31 @@ namespace SmartAlarm.Infrastructure.Repositories
             return Task.FromResult(result!);
         }
 
+        public Task<IEnumerable<Alarm>> GetAllEnabledAsync()
+        {
+            var result = _alarms.Values.Where(a => a.Enabled);
+            return Task.FromResult(result);
+        }
+
+        public Task<IEnumerable<Alarm>> GetDueForTriggeringAsync(DateTime now)
+        {
+            var enabledAlarms = _alarms.Values.Where(a => a.Enabled);
+            var dueAlarms = enabledAlarms.Where(alarm => 
+            {
+                try
+                {
+                    return alarm.ShouldTriggerNow();
+                }
+                catch
+                {
+                    // Em caso de erro na verificação, ignorar o alarme
+                    return false;
+                }
+            });
+            
+            return Task.FromResult(dueAlarms);
+        }
+
         public Task UpdateAsync(Alarm alarm)
         {
             _alarms[alarm.Id] = alarm;

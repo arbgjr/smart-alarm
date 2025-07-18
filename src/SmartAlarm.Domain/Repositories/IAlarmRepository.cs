@@ -12,6 +12,8 @@ namespace SmartAlarm.Domain.Repositories
     {
         Task<Alarm?> GetByIdAsync(Guid id);
         Task<IEnumerable<Alarm>> GetByUserIdAsync(Guid userId);
+        Task<IEnumerable<Alarm>> GetAllEnabledAsync();
+        Task<IEnumerable<Alarm>> GetDueForTriggeringAsync(DateTime now);
         Task AddAsync(Alarm alarm);
         Task UpdateAsync(Alarm alarm);
         Task DeleteAsync(Guid id);

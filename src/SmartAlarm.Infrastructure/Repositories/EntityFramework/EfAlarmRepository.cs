@@ -229,6 +229,126 @@ namespace SmartAlarm.Infrastructure.Repositories.EntityFramework
             }
         }
 
+        public async Task<IEnumerable<Alarm>> GetAllEnabledAsync()
+        {
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            var correlationId = _correlationContext.CorrelationId;
+            
+            using var activity = _activitySource.StartActivity("EfAlarmRepository.GetAllEnabledAsync");
+            activity?.SetTag("correlation.id", correlationId);
+            activity?.SetTag("operation", "GetAllEnabledAsync");
+            activity?.SetTag("table", "Alarms");
+            
+            try
+            {
+                _logger.LogDebug(LogTemplates.DatabaseQueryStarted,
+                    "GetAllEnabledAsync", 
+                    "Alarms", 
+                    new { });
+
+                var result = await _context.Alarms
+                    .Include(a => a.Schedules)
+                    .Include(a => a.Routines)
+                    .Include(a => a.Integrations)
+                    .Where(a => a.Enabled)
+                    .ToListAsync();
+
+                _meter.RecordDatabaseQueryDuration(stopwatch.ElapsedMilliseconds, "GetAllEnabledAsync", "Alarms");
+                activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Ok);
+                activity?.SetTag("result.count", result.Count);
+                
+                _logger.LogDebug(LogTemplates.DatabaseQueryExecuted,
+                    "GetAllEnabledAsync",
+                    stopwatch.ElapsedMilliseconds,
+                    result.Count);
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Error, ex.Message);
+                _meter.IncrementErrorCount("DATABASE", "Alarms", "QueryError");
+                
+                _logger.LogError(LogTemplates.DatabaseQueryFailed,
+                    "GetAllEnabledAsync",
+                    "Alarms", 
+                    stopwatch.ElapsedMilliseconds,
+                    ex.Message);
+                
+                throw;
+            }
+        }
+
+        public async Task<IEnumerable<Alarm>> GetDueForTriggeringAsync(DateTime now)
+        {
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            var correlationId = _correlationContext.CorrelationId;
+            
+            using var activity = _activitySource.StartActivity("EfAlarmRepository.GetDueForTriggeringAsync");
+            activity?.SetTag("correlation.id", correlationId);
+            activity?.SetTag("operation", "GetDueForTriggeringAsync");
+            activity?.SetTag("table", "Alarms");
+            activity?.SetTag("query.time", now.ToString("HH:mm"));
+            
+            try
+            {
+                _logger.LogDebug(LogTemplates.DatabaseQueryStarted,
+                    "GetDueForTriggeringAsync", 
+                    "Alarms", 
+                    new { Time = now });
+
+                // Query otimizada para buscar alarmes que devem ser disparados agora
+                var result = await _context.Alarms
+                    .Include(a => a.Schedules)
+                    .Include(a => a.Routines)
+                    .Include(a => a.Integrations)
+                    .Where(a => a.Enabled && 
+                               a.Schedules.Any(s => s.IsActive &&
+                                                   s.Time.Hour == now.Hour &&
+                                                   s.Time.Minute == now.Minute))
+                    .ToListAsync();
+
+                // Filtro adicional em memória para validar regras de negócio complexas
+                var dueAlarms = result.Where(alarm => 
+                {
+                    try
+                    {
+                        return alarm.ShouldTriggerNow();
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning("Error checking if alarm {AlarmId} should trigger: {Error}", alarm.Id, ex.Message);
+                        return false;
+                    }
+                }).ToList();
+
+                _meter.RecordDatabaseQueryDuration(stopwatch.ElapsedMilliseconds, "GetDueForTriggeringAsync", "Alarms");
+                activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Ok);
+                activity?.SetTag("result.count", dueAlarms.Count);
+                activity?.SetTag("candidates.count", result.Count);
+                
+                _logger.LogDebug(LogTemplates.DatabaseQueryExecuted,
+                    "GetDueForTriggeringAsync",
+                    stopwatch.ElapsedMilliseconds,
+                    dueAlarms.Count);
+
+                return dueAlarms;
+            }
+            catch (Exception ex)
+            {
+                activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Error, ex.Message);
+                _meter.IncrementErrorCount("DATABASE", "Alarms", "QueryError");
+                
+                _logger.LogError(LogTemplates.DatabaseQueryFailed,
+                    "GetDueForTriggeringAsync",
+                    "Alarms", 
+                    stopwatch.ElapsedMilliseconds,
+                    ex.Message);
+                
+                throw;
+            }
+        }
+
         public Task DeleteAsync(Guid id)
         {
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
