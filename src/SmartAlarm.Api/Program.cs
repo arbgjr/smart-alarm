@@ -210,6 +210,10 @@ app.UseKeyVault();
 app.UseGlobalExceptionHandler();
 app.UseHttpsRedirection();
 app.UseAuthentication();
+
+// JWT Blocklist Middleware - deve vir após UseAuthentication e antes de UseAuthorization
+app.UseJwtBlocklist();
+
 app.UseAuthorization();
 
 // Swagger/OpenAPI

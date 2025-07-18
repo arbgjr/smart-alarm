@@ -160,6 +160,33 @@ namespace SmartAlarm.Infrastructure
                 };
             });
 
+            // JWT Blocklist service with distributed Redis support
+            services.AddScoped<Security.IJwtBlocklistService>(provider =>
+            {
+                var config = provider.GetRequiredService<IConfiguration>();
+                var environment = config["Environment"] ?? config["ASPNETCORE_ENVIRONMENT"] ?? "Development";
+                var logger = provider.GetRequiredService<ILogger<Security.RedisJwtBlocklistService>>();
+                var meter = provider.GetRequiredService<SmartAlarm.Observability.Metrics.SmartAlarmMeter>();
+                var correlationContext = provider.GetRequiredService<SmartAlarm.Observability.Context.ICorrelationContext>();
+                var activitySource = provider.GetRequiredService<SmartAlarm.Observability.Tracing.SmartAlarmActivitySource>();
+                
+                return environment switch
+                {
+                    "Production" => new Security.RedisJwtBlocklistService(
+                        logger, meter, correlationContext, activitySource,
+                        config.GetConnectionString("Redis") ?? throw new InvalidOperationException("Redis connection string required for JWT Blocklist in production")
+                    ),
+                    "Staging" => new Security.RedisJwtBlocklistService(
+                        logger, meter, correlationContext, activitySource,
+                        config.GetConnectionString("Redis") ?? "localhost:6379"
+                    ),
+                    _ => new Security.RedisJwtBlocklistService(
+                        logger, meter, correlationContext, activitySource,
+                        config.GetConnectionString("Redis") ?? "localhost:6379"
+                    )
+                };
+            });
+
             // Register messaging service with production-ready configuration
             services.AddScoped<Messaging.IMessagingService>(provider =>
             {
