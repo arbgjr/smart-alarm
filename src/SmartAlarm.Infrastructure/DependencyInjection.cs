@@ -126,14 +126,20 @@ namespace SmartAlarm.Infrastructure
             services.AddScoped<INotificationService, LoggingNotificationService>();
             services.AddScoped<IFileParser, CsvFileParser>();
             
+            // Register repositories
+            services.AddSingleton<Domain.Repositories.IWebhookRepository, Repositories.InMemoryWebhookRepository>();
+            
             // Register security services
-            services.AddScoped<IJwtTokenService, SimpleJwtTokenService>();
+            services.AddScoped<IJwtTokenService, JwtTokenService>();
+            services.AddSingleton<Security.ITokenStorage, Security.InMemoryTokenStorage>();
 
-            // Register messaging, storage, tracing, metrics (mock for now)
-            services.AddSingleton<Messaging.IMessagingService, Messaging.MockMessagingService>();
-            services.AddSingleton<Storage.IStorageService, Storage.MockStorageService>();
-            services.AddSingleton<Observability.ITracingService, Observability.MockTracingService>();
-            services.AddSingleton<Observability.IMetricsService, Observability.MockMetricsService>();
+            // Register messaging, storage services with real implementations
+            services.AddSingleton<Messaging.IMessagingService, Messaging.RabbitMqMessagingService>();
+            services.AddSingleton<Storage.IStorageService, Storage.MinioStorageService>();
+            
+            // Note: Observability services (Tracing and Metrics) are handled by SmartAlarm.Observability package
+            // SmartAlarmActivitySource, SmartAlarmMeter, and BusinessMetrics are registered via AddSmartAlarmObservability()
+            // in the API startup configuration, not here in Infrastructure layer
 
             return services;
         }

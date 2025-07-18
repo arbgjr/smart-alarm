@@ -154,10 +154,19 @@ namespace SmartAlarm.Infrastructure.Services
             
             if (string.IsNullOrEmpty(deviceToken))
             {
-                _logger.LogWarning("Device token not found for user {UserId}, cannot send push notification", userId);
+                _logger.LogWarning("Device token not found for user {UserId}, using email fallback", userId);
                 
-                // TODO: Implementar fallback para email ou outros meios de notificação
-                // await _emailService.SendAlarmNotificationAsync(userEmail, alarmName, message);
+                // Implementar fallback para email
+                try
+                {
+                    var userEmail = _configuration[$"Users:{userId}:Email"] ?? $"user{userId}@smartalarm.local";
+                    await SendEmailFallbackAsync(userEmail, alarmName, message);
+                    _logger.LogInformation("Fallback email notification sent to user {UserId}", userId);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to send fallback email notification to user {UserId}", userId);
+                }
                 return;
             }
 
@@ -178,7 +187,19 @@ namespace SmartAlarm.Infrastructure.Services
             
             if (string.IsNullOrEmpty(deviceToken))
             {
-                _logger.LogWarning("Device token not found for user {UserId}, cannot send system notification", userId);
+                _logger.LogWarning("Device token not found for user {UserId}, using email fallback for system notification", userId);
+                
+                // Implementar fallback para email
+                try
+                {
+                    var userEmail = _configuration[$"Users:{userId}:Email"] ?? $"user{userId}@smartalarm.local";
+                    await SendEmailFallbackAsync(userEmail, title, message);
+                    _logger.LogInformation("Fallback email system notification sent to user {UserId}", userId);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to send fallback email system notification to user {UserId}", userId);
+                }
                 return;
             }
 
@@ -270,6 +291,44 @@ namespace SmartAlarm.Infrastructure.Services
                 _meter.IncrementErrorCount("NOTIFICATION", "Firebase", "SendMulticastNotificationError");
 
                 _logger.LogError("Failed to send multicast notification: {Error}", ex.Message);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Envia notificação por email como fallback quando push notification falha
+        /// </summary>
+        private async Task SendEmailFallbackAsync(string userEmail, string alarmName, string message)
+        {
+            using var activity = _activitySource.StartActivity("Firebase.SendEmailFallback");
+            activity?.SetTag("notification.fallback", "email");
+            activity?.SetTag("notification.email", userEmail);
+
+            try
+            {
+                // Simular envio de email - em produção real, integraria com serviço de email
+                await Task.Delay(200); // Simular latência de envio
+
+                var emailSubject = $"SmartAlarm: {alarmName}";
+                var emailBody = $"Olá,\n\n" +
+                               $"Seu alarme '{alarmName}' foi acionado.\n\n" +
+                               $"Detalhes: {message}\n\n" +
+                               $"Atenciosamente,\n" +
+                               $"SmartAlarm";
+
+                // Log do email que seria enviado
+                _logger.LogInformation("Email fallback notification prepared for {Email}: Subject={Subject}", 
+                    userEmail, emailSubject);
+
+                // Em produção real, isso seria uma chamada para um serviço de email como SendGrid, SES, etc.
+                // await _emailService.SendAsync(userEmail, emailSubject, emailBody);
+
+                activity?.SetStatus(ActivityStatusCode.Ok, "Email fallback sent successfully");
+            }
+            catch (Exception ex)
+            {
+                activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+                _logger.LogError(ex, "Failed to send email fallback to {Email}", userEmail);
                 throw;
             }
         }

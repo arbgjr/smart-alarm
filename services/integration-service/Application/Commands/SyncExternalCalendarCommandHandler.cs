@@ -304,34 +304,31 @@ namespace SmartAlarm.IntegrationService.Application.Commands
             {
                 _logger.LogInformation("Fetching Google Calendar events from {FromDate} to {ToDate}", fromDate, toDate);
                 
-                // TODO: Uncomment when Google APIs are properly configured
-                // var credential = GoogleCredential.FromAccessToken(accessToken);
-                // var service = new CalendarService(new BaseClientService.Initializer()
-                // {
-                //     HttpClientInitializer = credential,
-                //     ApplicationName = "SmartAlarm Integration Service"
-                // });
-                // 
-                // var request = service.Events.List("primary");
-                // request.TimeMin = fromDate;
-                // request.TimeMax = toDate;
-                // request.SingleEvents = true;
-                // request.OrderBy = EventsResource.ListRequest.OrderByEnum.StartTime;
-                // request.MaxResults = 250;
-                // 
-                // var events = await request.ExecuteAsync();
-                // 
-                // return events.Items.Select(e => new ExternalCalendarEvent(
-                //     e.Id,
-                //     e.Summary ?? "Sem título",
-                //     e.Start.DateTime ?? DateTime.Parse(e.Start.Date),
-                //     e.End.DateTime ?? DateTime.Parse(e.End.Date),
-                //     e.Location ?? "",
-                //     e.Description ?? ""
-                // )).ToList();
-
-                // Implementação real estruturada para Google Calendar
-                return await FetchFromGoogleCalendarAsync(accessToken, fromDate, toDate, cancellationToken);
+                // Implementação real com Google Calendar API
+                var credential = GoogleCredential.FromAccessToken(accessToken);
+                var service = new CalendarService(new BaseClientService.Initializer()
+                {
+                    HttpClientInitializer = credential,
+                    ApplicationName = "SmartAlarm Integration Service"
+                });
+                
+                var request = service.Events.List("primary");
+                request.TimeMinDateTimeOffset = fromDate;
+                request.TimeMaxDateTimeOffset = toDate;
+                request.SingleEvents = true;
+                request.OrderBy = EventsResource.ListRequest.OrderByEnum.StartTime;
+                request.MaxResults = 250;
+                
+                var events = await request.ExecuteAsync();
+                
+                return events.Items.Select(e => new ExternalCalendarEvent(
+                    e.Id,
+                    e.Summary ?? "Sem título",
+                    e.Start.DateTimeDateTimeOffset?.DateTime ?? DateTime.Parse(e.Start.Date),
+                    e.End.DateTimeDateTimeOffset?.DateTime ?? DateTime.Parse(e.End.Date),
+                    e.Location ?? "",
+                    e.Description ?? ""
+                )).ToList();
             }
             catch (Exception ex)
             {
@@ -346,25 +343,73 @@ namespace SmartAlarm.IntegrationService.Application.Commands
             DateTime toDate, 
             CancellationToken cancellationToken)
         {
-            // Real implementation structure for Google Calendar API
-            await Task.Delay(100, cancellationToken); // Simulate API latency
-
-            _logger.LogDebug("Simulating Google Calendar API call with token: {TokenPrefix}...", 
-                accessToken.Length > 10 ? accessToken.Substring(0, 10) : accessToken);
-            _logger.LogDebug("Date range: {FromDate} to {ToDate}", fromDate, toDate);
-
-            // In real implementation, this would be actual Google Calendar API calls
-            var mockEvents = new List<ExternalCalendarEvent>
+            try
             {
-                new("google_real_1", "Reunião de trabalho", fromDate.AddHours(9), fromDate.AddHours(10), "Escritório", "Reunião importante"),
-                new("google_real_2", "Consulta médica", fromDate.AddDays(1).AddHours(14), fromDate.AddDays(1).AddHours(15), "Hospital", "Checkup anual"),
-                new("google_real_3", "Academia", fromDate.AddDays(2).AddHours(18), fromDate.AddDays(2).AddHours(19), "Gym", "Treino de força")
-            };
+                using var httpClient = new HttpClient();
+                httpClient.DefaultRequestHeaders.Authorization = 
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
 
-            var filteredEvents = mockEvents.Where(e => e.StartTime >= fromDate && e.StartTime <= toDate).ToList();
-            _logger.LogInformation("Retrieved {EventCount} events from Google Calendar", filteredEvents.Count);
-            
-            return filteredEvents;
+                var timeMin = fromDate.ToString("yyyy-MM-ddTHH:mm:ssK");
+                var timeMax = toDate.ToString("yyyy-MM-ddTHH:mm:ssK");
+                var url = $"https://www.googleapis.com/calendar/v3/calendars/primary/events" +
+                         $"?timeMin={Uri.EscapeDataString(timeMin)}" +
+                         $"&timeMax={Uri.EscapeDataString(timeMax)}" +
+                         $"&singleEvents=true&orderBy=startTime&maxResults=250";
+
+                _logger.LogDebug("Calling Google Calendar API: {Url}", url);
+
+                var response = await httpClient.GetAsync(url, cancellationToken);
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                    _logger.LogError("Google Calendar API failed with status {StatusCode}: {Error}", 
+                        response.StatusCode, errorContent);
+                    return new List<ExternalCalendarEvent>();
+                }
+
+                var jsonContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                using var document = JsonDocument.Parse(jsonContent);
+                var events = new List<ExternalCalendarEvent>();
+
+                if (document.RootElement.TryGetProperty("items", out var itemsElement))
+                {
+                    foreach (var eventElement in itemsElement.EnumerateArray())
+                    {
+                        var id = eventElement.GetProperty("id").GetString() ?? "";
+                        var summary = eventElement.GetProperty("summary").GetString() ?? "Sem título";
+                        
+                        var start = eventElement.GetProperty("start");
+                        var startDateTime = DateTime.Parse(
+                            start.TryGetProperty("dateTime", out var startDateTimeElement) 
+                                ? startDateTimeElement.GetString() ?? DateTime.Now.ToString()
+                                : start.GetProperty("date").GetString() ?? DateTime.Now.ToString());
+                        
+                        var end = eventElement.GetProperty("end");
+                        var endDateTime = DateTime.Parse(
+                            end.TryGetProperty("dateTime", out var endDateTimeElement) 
+                                ? endDateTimeElement.GetString() ?? DateTime.Now.ToString()
+                                : end.GetProperty("date").GetString() ?? DateTime.Now.ToString());
+                        
+                        var location = eventElement.TryGetProperty("location", out var locationElement)
+                            ? locationElement.GetString() ?? ""
+                            : "";
+                        
+                        var description = eventElement.TryGetProperty("description", out var descriptionElement)
+                            ? descriptionElement.GetString() ?? ""
+                            : "";
+
+                        events.Add(new ExternalCalendarEvent(id, summary, startDateTime, endDateTime, location, description));
+                    }
+                }
+
+                _logger.LogInformation("Retrieved {EventCount} events from Google Calendar", events.Count);
+                return events;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error calling Google Calendar API");
+                return new List<ExternalCalendarEvent>();
+            }
         }
 
         /// <summary>
@@ -380,30 +425,6 @@ namespace SmartAlarm.IntegrationService.Application.Commands
             {
                 _logger.LogInformation("Fetching Outlook Calendar events from {FromDate} to {ToDate}", fromDate, toDate);
                 
-                // TODO: Uncomment when Microsoft Graph is properly configured
-                // var graphServiceClient = new GraphServiceClient(
-                //     new DelegateAuthenticationProvider((requestMessage) =>
-                //     {
-                //         requestMessage.Headers.Authorization = 
-                //             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
-                //         return Task.FromResult(requestMessage);
-                //     }));
-                // 
-                // var events = await graphServiceClient.Me.Events
-                //     .Request()
-                //     .Filter($"start/dateTime ge '{fromDate:O}' and end/dateTime le '{toDate:O}'")
-                //     .Top(250)
-                //     .GetAsync();
-                // 
-                // return events.Select(e => new ExternalCalendarEvent(
-                //     e.Id,
-                //     e.Subject ?? "Sem título",
-                //     e.Start.DateTime ?? DateTime.Now,
-                //     e.End.DateTime ?? DateTime.Now,
-                //     e.Location?.DisplayName ?? "",
-                //     e.Body?.Content ?? ""
-                // )).ToList();
-
                 // Implementação real estruturada para Microsoft Graph
                 return await FetchFromMicrosoftGraphAsync(accessToken, fromDate, toDate, cancellationToken);
             }
@@ -420,25 +441,69 @@ namespace SmartAlarm.IntegrationService.Application.Commands
             DateTime toDate, 
             CancellationToken cancellationToken)
         {
-            // Real implementation structure for Microsoft Graph API
-            await Task.Delay(150, cancellationToken); // Simulate API latency
-
-            _logger.LogDebug("Simulating Microsoft Graph API call with token: {TokenPrefix}...", 
-                accessToken.Length > 10 ? accessToken.Substring(0, 10) : accessToken);
-            _logger.LogDebug("Date range: {FromDate} to {ToDate}", fromDate, toDate);
-
-            // In real implementation, this would be actual Microsoft Graph API calls
-            var mockEvents = new List<ExternalCalendarEvent>
+            try
             {
-                new("outlook_real_1", "Apresentação do projeto", fromDate.AddHours(10), fromDate.AddHours(12), "Sala de conferências", "Projeto Q4"),
-                new("outlook_real_2", "Almoço com cliente", fromDate.AddDays(1).AddHours(12), fromDate.AddDays(1).AddHours(14), "Restaurante", "Discussão de contrato"),
-                new("outlook_real_3", "Teams Meeting", fromDate.AddDays(2).AddHours(15), fromDate.AddDays(2).AddHours(16), "Microsoft Teams", "Weekly sync")
-            };
+                using var httpClient = new HttpClient();
+                httpClient.DefaultRequestHeaders.Authorization = 
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
 
-            var filteredEvents = mockEvents.Where(e => e.StartTime >= fromDate && e.StartTime <= toDate).ToList();
-            _logger.LogInformation("Retrieved {EventCount} events from Outlook Calendar", filteredEvents.Count);
-            
-            return filteredEvents;
+                var filterQuery = $"start/dateTime ge '{fromDate:O}' and end/dateTime le '{toDate:O}'";
+                var url = $"https://graph.microsoft.com/v1.0/me/events?$filter={Uri.EscapeDataString(filterQuery)}&$top=250";
+
+                _logger.LogDebug("Calling Microsoft Graph: {Url}", url);
+
+                var response = await httpClient.GetAsync(url, cancellationToken);
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                    _logger.LogError("Microsoft Graph API failed with status {StatusCode}: {Error}", 
+                        response.StatusCode, errorContent);
+                    return new List<ExternalCalendarEvent>();
+                }
+
+                var jsonContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                using var document = JsonDocument.Parse(jsonContent);
+                var events = new List<ExternalCalendarEvent>();
+
+                if (document.RootElement.TryGetProperty("value", out var valueElement))
+                {
+                    foreach (var eventElement in valueElement.EnumerateArray())
+                    {
+                        var id = eventElement.GetProperty("id").GetString() ?? "";
+                        var subject = eventElement.GetProperty("subject").GetString() ?? "Sem título";
+                        
+                        var start = eventElement.GetProperty("start");
+                        var startDateTime = DateTime.Parse(start.GetProperty("dateTime").GetString() ?? DateTime.Now.ToString());
+                        
+                        var end = eventElement.GetProperty("end");
+                        var endDateTime = DateTime.Parse(end.GetProperty("dateTime").GetString() ?? DateTime.Now.ToString());
+                        
+                        var location = "";
+                        if (eventElement.TryGetProperty("location", out var locationElement) &&
+                            locationElement.TryGetProperty("displayName", out var displayNameElement))
+                        {
+                            location = displayNameElement.GetString() ?? "";
+                        }
+                        
+                        var description = "";
+                        if (eventElement.TryGetProperty("body", out var bodyElement) &&
+                            bodyElement.TryGetProperty("content", out var contentElement))
+                        {
+                            description = contentElement.GetString() ?? "";
+                        }
+
+                        events.Add(new ExternalCalendarEvent(id, subject, startDateTime, endDateTime, location, description));
+                    }
+                }
+
+                _logger.LogInformation("Retrieved {EventCount} events from Microsoft Graph", events.Count);
+                return events;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error calling Microsoft Graph API");
+                return new List<ExternalCalendarEvent>();
+            }
         }
 
         /// <summary>

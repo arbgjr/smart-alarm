@@ -1,158 +1,96 @@
-## 📋 **MAPEAMENTO ARQUIVO POR ARQUIVO - PENDÊNCIAS TÉCNICAS**
+# 🔍 Auditoria Técnica - Smart Alarm Project
 
-## **📂 CONTROLLERS E APIs**
+## 📊 Prompt
 
-### **1️⃣ AlarmsController.cs**
-**Linha 291**: ✅ **PENDÊNCIA REAL**
-```csharp
-// TODO: Implementar comando real
-// await _mediator.Send(new UpdateAlarmStatusCommand(alarmId, request.IsActive));
-```
-**Impacto**: Funcionalidade de ativar/desativar alarme não implementada.
+Resolva os pontos abaixo seguindo os padrões de qualidade definidos no projeto.
 
-**Linha 342**: ✅ **PENDÊNCIA REAL** 
-```csharp
-// TODO: Implementar lógica de disparo real
-// - Comunicar com AI Service para obter recomendações personalizadas
-// - Comunicar com Integration Service para enviar notificações
-// - Registrar evento de disparo
-```
-**Impacto**: Lógica principal de disparo de alarmes não implementada.
+## 🔴 Débitos Técnicos Identificados
 
----
+### 1. **TODOs Críticos - Implementações Pendentes**
 
-### **2️⃣ IntegrationsController.cs**
-**Linha 246**: ✅ **PENDÊNCIA REAL**
-```csharp
-// TODO: Implementar comando real para criar integração
-// var integration = await _mediator.Send(new CreateIntegrationCommand(alarmId, request));
-```
-**Impacto**: Criação de integrações está mockada, retorna dados fictícios.
-
----
-
-### **3️⃣ WebhookController.cs**
-**Linha 39**: ✅ **PENDÊNCIA REAL**
+#### **WebhookController** - Funcionalidade Incompleta
 ```csharp
 // TODO: Implementar lógica de registro de webhook
+// Arquivo: src/SmartAlarm.Api/Controllers/WebhookController.cs:39
 ```
-**Impacto**: Sistema de webhooks não funcional.
+**Impacto**: Funcionalidade de webhooks não implementada, apenas retorna dados mockados.
 
----
-
-## **🔐 KEYVAULT PROVIDERS**
-
-### **4️⃣ AzureKeyVaultProvider.cs**
-**Linha 57**: ✅ **PENDÊNCIA REAL**
-```csharp
-// TODO: Implementar integração real com Azure SDK
-```
-**Linha 107**: ✅ **PENDÊNCIA REAL**
-```csharp
-// TODO: Implementar integração real com Azure SDK
-```
-**Impacto**: Retorna valores mock (`mock-azure-value-for-{key}`), não conecta ao Azure.
-
----
-
-### **5️⃣ AwsSecretsManagerProvider.cs**
-**Linha 33**: ✅ **PENDÊNCIA REAL**
-```csharp
-// TODO: Implementar integração real com AWS SDK
-```
-**Linha 63**: ✅ **PENDÊNCIA REAL**
-```csharp
-// TODO: Implementar integração real com AWS SDK
-```
-**Impacto**: Simulações com delay, valores mock para AWS.
-
----
-
-### **6️⃣ OciVaultProvider.cs**
-**Linha 148**: ✅ **PENDÊNCIA REAL**
-**Linha 307**: ✅ **PENDÊNCIA REAL**
+#### **OCI Vault Provider** - APIs Comentadas
 ```csharp
 // TODO: Uncomment when OCI SDK is properly configured
+// Arquivo: src/SmartAlarm.Infrastructure/KeyVault/OciVaultProvider.cs:148-307
 ```
-**Impacto**: Código real comentado, usando simulações.
+**Impacto**: Implementação real do OCI Vault está comentada, usando simulação.
 
----
-
-### **7️⃣ OciVaultProvider.cs** 
-**Linha 39**: ✅ **PENDÊNCIA REAL**
-**Linha 64**: ✅ **PENDÊNCIA REAL**
-**Linha 86**: ✅ **PENDÊNCIA REAL**
-**Linha 188**: ✅ **PENDÊNCIA REAL**
-```csharp
-// TODO: Uncomment when OCI SDK is properly configured
-// TODO: Implement actual OCI SDK connectivity check
-// TODO: Implement OCI Vault secret setting
-```
-**Impacto**: Provider duplicado, ambos com SDKs comentados.
-
----
-
-## **💾 STORAGE SERVICES**
-
-### **8️⃣ OciObjectStorageService.cs**
-**Linha 79**: ✅ **PENDÊNCIA REAL**
-**Linha 162**: ✅ **PENDÊNCIA REAL** 
-**Linha 256**: ✅ **PENDÊNCIA REAL**
-**Linha 348**: ✅ **PENDÊNCIA REAL**
-```csharp
-// TODO: Uncomment when OCI SDK is properly configured
-```
-**Impacto**: Storage usando simulações HTTP em vez de SDK oficial.
-
----
-
-## **📨 MESSAGING SERVICES**
-
-### **9️⃣ OciStreamingMessagingService.cs**
-**Linha 82**: ✅ **PENDÊNCIA REAL**
-**Linha 166**: ✅ **PENDÊNCIA REAL**
-**Linha 283**: ✅ **PENDÊNCIA REAL**
-```csharp
-// TODO: Uncomment when OCI SDK is properly configured
-// TODO: Implementar integração real com OCI SDK
-```
-**Impacto**: Mensageria usando calls HTTP diretas em vez de SDK.
-
----
-
-## **📞 NOTIFICATION SERVICES**
-
-### **🔟 FirebaseNotificationService.cs**
-**Linha 159**: ✅ **PENDÊNCIA REAL**
-```csharp
-// TODO: Implementar fallback para email ou outros meios de notificação
-```
-**Impacto**: Sem fallback quando Firebase falha.
-
----
-
-## **🔗 EXTERNAL INTEGRATIONS**
-
-### **1️⃣1️⃣ SyncExternalCalendarCommandHandler.cs**
-**Linha 307**: ✅ **PENDÊNCIA REAL**
+#### **Serviços de Integração Externa** - APIs Mockadas
 ```csharp
 // TODO: Uncomment when Google APIs are properly configured
-```
-**Linha 383**: ✅ **PENDÊNCIA REAL**
-```csharp
 // TODO: Uncomment when Microsoft Graph is properly configured
+// Arquivo: services/integration-service/.../SyncExternalCalendarCommandHandler.cs
 ```
-**Impacto**: Integração com Google Calendar e Outlook usando simulações.
+**Impacto**: Integrações com Google Calendar e Microsoft Graph usando dados simulados.
 
----
-
-## **🧪 TESTES**
-
-### **1️⃣2️⃣ ImportAlarmsCommandValidatorTests.cs**
-**Linha 54**: ✅ **PENDÊNCIA REAL**
+#### **Azure KeyVault Provider** - Implementação Stub
 ```csharp
-Assert.True(true); // Placeholder para manter a estrutura
+// TODO: Implementar integração real com Azure SDK
+// Arquivo: src/SmartAlarm.Infrastructure/KeyVault/AzureKeyVaultProvider.cs:57,107
 ```
-**Impacto**: Teste sem implementação real.
+**Impacto**: Provider do Azure retorna valores mockados.
 
----
+#### **FirebaseNotificationService** - Fallback Ausente
+```csharp
+// TODO: Implementar fallback para email ou outros meios de notificação
+// Arquivo: src/SmartAlarm.Infrastructure/Services/FirebaseNotificationService.cs:159
+```
+**Impacto**: Sem fallback quando push notification falha.
+
+### 2. **Conflitos de Dependências**
+
+#### **Erro Crítico de Build** ⚠️
+```
+error NU1107: Version conflict detected for System.Diagnostics.DiagnosticSource
+```
+**Arquivos Afetados**:
+- AiService.csproj
+- SmartAlarm.Api.csproj  
+- SmartAlarm.Infrastructure.csproj
+
+**Solução**: Adicionar referência direta ao `System.Diagnostics.DiagnosticSource 9.0.7`
+
+#### **Warnings de Compatibilidade**
+```
+warning NU1608: Microsoft.Kiota.Http.HttpClientLibrary requires System.Text.Json (>= 6.0.0 && < 9.0.0) but version 9.0.7 was resolved
+```
+
+### 3. **Implementações Mock em Produção**
+
+#### **Serviços Registrados como Mock**
+```csharp
+// Register messaging, storage, tracing, metrics (mock for now)
+services.AddSingleton<Messaging.IMessagingService, Messaging.MockMessagingService>();
+services.AddSingleton<Storage.IStorageService, Storage.MockStorageService>();
+services.AddSingleton<Observability.ITracingService, Observability.MockTracingService>();
+services.AddSingleton<Observability.IMetricsService, Observability.MockMetricsService>();
+```
+**Impacto**: Serviços críticos usando implementações mock em vez de providers reais.
+
+### 4. **Validação de Token Incompleta**
+
+#### **Comentários de Implementação Futura**
+```csharp
+// Aqui implementaríamos validação com storage (Redis/Database)
+// Arquivos: 
+// - src/SmartAlarm.Infrastructure/Security/SimpleJwtTokenService.cs:200
+// - src/SmartAlarm.Infrastructure/Security/JwtTokenService.cs:201
+```
+**Impacto**: Validação de token JWT sem verificação de revogação.
+
+### 5. **Funcionalidades de Criação de Segredos**
+
+#### **OCI Vault - SetSecret Não Implementado**
+```csharp
+// Implementação real OCI Vault - criação de secrets requer CreateSecret API call
+_logger.LogInformation("OCI Vault secret creation not implemented - requires CreateSecret API call");
+return Task.FromResult(false);
+```
+**Impacto**: Não é possível criar novos segredos no OCI Vault.

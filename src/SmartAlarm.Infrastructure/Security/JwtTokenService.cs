@@ -18,12 +18,16 @@ public class JwtTokenService : IJwtTokenService
 {
     private readonly IKeyVaultService _keyVault;
     private readonly ILogger<JwtTokenService> _logger;
-    private readonly HashSet<string> _revokedTokens = new();
+    private readonly ITokenStorage _tokenStorage;
 
-    public JwtTokenService(IKeyVaultService keyVault, ILogger<JwtTokenService> logger)
+    public JwtTokenService(
+        IKeyVaultService keyVault, 
+        ILogger<JwtTokenService> logger,
+        ITokenStorage tokenStorage)
     {
         _keyVault = keyVault ?? throw new ArgumentNullException(nameof(keyVault));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _tokenStorage = tokenStorage ?? throw new ArgumentNullException(nameof(tokenStorage));
     }
 
     public async Task<string> GenerateTokenAsync(User user, IEnumerable<string> roles)
@@ -113,10 +117,15 @@ public class JwtTokenService : IJwtTokenService
             if (string.IsNullOrWhiteSpace(token))
                 return null;
 
+            // Extrair JTI (Token ID) do token para verificar revogação
+            var jwtHandler = new JwtSecurityTokenHandler();
+            var jwt = jwtHandler.ReadJwtToken(token);
+            var jti = jwt.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Jti)?.Value;
+
             // Verificar se token foi revogado
-            if (_revokedTokens.Contains(token))
+            if (!string.IsNullOrEmpty(jti) && await _tokenStorage.IsTokenRevokedAsync(jti))
             {
-                _logger.LogWarning("Attempt to use revoked token");
+                _logger.LogWarning("Attempt to use revoked token with JTI: {Jti}", jti);
                 return null;
             }
 
@@ -192,16 +201,13 @@ public class JwtTokenService : IJwtTokenService
 
     public async Task<bool> ValidateRefreshTokenAsync(string refreshToken)
     {
-        await Task.CompletedTask;
         try
         {
             if (string.IsNullOrWhiteSpace(refreshToken))
                 return false;
 
-            // Aqui implementaríamos validação com storage (Redis/Database)
-            // Por simplicidade, validamos formato básico
-            var tokenBytes = Convert.FromBase64String(refreshToken);
-            return tokenBytes.Length == 32;
+            // Usar token storage para validação real
+            return await _tokenStorage.ValidateRefreshTokenAsync(refreshToken);
         }
         catch (Exception ex)
         {
@@ -212,16 +218,30 @@ public class JwtTokenService : IJwtTokenService
 
     public async Task<bool> RevokeTokenAsync(string token)
     {
-        await Task.CompletedTask;
         try
         {
             if (string.IsNullOrWhiteSpace(token))
                 return false;
 
-            // Adicionar token à lista de revogados
-            _revokedTokens.Add(token);
+            // Extrair JTI do token para revogação
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var jwt = tokenHandler.ReadJwtToken(token);
+            var jti = jwt.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Jti)?.Value;
             
-            _logger.LogInformation("Token revoked successfully");
+            if (string.IsNullOrEmpty(jti))
+            {
+                _logger.LogWarning("Token does not have JTI claim for revocation");
+                return false;
+            }
+
+            // Calcular tempo até expiração do token para storage
+            var expiration = jwt.ValidTo - DateTime.UtcNow;
+            if (expiration.TotalMinutes < 1)
+                expiration = TimeSpan.FromMinutes(1); // Mínimo de 1 minuto
+
+            await _tokenStorage.RevokeTokenAsync(jti, expiration);
+            
+            _logger.LogInformation("Token with JTI {Jti} revoked successfully", jti);
             return true;
         }
         catch (Exception ex)

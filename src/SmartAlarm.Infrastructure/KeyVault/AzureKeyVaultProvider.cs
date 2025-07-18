@@ -3,6 +3,8 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
+using Azure.Security.KeyVault.Secrets;
+using Azure.Identity;
 using SmartAlarm.Observability.Context;
 using SmartAlarm.Observability.Logging;
 using SmartAlarm.Observability.Metrics;
@@ -54,14 +56,9 @@ namespace SmartAlarm.Infrastructure.KeyVault
 
             try
             {
-                // TODO: Implementar integração real com Azure SDK
-                // Exemplo de implementação:
-                // var keyVaultClient = new SecretClient(new Uri(_keyVaultUri), new DefaultAzureCredential());
-                // var secret = await keyVaultClient.GetSecretAsync(key);
-                // return secret.Value.Value;
-                
-                // Por enquanto, simular a recuperação
-                await Task.Delay(100); // Simular latência de rede
+                // Implementação real com Azure SDK
+                var keyVaultClient = new SecretClient(new Uri(_keyVaultUri), new DefaultAzureCredential());
+                var secret = await keyVaultClient.GetSecretAsync(key);
                 
                 stopwatch.Stop();
                 _meter.RecordExternalServiceCallDuration(stopwatch.ElapsedMilliseconds, "AzureKeyVault", "GetSecret", true);
@@ -72,7 +69,7 @@ namespace SmartAlarm.Infrastructure.KeyVault
                     stopwatch.ElapsedMilliseconds);
 
                 activity?.SetStatus(ActivityStatusCode.Ok, "Secret retrieved successfully");
-                return $"mock-azure-value-for-{key}"; // Valor mock para desenvolvimento
+                return secret.Value.Value;
             }
             catch (Exception ex)
             {
@@ -104,13 +101,9 @@ namespace SmartAlarm.Infrastructure.KeyVault
 
             try
             {
-                // TODO: Implementar integração real com Azure SDK
-                // Exemplo de implementação:
-                // var keyVaultClient = new SecretClient(new Uri(_keyVaultUri), new DefaultAzureCredential());
-                // await keyVaultClient.SetSecretAsync(key, value);
-                
-                // Por enquanto, simular a criação
-                await Task.Delay(150); // Simular latência de rede
+                // Implementação real com Azure SDK
+                var keyVaultClient = new SecretClient(new Uri(_keyVaultUri), new DefaultAzureCredential());
+                await keyVaultClient.SetSecretAsync(key, value);
                 
                 stopwatch.Stop();
                 _meter.RecordExternalServiceCallDuration(stopwatch.ElapsedMilliseconds, "AzureKeyVault", "SetSecret", true);

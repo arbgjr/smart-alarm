@@ -1,5 +1,8 @@
+using System.Security.Claims;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SmartAlarm.Application.Webhooks.Commands.RegisterWebhook;
 using Swashbuckle.AspNetCore.Annotations;
 
 namespace SmartAlarm.Api.Controllers;
@@ -13,10 +16,12 @@ namespace SmartAlarm.Api.Controllers;
 public class WebhookController : ControllerBase
 {
     private readonly ILogger<WebhookController> _logger;
+    private readonly IMediator _mediator;
 
-    public WebhookController(ILogger<WebhookController> logger)
+    public WebhookController(ILogger<WebhookController> logger, IMediator mediator)
     {
         _logger = logger;
+        _mediator = mediator;
     }
 
     /// <summary>
@@ -30,23 +35,40 @@ public class WebhookController : ControllerBase
     [SwaggerResponse(201, "Webhook registrado com sucesso")]
     [SwaggerResponse(400, "Dados inválidos")]
     [SwaggerResponse(401, "Não autorizado")]
-    public async Task<ActionResult> RegisterWebhook([FromBody] WebhookRegisterRequest request)
+    public async Task<ActionResult<RegisterWebhookResponse>> RegisterWebhook([FromBody] WebhookRegisterRequest request)
     {
         try
         {
-            _logger.LogInformation("Webhook registration requested for URL: {Url}", request.Url);
-            
-            // TODO: Implementar lógica de registro de webhook
-            var response = new
+            // Obter ID do usuário do token JWT
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
             {
-                Id = Guid.NewGuid(),
+                _logger.LogWarning("Invalid or missing user ID in token");
+                return Unauthorized(new { Message = "Token inválido" });
+            }
+
+            _logger.LogInformation("Webhook registration requested for URL: {Url} by user: {UserId}", 
+                request.Url, userId);
+
+            var command = new RegisterWebhookCommand
+            {
                 Url = request.Url,
                 Events = request.Events,
-                Secret = Guid.NewGuid().ToString("N")[..32],
-                CreatedAt = DateTime.UtcNow
+                UserId = userId
             };
 
+            var response = await _mediator.Send(command);
+
             return Created($"/api/v1/webhooks/{response.Id}", response);
+        }
+        catch (FluentValidation.ValidationException ex)
+        {
+            _logger.LogWarning("Validation failed for webhook registration: {@Errors}", 
+                ex.Errors.Select(e => e.ErrorMessage));
+            return BadRequest(new { 
+                Message = "Dados inválidos", 
+                Errors = ex.Errors.Select(e => e.ErrorMessage) 
+            });
         }
         catch (Exception ex)
         {

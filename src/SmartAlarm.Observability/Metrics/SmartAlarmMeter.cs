@@ -24,6 +24,8 @@ namespace SmartAlarm.Observability.Metrics
         private readonly Counter<long> _userRegistrationCounter;
         private readonly Counter<long> _authenticationAttemptCounter;
         private readonly Counter<long> _monitoringRequestCounter;
+        private readonly Counter<long> _webhookRegistered;
+        private readonly Counter<long> _webhookRegistrationErrors;
         #endregion
 
         #region Histograms
@@ -31,6 +33,7 @@ namespace SmartAlarm.Observability.Metrics
         private readonly Histogram<double> _alarmCreationDuration;
         private readonly Histogram<double> _databaseQueryDuration;
         private readonly Histogram<double> _externalServiceCallDuration;
+        private readonly Histogram<double> _webhookCommandDuration;
         #endregion
 
         #region Gauges
@@ -45,6 +48,25 @@ namespace SmartAlarm.Observability.Metrics
         private int _currentOnlineUsers = 0;
         private long _currentMemoryUsage = 0;
         private int _currentDatabaseConnections = 0;
+        #endregion
+
+        #region Public Properties
+
+        /// <summary>
+        /// Contador de webhooks registrados
+        /// </summary>
+        public Counter<long> WebhookRegistered => _webhookRegistered;
+
+        /// <summary>
+        /// Contador de erros de registro de webhook
+        /// </summary>
+        public Counter<long> WebhookRegistrationErrors => _webhookRegistrationErrors;
+
+        /// <summary>
+        /// Histograma de duração de comandos webhook
+        /// </summary>
+        public Histogram<double> WebhookCommandDuration => _webhookCommandDuration;
+
         #endregion
 
         /// <summary>
@@ -89,6 +111,16 @@ namespace SmartAlarm.Observability.Metrics
                 "monitoring_requests_total",
                 description: "Total number of monitoring endpoint requests");
 
+            // Contador de webhooks registrados
+            _webhookRegistered = _meter.CreateCounter<long>(
+                "webhooks_registered_total",
+                description: "Total number of webhooks registered");
+
+            // Contador de erros de registro de webhook
+            _webhookRegistrationErrors = _meter.CreateCounter<long>(
+                "webhook_registration_errors_total",
+                description: "Total number of webhook registration errors");
+
             // Histograma de duração de requisições
             _requestDuration = _meter.CreateHistogram<double>(
                 "http_request_duration_ms",
@@ -112,6 +144,12 @@ namespace SmartAlarm.Observability.Metrics
                 "external_service_call_duration_ms",
                 unit: "ms",
                 description: "Duration of external service calls in milliseconds");
+
+            // Histograma de duração de comandos webhook
+            _webhookCommandDuration = _meter.CreateHistogram<double>(
+                "webhook_command_duration_ms",
+                unit: "ms",
+                description: "Duration of webhook commands in milliseconds");
 
             // Observable gauge de alarmes ativos
             _activeAlarmsGauge = _meter.CreateObservableGauge<int>(
