@@ -236,9 +236,51 @@ namespace SmartAlarm.Infrastructure
                 };
             });
             
-            // Note: Observability services (Tracing and Metrics) are handled by SmartAlarm.Observability package
-            // SmartAlarmActivitySource, SmartAlarmMeter, and BusinessMetrics are registered via AddSmartAlarmObservability()
-            // in the API startup configuration, not here in Infrastructure layer
+            // Register observability services with environment-based implementations
+            services.AddScoped<Observability.ITracingService>(provider =>
+            {
+                var config = provider.GetRequiredService<IConfiguration>();
+                var environment = config["Environment"] ?? config["ASPNETCORE_ENVIRONMENT"] ?? "Development";
+                
+                return environment switch
+                {
+                    "Production" => new Observability.OpenTelemetryTracingService(
+                        provider.GetRequiredService<SmartAlarm.Observability.Tracing.SmartAlarmActivitySource>(),
+                        provider.GetRequiredService<ILogger<Observability.OpenTelemetryTracingService>>()
+                    ),
+                    "Staging" => new Observability.OpenTelemetryTracingService(
+                        provider.GetRequiredService<SmartAlarm.Observability.Tracing.SmartAlarmActivitySource>(),
+                        provider.GetRequiredService<ILogger<Observability.OpenTelemetryTracingService>>()
+                    ),
+                    _ => new Observability.MockTracingService(
+                        provider.GetRequiredService<ILogger<Observability.MockTracingService>>()
+                    )
+                };
+            });
+            
+            services.AddScoped<Observability.IMetricsService>(provider =>
+            {
+                var config = provider.GetRequiredService<IConfiguration>();
+                var environment = config["Environment"] ?? config["ASPNETCORE_ENVIRONMENT"] ?? "Development";
+                
+                return environment switch
+                {
+                    "Production" => new Observability.OpenTelemetryMetricsService(
+                        provider.GetRequiredService<SmartAlarm.Observability.Metrics.SmartAlarmMeter>(),
+                        provider.GetRequiredService<ILogger<Observability.OpenTelemetryMetricsService>>()
+                    ),
+                    "Staging" => new Observability.OpenTelemetryMetricsService(
+                        provider.GetRequiredService<SmartAlarm.Observability.Metrics.SmartAlarmMeter>(),
+                        provider.GetRequiredService<ILogger<Observability.OpenTelemetryMetricsService>>()
+                    ),
+                    _ => new Observability.MockMetricsService(
+                        provider.GetRequiredService<ILogger<Observability.MockMetricsService>>()
+                    )
+                };
+            });
+            
+            // Note: Observability services (SmartAlarmActivitySource and SmartAlarmMeter) are handled by SmartAlarm.Observability package
+            // They are registered via AddSmartAlarmObservability() in the API startup configuration, not here in Infrastructure layer
 
             return services;
         }
