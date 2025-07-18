@@ -9,6 +9,7 @@
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.8" />
     <PackageVersion Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.0" />
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="8.0.8" />
+    <PackageVersion Include="Microsoft.Extensions.Caching.Memory" Version="8.0.1" />
     
     <!-- Microsoft Extensions (Alinhado para .NET 8) -->
     <PackageVersion Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
