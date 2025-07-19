@@ -1,0 +1,181 @@
+version: '3.8'
+
+services:
+  # Banco de dados principal
+  postgres:
+    image: postgres:15-alpine
+    container_name: smartalarm-postgres
+    environment:
+      POSTGRES_DB: smartalarm
+      POSTGRES_USER: smartalarm
+      POSTGRES_PASSWORD: smartalarm123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smartalarm"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis para cache e sessões
+  redis:
+    image: redis:7-alpine
+    container_name: smartalarm-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --requirepass smartalarm123
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # Jaeger para observabilidade distribuída
+  jaeger:
+    image: jaegertracing/all-in-one:1.52
+    container_name: smartalarm-jaeger
+    ports:
+      - "16686:16686" # Jaeger UI
+      - "14268:14268" # Collector HTTP
+      - "6831:6831/udp" # Agent UDP
+    environment:
+      COLLECTOR_OTLP_ENABLED: true
+
+  # Prometheus para métricas
+  prometheus:
+    image: prom/prometheus:v2.48.1
+    container_name: smartalarm-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+
+  # Grafana para dashboards
+  grafana:
+    image: grafana/grafana:10.2.2
+    container_name: smartalarm-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+
+  # API Principal
+  api:
+    build:
+      context: .
+      dockerfile: src/SmartAlarm.Api/Dockerfile
+    container_name: smartalarm-api
+    ports:
+      - "5000:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "Host=postgres;Database=smartalarm;Username=smartalarm;Password=smartalarm123"
+      Redis__ConnectionString: "redis:6379,password=smartalarm123"
+      Jaeger__AgentHost: jaeger
+      Jaeger__AgentPort: 6831
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # AI Service
+  ai-service:
+    build:
+      context: .
+      dockerfile: services/ai-service/Dockerfile
+    container_name: smartalarm-ai-service
+    ports:
+      - "5001:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "Host=postgres;Database=smartalarm;Username=smartalarm;Password=smartalarm123"
+      Jaeger__AgentHost: jaeger
+      Jaeger__AgentPort: 6831
+    depends_on:
+      postgres:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Alarm Service
+  alarm-service:
+    build:
+      context: .
+      dockerfile: services/alarm-service/Dockerfile
+    container_name: smartalarm-alarm-service
+    ports:
+      - "5002:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "Host=postgres;Database=smartalarm;Username=smartalarm;Password=smartalarm123"
+      ConnectionStrings__HangfireConnection: "Host=postgres;Database=smartalarm_hangfire;Username=smartalarm;Password=smartalarm123"
+      Jaeger__AgentHost: jaeger
+      Jaeger__AgentPort: 6831
+    depends_on:
+      postgres:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Integration Service
+  integration-service:
+    build:
+      context: .
+      dockerfile: services/integration-service/Dockerfile
+    container_name: smartalarm-integration-service
+    ports:
+      - "5003:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "Host=postgres;Database=smartalarm;Username=smartalarm;Password=smartalarm123"
+      Jaeger__AgentHost: jaeger
+      Jaeger__AgentPort: 6831
+      ExternalServices__AiServiceUrl: "http://ai-service:8080"
+      ExternalServices__AlarmServiceUrl: "http://alarm-service:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_data:
+  grafana_data:
+
+networks:
+  default:
+    name: smartalarm-network

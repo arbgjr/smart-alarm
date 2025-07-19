@@ -1,0 +1,73 @@
+FROM mcr.microsoft.com/dotnet/sdk:8.0
+
+WORKDIR /app
+
+# Configurar variáveis de ambiente do NuGet mais agressivas
+ENV NUGET_PACKAGES=/app/.nuget/packages
+ENV NUGET_HTTP_CACHE_PATH=/app/.nuget/v3-cache
+ENV NUGET_PLUGINS_CACHE_PATH=/app/.nuget/plugins-cache
+ENV NUGET_XMLDOC_MODE=skip
+ENV DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
+ENV DOTNET_CLI_TELEMETRY_OPTOUT=1
+ENV DOTNET_NOLOGO=1
+ENV DOTNET_RUNNING_IN_CONTAINER=true
+
+# Criar diretório para NuGet packages
+RUN mkdir -p /app/.nuget/packages
+
+# Copiar todo o conteúdo primeiro
+COPY . .
+
+# Criar um NuGet.Config completamente limpo diretamente no container
+RUN echo '<?xml version="1.0" encoding="utf-8"?>' > /app/NuGet.Config && \
+    echo '<configuration>' >> /app/NuGet.Config && \
+    echo '  <packageSources>' >> /app/NuGet.Config && \
+    echo '    <clear />' >> /app/NuGet.Config && \
+    echo '    <add key="nuget.org" value="https://api.nuget.org/v3/index.json" protocolVersion="3" />' >> /app/NuGet.Config && \
+    echo '  </packageSources>' >> /app/NuGet.Config && \
+    echo '  <config>' >> /app/NuGet.Config && \
+    echo '    <add key="globalPackagesFolder" value="/app/.nuget/packages" />' >> /app/NuGet.Config && \
+    echo '    <add key="repositoryPath" value="/app/.nuget/packages" />' >> /app/NuGet.Config && \
+    echo '  </config>' >> /app/NuGet.Config && \
+    echo '  <fallbackPackageFolders>' >> /app/NuGet.Config && \
+    echo '    <clear />' >> /app/NuGet.Config && \
+    echo '  </fallbackPackageFolders>' >> /app/NuGet.Config && \
+    echo '</configuration>' >> /app/NuGet.Config
+
+# Copiar o NuGet.Config para outros locais
+RUN cp /app/NuGet.Config /app/src/NuGet.Config && \
+    cp /app/NuGet.Config /app/tests/NuGet.Config
+
+# Limpar tudo e restaurar do zero
+RUN dotnet clean SmartAlarm.sln || true && \
+    dotnet nuget locals all --clear && \
+    dotnet restore SmartAlarm.sln --configfile /app/NuGet.Config --packages /app/.nuget/packages --force
+
+# Fazer build completo
+RUN dotnet build SmartAlarm.sln -c Debug --no-restore --configfile /app/NuGet.Config
+
+# Configurar ambiente para testes
+ENV ASPNETCORE_ENVIRONMENT=Testing
+ENV DOTNET_ENVIRONMENT=Testing
+
+# Criar script para reconfigurar NuGet caso o volume mount sobrescreva
+RUN echo '#!/bin/bash' > /app/setup-nuget.sh && \
+    echo 'echo "Reconfigurando NuGet..."' >> /app/setup-nuget.sh && \
+    echo 'dotnet nuget locals all --clear' >> /app/setup-nuget.sh && \
+    echo 'echo "<?xml version=\"1.0\" encoding=\"utf-8\"?>" > /app/NuGet.Config' >> /app/setup-nuget.sh && \
+    echo 'echo "<configuration>" >> /app/NuGet.Config' >> /app/setup-nuget.sh && \
+    echo 'echo "  <packageSources>" >> /app/NuGet.Config' >> /app/setup-nuget.sh && \
+    echo 'echo "    <clear />" >> /app/NuGet.Config' >> /app/setup-nuget.sh && \
+    echo 'echo "    <add key=\"nuget.org\" value=\"https://api.nuget.org/v3/index.json\" protocolVersion=\"3\" />" >> /app/NuGet.Config' >> /app/setup-nuget.sh && \
+    echo 'echo "  </packageSources>" >> /app/NuGet.Config' >> /app/setup-nuget.sh && \
+    echo 'echo "  <config>" >> /app/NuGet.Config' >> /app/setup-nuget.sh && \
+    echo 'echo "    <add key=\"globalPackagesFolder\" value=\"/app/.nuget/packages\" />" >> /app/NuGet.Config' >> /app/setup-nuget.sh && \
+    echo 'echo "  </config>" >> /app/NuGet.Config' >> /app/setup-nuget.sh && \
+    echo 'echo "  <fallbackPackageFolders>" >> /app/NuGet.Config' >> /app/setup-nuget.sh && \
+    echo 'echo "    <clear />" >> /app/NuGet.Config' >> /app/setup-nuget.sh && \
+    echo 'echo "  </fallbackPackageFolders>" >> /app/NuGet.Config' >> /app/setup-nuget.sh && \
+    echo 'echo "</configuration>" >> /app/NuGet.Config' >> /app/setup-nuget.sh && \
+    chmod +x /app/setup-nuget.sh
+
+# Comando que recononfigura NuGet e roda os testes
+ENTRYPOINT ["/bin/bash", "-c", "/app/setup-nuget.sh && dotnet test --logger console;verbosity=detailed"]

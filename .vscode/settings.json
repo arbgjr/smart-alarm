@@ -87,7 +87,7 @@
 	"editor.inlineSuggest.syntaxHighlightingEnabled": true,
 	"editor.inlineSuggest.edits.showCollapsed": true,
 	"editor.inlineSuggest.showToolbar": "always",
-	"github.copilot.chat.localeOverride": "pt-br",
+	"github.copilot.chat.localeOverride": "en",
 	"workbench.commandPalette.experimental.askChatLocation": "chatView",
 	"editor.formatOnSave": false,
 	"git.enableSmartCommit": true,
@@ -126,5 +126,21 @@
 		"**/node_modules": true
 	},
 	"findUnusedExports.detectCircularImports": true,
+
+	"files.eol": "\n",
+	"files.insertFinalNewline": true,
+	"files.trimTrailingWhitespace": true,
+	"[markdown]": {
+		"files.trimTrailingWhitespace": false,
+		"editor.formatOnSave": true
+	},
+	"editor.rulers": [
+		100
+	],
+	"files.associations": {
+		"*.chatmode.md": "markdown",
+		"*.instructions.md": "markdown",
+		"*.prompt.md": "markdown"
+	}
 }
 
