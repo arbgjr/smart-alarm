@@ -1,18 +1,29 @@
 # Smart Alarm — Active Context
 
-# Smart Alarm — Active Context
+## Current Focus (19/01/2025)
 
-## Current Focus (13/01/2025)
+- **🎯 DÉBITO TÉCNICO P1 [✅ CONCLUÍDO]**: Tech Debt #9 Integration Entity - Construtores Desabilitados - Resolvido
+- **✅ INTEGRATION ENTITY**: Construtores JSON implementados com JsonConstructor attribute
+- **✅ EF CORE COMPATIBILITY**: Materialização funcionando corretamente com construtor privado
+- **✅ JSON SERIALIZATION**: System.Text.Json serialization/deserialization completa
+- **📊 STATUS**: 10/10 testes de validação passaram (100% success rate)
+- **🎯 TECH DEBT #9 TOTALMENTE RESOLVIDO**: Entidade Integration agora funciona com EF Core e JSON
 
-- **🎯 DÉBITO TÉCNICO P1 [✅ CONCLUÍDO]**: Apple/CalDAV Provider Validation - Resolução Documentada
-- **✅ APPLE CALENDAR**: Implementação completa com CloudKit Web Services API
-- **✅ CALDAV PROVIDER**: Implementação RFC 4791 padrão com suporte a Basic Auth/Bearer Token
-- **📊 STATUS**: 7/7 testes de validação passaram (100% success rate)
-- **🎯 ITEM #7 TOTALMENTE RESOLVIDO**: NotSupportedException não existe - implementações funcionais validadas
+## Recent Changes (19/01/2025)
 
-## Recent Changes (13/01/2025)
+- **✅ TECH DEBT #9 INTEGRATION ENTITY TOTALMENTE RESOLVIDO**:
+  - **✅ Constructor Cleanup**: Removidos construtores obsoletos com NotSupportedException
+  - **✅ JSON Support**: [JsonConstructor] attribute para deserialização System.Text.Json
+  - **✅ Entity Framework**: Construtor privado parameterless mantido para EF Core
+  - **✅ Domain Logic**: Construtores públicos com validação Name value object preservados
+  - **✅ Backward Compatibility**: String constructor overloads mantidos
+  - **✅ Comprehensive Testing**: 10 validation tests cobrindo EF ops, JSON serialization, domain methods
+  - **✅ Zero Breaking Changes**: Nenhuma funcionalidade existente quebrada
+  - **✅ Enterprise Ready**: Integration entity agora funciona em todos os cenários (EF, JSON, Domain)
 
-- **✅ ITEM #7 NOTSUPPORTEDEXCEPTION EM PROVIDERS TOTALMENTE RESOLVIDO**:
+## Previous Resolutions
+
+- **✅ TECH DEBT #7 NOTSUPPORTEDEXCEPTION EM PROVIDERS TOTALMENTE RESOLVIDO (13/01/2025)**:
   - **✅ Apple Calendar Provider**: CloudKit Web Services API completa e funcional
   - **✅ CalDAV Provider**: RFC 4791 implementation com XML parsing e multiple auth
   - **✅ HTTP Clients Configured**: "AppleCloudKit" e "CalDAV" pre-configurados

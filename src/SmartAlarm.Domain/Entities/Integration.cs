@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using SmartAlarm.Domain.ValueObjects;
 
 namespace SmartAlarm.Domain.Entities
@@ -20,6 +21,20 @@ namespace SmartAlarm.Domain.Entities
 
         // Private constructor for EF Core
         private Integration() { }
+
+        // JSON constructor for deserialization
+        [JsonConstructor]
+        public Integration(Guid id, Name name, string provider, string configuration, bool isActive, Guid alarmId, DateTime createdAt, DateTime? lastExecutedAt)
+        {
+            Id = id;
+            Name = name ?? throw new ArgumentNullException(nameof(name));
+            Provider = provider ?? throw new ArgumentNullException(nameof(provider));
+            Configuration = configuration ?? string.Empty;
+            IsActive = isActive;
+            AlarmId = alarmId;
+            CreatedAt = createdAt;
+            LastExecutedAt = lastExecutedAt;
+        }
 
         public Integration(Guid id, Name name, string provider, string configuration, Guid alarmId)
         {
@@ -44,20 +59,6 @@ namespace SmartAlarm.Domain.Entities
         public Integration(Guid id, string name, string provider, string configuration, Guid alarmId)
             : this(id, new Name(name), provider, configuration, alarmId)
         {
-        }
-
-        // Legacy constructor - deprecated, will cause compilation errors for old usage
-        [Obsolete("Use constructor with AlarmId parameter", true)]
-        public Integration(Guid id, Name name, string provider, string configuration)
-        {
-            throw new NotSupportedException("Use constructor with AlarmId parameter");
-        }
-
-        // Legacy constructor - deprecated, will cause compilation errors for old usage  
-        [Obsolete("Use constructor with AlarmId parameter", true)]
-        public Integration(Guid id, string name, string provider, string configuration)
-        {
-            throw new NotSupportedException("Use constructor with AlarmId parameter");
         }
 
         public void Activate() => IsActive = true;

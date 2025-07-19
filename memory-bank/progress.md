@@ -16,6 +16,7 @@
 **Status**: ✅ **CONCLUÍDO - Item #5 OciVaultProvider - Implementação Real (15/01/2025)**
 **Status**: ✅ **CONCLUÍDO - Item #6 External Calendar Integration - Silenciamento de Erros (12/01/2025)**
 **Status**: ✅ **CONCLUÍDO - Item #7 NotSupportedException em Providers - RESOLVIDO (Implementações Funcionais) (12/01/2025)**
+**Status**: ✅ **CONCLUÍDO - Item #9 Integration Entity - Construtores Desabilitados - RESOLVIDO (Construtores JSON Implementados) (19/01/2025)**
 
 ### **NotSupportedException em Providers - ANÁLISE E RESOLUÇÃO ✅**
 
@@ -62,6 +63,60 @@
 - **Realidade**: Implementações Apple e CalDAV **já funcionais e completas**
 - **Ação**: Marcado como resolvido com evidência técnica
 - **Evidência**: 7/7 testes passando demonstram funcionalidade plena
+
+### **Integration Entity - Construtores Desabilitados - RESOLUÇÃO ✅**
+
+#### **Problema Identificado e Resolvido**
+
+- **Débito Original**: Construtores obsoletos com NotSupportedException quebravam Entity Framework e JSON serialization
+- **Arquivo Principal**: `src/SmartAlarm.Domain/Entities/Integration.cs`
+- **Issue**: Construtores legacy impediam materialização EF Core e deserialização JSON
+
+#### **Solução Implementada ✅**
+
+**Remoção de Construtores Problemáticos:**
+- ✅ Removidos construtores obsoletos que lançavam NotSupportedException
+- ✅ Mantido construtor privado parametrless para Entity Framework Core
+- ✅ Mantidos construtores públicos funcionais para uso normal
+
+**Suporte JSON Serialization:**
+- ✅ Adicionado `JsonConstructor` attribute para deserialização
+- ✅ Construtor específico para JSON com todos os parâmetros necessários
+- ✅ Compatibilidade com System.Text.Json e camelCase naming policy
+
+#### **Implementação Técnica ✅**
+
+- **Entity Framework**: Construtor privado mantido para materialização
+- **Domain Logic**: Construtores públicos com validação completa
+- **JSON Support**: Construtor específico com `[JsonConstructor]` attribute
+- **Validation**: Validação JSON configuration mantida
+
+#### **Testes Abrangentes ✅**
+
+- **Arquivo**: `tests/SmartAlarm.Tests/IntegrationService/TechDebt/TechDebt9IntegrationConstructorTests.cs`
+- **Coverage**: 10 testes de validação - 100% passando
+- **Cenários Testados**:
+  - ✅ Entity Framework Core operations (materialização e queries)
+  - ✅ JSON serialization com WriteIndented e camelCase policy
+  - ✅ JSON deserialization com objetos complexos
+  - ✅ Constructor validation com Name value objects
+  - ✅ Domain methods (Activate, Deactivate, UpdateConfiguration)
+  - ✅ Private parameterless constructor accessibility para EF
+  - ✅ Constructor string overloads para backward compatibility
+
+#### **Validação Enterprise ✅**
+
+- **Entity Framework**: Integração testada com SmartAlarmContext
+- **JSON Compatibility**: System.Text.Json deserialização funcional
+- **Domain Logic**: Validações e business rules preservadas
+- **Backward Compatibility**: Não quebrou funcionalidades existentes
+
+#### **Resultado Final ✅**
+
+- **Status**: Tech Debt #9 **completamente resolvido**
+- **Realidade**: Integration entity agora funciona com EF Core e JSON serialization
+- **Evidência**: 10/10 testes passando + build sem erros + testes de integração funcionais
+- **Impact**: Zero breaking changes para funcionalidade existente
 
 ### **External Calendar Integration - Tratamento Robusto de Erros ✅**
 
