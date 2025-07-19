@@ -126,6 +126,100 @@ namespace SmartAlarm.Infrastructure.Repositories.EntityFramework
             }
         }
 
+        public async Task<IEnumerable<Integration>> GetByUserIdAsync(Guid userId)
+        {
+            using var activity = _activitySource.StartActivity("GetIntegrationsByUserId");
+            activity?.SetTag("user.id", userId.ToString());
+
+            var stopwatch = Stopwatch.StartNew();
+
+            _logger.LogInformation(LogTemplates.QueryStarted,
+                "GetIntegrationsByUserId",
+                new { UserId = userId });
+
+            try
+            {
+                // Busca integrações do usuário através dos alarmes
+                var integrations = await (from integration in _context.Integrations
+                                        join alarm in _context.Alarms on integration.AlarmId equals alarm.Id
+                                        where alarm.UserId == userId
+                                        select integration).ToListAsync();
+                
+                stopwatch.Stop();
+
+                _meter.RecordDatabaseQueryDuration(stopwatch.ElapsedMilliseconds, "GetByUserId", "Integrations");
+
+                _logger.LogInformation(LogTemplates.QueryCompleted,
+                    "GetIntegrationsByUserId",
+                    stopwatch.ElapsedMilliseconds,
+                    integrations.Count());
+
+                activity?.SetStatus(ActivityStatusCode.Ok);
+                return integrations;
+            }
+            catch (Exception ex)
+            {
+                stopwatch.Stop();
+                activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+                _meter.IncrementErrorCount("DATABASE", "Integrations", "QueryError");
+
+                _logger.LogError(LogTemplates.DatabaseQueryFailed,
+                    "GetIntegrationsByUserId",
+                    "Integrations",
+                    stopwatch.ElapsedMilliseconds,
+                    ex.Message);
+
+                throw;
+            }
+        }
+
+        public async Task<IEnumerable<Integration>> GetActiveByUserIdAsync(Guid userId)
+        {
+            using var activity = _activitySource.StartActivity("GetActiveIntegrationsByUserId");
+            activity?.SetTag("user.id", userId.ToString());
+
+            var stopwatch = Stopwatch.StartNew();
+
+            _logger.LogInformation(LogTemplates.QueryStarted,
+                "GetActiveIntegrationsByUserId",
+                new { UserId = userId });
+
+            try
+            {
+                // Busca integrações ativas do usuário através dos alarmes
+                var integrations = await (from integration in _context.Integrations
+                                        join alarm in _context.Alarms on integration.AlarmId equals alarm.Id
+                                        where alarm.UserId == userId && integration.IsActive
+                                        select integration).ToListAsync();
+                
+                stopwatch.Stop();
+
+                _meter.RecordDatabaseQueryDuration(stopwatch.ElapsedMilliseconds, "GetActiveByUserId", "Integrations");
+
+                _logger.LogInformation(LogTemplates.QueryCompleted,
+                    "GetActiveIntegrationsByUserId",
+                    stopwatch.ElapsedMilliseconds,
+                    integrations.Count());
+
+                activity?.SetStatus(ActivityStatusCode.Ok);
+                return integrations;
+            }
+            catch (Exception ex)
+            {
+                stopwatch.Stop();
+                activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+                _meter.IncrementErrorCount("DATABASE", "Integrations", "QueryError");
+
+                _logger.LogError(LogTemplates.DatabaseQueryFailed,
+                    "GetActiveIntegrationsByUserId",
+                    "Integrations",
+                    stopwatch.ElapsedMilliseconds,
+                    ex.Message);
+
+                throw;
+            }
+        }
+
         public async Task<IEnumerable<Integration>> GetAllAsync()
         {
             using var activity = _activitySource.StartActivity("GetAllIntegrations");

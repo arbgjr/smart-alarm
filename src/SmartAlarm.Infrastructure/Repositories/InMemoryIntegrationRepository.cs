@@ -39,6 +39,28 @@ namespace SmartAlarm.Infrastructure.Repositories
             return Task.FromResult(result!);
         }
 
+        public Task<IEnumerable<Integration>> GetByUserIdAsync(Guid userId)
+        {
+            // Para encontrar integrações por usuário, precisamos buscar via alarmes
+            // Em uma implementação real, isso seria feito com JOIN no banco
+            var result = _integrations.Values.Where(i => 
+                // Para este exemplo, usamos uma lógica simples baseada no hash do userId
+                // Em produção, haveria uma relação real User -> Alarm -> Integration
+                (i.AlarmId.GetHashCode() % 100) == (userId.GetHashCode() % 100)
+            );
+            return Task.FromResult(result!);
+        }
+
+        public Task<IEnumerable<Integration>> GetActiveByUserIdAsync(Guid userId)
+        {
+            // Similar ao anterior, mas filtrando apenas integrações ativas
+            var result = _integrations.Values.Where(i => 
+                i.IsActive && 
+                (i.AlarmId.GetHashCode() % 100) == (userId.GetHashCode() % 100)
+            );
+            return Task.FromResult(result!);
+        }
+
         public Task UpdateAsync(Integration integration)
         {
             _integrations[integration.Id] = integration;

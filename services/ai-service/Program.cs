@@ -2,6 +2,7 @@ using Serilog;
 using SmartAlarm.Observability.Extensions;
 using SmartAlarm.Infrastructure;
 using SmartAlarm.Application;
+using SmartAlarm.AiService.Infrastructure.MachineLearning;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +20,9 @@ builder.Host.UseSerilog((context, configuration) =>
 
 // Adicionar observabilidade completa
 builder.Services.AddObservability(builder.Configuration, "SmartAlarm.AiService", "1.0.0");
+
+// Registrar serviço de Machine Learning
+builder.Services.AddSingleton<IMachineLearningService, MachineLearningService>();
 
 // Registrar MediatR apontando para os handlers do AI Service e Application Layer
 builder.Services.AddMediatR(cfg => 

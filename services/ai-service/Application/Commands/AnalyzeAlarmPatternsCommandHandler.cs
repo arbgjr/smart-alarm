@@ -4,6 +4,7 @@ using SmartAlarm.Domain.Repositories;
 using SmartAlarm.Observability.Context;
 using SmartAlarm.Observability.Tracing;
 using SmartAlarm.Observability.Metrics;
+using SmartAlarm.AiService.Infrastructure.MachineLearning;
 using FluentValidation;
 using System.Diagnostics;
 
@@ -92,6 +93,7 @@ namespace SmartAlarm.AiService.Application.Commands
         private readonly IAlarmRepository _alarmRepository;
         private readonly IUserRepository _userRepository;
         private readonly IValidator<AnalyzeAlarmPatternsCommand> _validator;
+        private readonly IMachineLearningService _machineLearningService;
         private readonly SmartAlarmActivitySource _activitySource;
         private readonly SmartAlarmMeter _meter;
         private readonly ICorrelationContext _correlationContext;
@@ -101,6 +103,7 @@ namespace SmartAlarm.AiService.Application.Commands
             IAlarmRepository alarmRepository,
             IUserRepository userRepository,
             IValidator<AnalyzeAlarmPatternsCommand> validator,
+            IMachineLearningService machineLearningService,
             SmartAlarmActivitySource activitySource,
             SmartAlarmMeter meter,
             ICorrelationContext correlationContext,
@@ -109,6 +112,7 @@ namespace SmartAlarm.AiService.Application.Commands
             _alarmRepository = alarmRepository;
             _userRepository = userRepository;
             _validator = validator;
+            _machineLearningService = machineLearningService;
             _activitySource = activitySource;
             _meter = meter;
             _correlationContext = correlationContext;
@@ -185,17 +189,32 @@ namespace SmartAlarm.AiService.Application.Commands
                 activity?.SetTag("analysis.end_date", endDate.ToString("yyyy-MM-dd"));
                 activity?.SetTag("analysis.days_analyzed", daysAnalyzed.ToString());
 
-                // Executar análise de IA (simulação)
-                var patterns = AnalyzePatterns(alarmsToAnalyze, startDate, endDate);
-                var recommendations = GenerateRecommendations(patterns, alarmsToAnalyze);
+                // Executar análise de IA usando ML.NET
+                _logger.LogInformation("Executando análise ML.NET para {AlarmCount} alarmes - UserId: {UserId} - CorrelationId: {CorrelationId}",
+                    alarmsToAnalyze.Count, request.UserId, _correlationContext.CorrelationId);
+
+                var mlResult = await _machineLearningService.AnalyzeAlarmPatternsAsync(
+                    alarmsToAnalyze, startDate, endDate);
+
+                // Converter resultado do ML.NET para o formato esperado
+                var patterns = new AlarmUsagePatterns(
+                    MostCommonAlarmTime: mlResult.MostCommonAlarmTime,
+                    MostActiveDays: mlResult.MostActiveDays,
+                    AverageSnoozeCount: mlResult.AverageSnoozeCount,
+                    AverageWakeupDelay: mlResult.AverageWakeupDelay,
+                    SleepPattern: mlResult.SleepPattern
+                );
+
+                var recommendations = GenerateRecommendationsFromMLResult(mlResult, alarmsToAnalyze);
                 var metrics = new AnalysisMetrics(
                     AlarmsAnalyzed: alarmsToAnalyze.Count,
                     DaysAnalyzed: daysAnalyzed,
-                    PatternConfidence: CalculatePatternConfidence(alarmsToAnalyze),
+                    PatternConfidence: mlResult.PatternConfidence,
                     LastAlarmActivity: alarmsToAnalyze.Max(a => a.LastTriggeredAt ?? a.CreatedAt)
                 );
 
-                activity?.SetTag("analysis.pattern_confidence", metrics.PatternConfidence.ToString("F2"));
+                activity?.SetTag("ml.model_accuracy", mlResult.ModelAccuracy.ToString("F2"));
+                activity?.SetTag("analysis.pattern_confidence", mlResult.PatternConfidence.ToString("F2"));
                 activity?.SetTag("analysis.recommendations_count", recommendations.Count().ToString());
 
                 stopwatch.Stop();
@@ -245,88 +264,72 @@ namespace SmartAlarm.AiService.Application.Commands
         }
 
         /// <summary>
-        /// Analisa padrões de uso dos alarmes (simulação de ML)
+        /// Gera recomendações inteligentes baseadas no resultado do ML.NET
         /// </summary>
-        private static AlarmUsagePatterns AnalyzePatterns(IEnumerable<Alarm> alarms, DateTime startDate, DateTime endDate)
-        {
-            // Simulação de análise de ML - em produção seria ML.NET
-            var averageTime = alarms.Average(a => a.Time.TimeOfDay.TotalMinutes);
-            var mostCommonTime = TimeSpan.FromMinutes(averageTime);
-            
-            // Analisar dias mais ativos baseado nos schedules
-            var daysFrequency = new Dictionary<System.DayOfWeek, int>();
-            foreach (var alarm in alarms)
-            {
-                foreach (var schedule in alarm.Schedules.Where(s => s.IsActive))
-                {
-                    var daysOfWeek = schedule.DaysOfWeek;
-                    if (daysOfWeek.HasFlag(SmartAlarm.Domain.Entities.DaysOfWeek.Monday)) daysFrequency[System.DayOfWeek.Monday] = daysFrequency.GetValueOrDefault(System.DayOfWeek.Monday) + 1;
-                    if (daysOfWeek.HasFlag(SmartAlarm.Domain.Entities.DaysOfWeek.Tuesday)) daysFrequency[System.DayOfWeek.Tuesday] = daysFrequency.GetValueOrDefault(System.DayOfWeek.Tuesday) + 1;
-                    if (daysOfWeek.HasFlag(SmartAlarm.Domain.Entities.DaysOfWeek.Wednesday)) daysFrequency[System.DayOfWeek.Wednesday] = daysFrequency.GetValueOrDefault(System.DayOfWeek.Wednesday) + 1;
-                    if (daysOfWeek.HasFlag(SmartAlarm.Domain.Entities.DaysOfWeek.Thursday)) daysFrequency[System.DayOfWeek.Thursday] = daysFrequency.GetValueOrDefault(System.DayOfWeek.Thursday) + 1;
-                    if (daysOfWeek.HasFlag(SmartAlarm.Domain.Entities.DaysOfWeek.Friday)) daysFrequency[System.DayOfWeek.Friday] = daysFrequency.GetValueOrDefault(System.DayOfWeek.Friday) + 1;
-                    if (daysOfWeek.HasFlag(SmartAlarm.Domain.Entities.DaysOfWeek.Saturday)) daysFrequency[System.DayOfWeek.Saturday] = daysFrequency.GetValueOrDefault(System.DayOfWeek.Saturday) + 1;
-                    if (daysOfWeek.HasFlag(SmartAlarm.Domain.Entities.DaysOfWeek.Sunday)) daysFrequency[System.DayOfWeek.Sunday] = daysFrequency.GetValueOrDefault(System.DayOfWeek.Sunday) + 1;
-                }
-            }
-
-            var activeDays = daysFrequency
-                .OrderByDescending(kvp => kvp.Value)
-                .Take(3)
-                .Select(kvp => kvp.Key)
-                .ToList();
-
-            return new AlarmUsagePatterns(
-                MostCommonAlarmTime: mostCommonTime,
-                MostActiveDays: activeDays,
-                AverageSnoozeCount: 1.5, // Simulado
-                AverageWakeupDelay: TimeSpan.FromMinutes(8), // Simulado
-                SleepPattern: mostCommonTime.Hours < 7 ? "Early Bird" : mostCommonTime.Hours > 9 ? "Night Owl" : "Regular"
-            );
-        }
-
-        /// <summary>
-        /// Gera recomendações inteligentes baseadas nos padrões
-        /// </summary>
-        private static IEnumerable<SmartRecommendation> GenerateRecommendations(AlarmUsagePatterns patterns, IEnumerable<Alarm> alarms)
+        private static IEnumerable<SmartRecommendation> GenerateRecommendationsFromMLResult(AlarmPatternAnalysisResult mlResult, IEnumerable<Alarm> alarms)
         {
             var recommendations = new List<SmartRecommendation>();
 
-            // Recomendação de otimização de horário
-            if (patterns.SleepPattern == "Irregular")
+            // Recomendação de otimização de horário baseada no ML.NET
+            if (mlResult.SleepPattern == "Irregular")
             {
                 recommendations.Add(new SmartRecommendation(
                     Type: "SCHEDULE_OPTIMIZATION",
-                    Title: "Padronização de Horários",
-                    Description: "Seus horários de alarme variam muito. Considere manter um horário mais consistente para melhorar a qualidade do sono.",
-                    ConfidenceScore: 0.85,
+                    Title: "Padronização de Horários (ML.NET Analysis)",
+                    Description: $"Nosso modelo ML.NET identificou padrão irregular com {mlResult.PatternConfidence:F1}% de confiança. Considere manter um horário mais consistente para melhorar a qualidade do sono.",
+                    ConfidenceScore: mlResult.PatternConfidence,
                     SuggestedImplementationDate: DateTime.Today.AddDays(1)
                 ));
             }
 
-            // Recomendação de ajuste de horário
-            if (patterns.AverageWakeupDelay.TotalMinutes > 10)
+            // Recomendação de ajuste de horário baseada no ML.NET
+            if (mlResult.AverageWakeupDelay.TotalMinutes > 10)
             {
+                var adjustmentMinutes = (int)Math.Ceiling(mlResult.AverageWakeupDelay.TotalMinutes);
                 recommendations.Add(new SmartRecommendation(
                     Type: "TIME_ADJUSTMENT",
-                    Title: "Ajuste de Horário",
-                    Description: $"Você demora em média {patterns.AverageWakeupDelay.TotalMinutes:F0} minutos para levantar. Considere adiantar seus alarmes.",
-                    ConfidenceScore: 0.78,
-                    SuggestedImplementationDate: DateTime.Today.AddDays(3)
+                    Title: "Ajuste de Horário (ML.NET Prediction)",
+                    Description: $"Análise ML.NET mostra atraso médio de {adjustmentMinutes} minutos. Modelo sugere adiantar seus alarmes com {mlResult.ModelAccuracy:F1}% de precisão.",
+                    ConfidenceScore: Math.Min(0.9, mlResult.ModelAccuracy),
+                    SuggestedImplementationDate: DateTime.Today.AddDays(2)
                 ));
             }
 
-            return recommendations;
-        }
+            // Recomendação baseada na contagem de soneca
+            if (mlResult.AverageSnoozeCount > 2)
+            {
+                recommendations.Add(new SmartRecommendation(
+                    Type: "SLEEP_HYGIENE",
+                    Title: "Redução de Sonecas (ML Analysis)",
+                    Description: $"Detectada média de {mlResult.AverageSnoozeCount:F1} sonecas por alarme. Considere ajustar horário de dormir para reduzir dependência de soneca.",
+                    ConfidenceScore: Math.Min(0.85, mlResult.PatternConfidence),
+                    SuggestedImplementationDate: DateTime.Today.AddDays(7)
+                ));
+            }
 
-        /// <summary>
-        /// Calcula a confiança dos padrões identificados
-        /// </summary>
-        private static double CalculatePatternConfidence(IEnumerable<Alarm> alarms)
-        {
-            // Simulação de cálculo de confiança baseado na quantidade de dados
-            var alarmCount = alarms.Count();
-            return Math.Min(0.95, 0.3 + (alarmCount * 0.1));
+            // Recomendação para Early Birds ou Night Owls
+            if (mlResult.SleepPattern == "Early Bird" && mlResult.MostCommonAlarmTime.Hours < 6)
+            {
+                recommendations.Add(new SmartRecommendation(
+                    Type: "SCHEDULE_OPTIMIZATION",
+                    Title: "Otimização para Madrugadores",
+                    Description: "Padrão Early Bird detectado. Considere criar rotinas noturnas mais estruturadas para maximizar a qualidade do sono limitado.",
+                    ConfidenceScore: mlResult.ModelAccuracy,
+                    SuggestedImplementationDate: DateTime.Today.AddDays(3)
+                ));
+            }
+            else if (mlResult.SleepPattern == "Night Owl" && mlResult.MostCommonAlarmTime.Hours > 9)
+            {
+                recommendations.Add(new SmartRecommendation(
+                    Type: "SCHEDULE_OPTIMIZATION",
+                    Title: "Ajuste para Notívagos",
+                    Description: "Padrão Night Owl identificado. Considere gradualmente adiantar horários para melhor alinhamento com responsabilidades matutinas.",
+                    ConfidenceScore: mlResult.ModelAccuracy,
+                    SuggestedImplementationDate: DateTime.Today.AddDays(5)
+                ));
+            }
+
+            return recommendations.OrderByDescending(r => r.ConfidenceScore);
         }
     }
 }

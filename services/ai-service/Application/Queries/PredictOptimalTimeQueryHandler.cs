@@ -4,6 +4,7 @@ using SmartAlarm.Domain.Repositories;
 using SmartAlarm.Observability.Context;
 using SmartAlarm.Observability.Tracing;
 using SmartAlarm.Observability.Metrics;
+using SmartAlarm.AiService.Infrastructure.MachineLearning;
 using FluentValidation;
 using System.Diagnostics;
 
@@ -80,6 +81,7 @@ namespace SmartAlarm.AiService.Application.Queries
         private readonly IAlarmRepository _alarmRepository;
         private readonly IUserRepository _userRepository;
         private readonly IValidator<PredictOptimalTimeQuery> _validator;
+        private readonly IMachineLearningService _machineLearningService;
         private readonly SmartAlarmActivitySource _activitySource;
         private readonly SmartAlarmMeter _meter;
         private readonly ICorrelationContext _correlationContext;
@@ -89,6 +91,7 @@ namespace SmartAlarm.AiService.Application.Queries
             IAlarmRepository alarmRepository,
             IUserRepository userRepository,
             IValidator<PredictOptimalTimeQuery> validator,
+            IMachineLearningService machineLearningService,
             SmartAlarmActivitySource activitySource,
             SmartAlarmMeter meter,
             ICorrelationContext correlationContext,
@@ -97,6 +100,7 @@ namespace SmartAlarm.AiService.Application.Queries
             _alarmRepository = alarmRepository;
             _userRepository = userRepository;
             _validator = validator;
+            _machineLearningService = machineLearningService;
             _activitySource = activitySource;
             _meter = meter;
             _correlationContext = correlationContext;
@@ -156,16 +160,25 @@ namespace SmartAlarm.AiService.Application.Queries
 
                 activity?.SetTag("historical.alarms_count", relevantAlarms.Count.ToString());
 
-                // Executar predição usando IA (simulação)
-                var predictions = PredictOptimalTimes(relevantAlarms, request.TargetDay, request.Context, request.PreferredTimeRange);
+                // Executar predição usando ML.NET
+                _logger.LogInformation("Executando predição ML.NET para {TargetDay} com {AlarmCount} alarmes históricos - CorrelationId: {CorrelationId}",
+                    request.TargetDay, relevantAlarms.Count, _correlationContext.CorrelationId);
+
+                var mlResult = await _machineLearningService.PredictOptimalTimeAsync(
+                    relevantAlarms, request.TargetDay, request.Context, request.PreferredTimeRange);
+
+                // Converter resultado do ML.NET para múltiplos slots
+                var predictions = CreateOptimalTimeSlotsFromMLResult(mlResult, request.TargetDay, request.Context);
+                
                 var metrics = new PredictionMetrics(
                     HistoricalDataPoints: relevantAlarms.Count,
-                    ModelAccuracy: 0.87, // Simulado
-                    ModelVersion: "SmartAlarm.AI.v1.2.3",
-                    FactorsConsidered: GetFactorsConsidered(request.Context, relevantAlarms.Count)
+                    ModelAccuracy: mlResult.ModelAccuracy,
+                    ModelVersion: "ML.NET SmartAlarm v2.0.0",
+                    FactorsConsidered: mlResult.FactorsConsidered ?? new[] { "Análise ML.NET", "Padrões históricos" }
                 );
 
-                activity?.SetTag("prediction.model_accuracy", metrics.ModelAccuracy.ToString("F2"));
+                activity?.SetTag("prediction.ml_model_accuracy", mlResult.ModelAccuracy.ToString("F2"));
+                activity?.SetTag("prediction.ml_confidence", mlResult.ConfidenceScore.ToString("F2"));
                 activity?.SetTag("prediction.slots_count", predictions.Count().ToString());
 
                 stopwatch.Stop();
@@ -215,89 +228,147 @@ namespace SmartAlarm.AiService.Application.Queries
         }
 
         /// <summary>
-        /// Prediz horários ótimos usando algoritmos de ML (simulação)
+        /// Cria múltiplos slots de horário ótimo baseado no resultado do ML.NET
         /// </summary>
-        private static IEnumerable<OptimalTimeSlot> PredictOptimalTimes(
-            IEnumerable<Alarm> historicalAlarms, 
-            System.DayOfWeek targetDay, 
-            string? context,
-            TimeSpan? preferredRange)
+        private static IEnumerable<OptimalTimeSlot> CreateOptimalTimeSlotsFromMLResult(
+            OptimalTimePredictionResult mlResult, 
+            DayOfWeek targetDay, 
+            string? context)
         {
-            var predictions = new List<OptimalTimeSlot>();
+            var slots = new List<OptimalTimeSlot>();
 
-            // Análise baseada em padrões históricos
-            if (historicalAlarms.Any())
-            {
-                var avgTime = historicalAlarms.Average(a => a.Time.TimeOfDay.TotalMinutes);
-                var historicalOptimal = TimeSpan.FromMinutes(avgTime);
-
-                predictions.Add(new OptimalTimeSlot(
-                    SuggestedTime: historicalOptimal,
-                    ConfidenceScore: 0.85,
-                    Reasoning: "Baseado no seu padrão histórico de alarmes",
-                    Category: "historical_data",
-                    AlternativeTime: historicalOptimal.Add(TimeSpan.FromMinutes(15))
-                ));
-            }
-
-            // Análise baseada no contexto
-            if (!string.IsNullOrEmpty(context))
-            {
-                var contextTime = context switch
-                {
-                    "work" => TimeSpan.FromHours(7), // 07:00
-                    "exercise" => TimeSpan.FromHours(6), // 06:00
-                    "appointment" => TimeSpan.FromHours(8.5), // 08:30
-                    "personal" => TimeSpan.FromHours(9), // 09:00
-                    "sleep" => TimeSpan.FromHours(22), // 22:00
-                    _ => TimeSpan.FromHours(7.5) // 07:30 padrão
-                };
-
-                predictions.Add(new OptimalTimeSlot(
-                    SuggestedTime: contextTime,
-                    ConfidenceScore: 0.78,
-                    Reasoning: $"Horário otimizado para contexto: {context}",
-                    Category: "context_based"
-                ));
-            }
-
-            // Análise baseada no dia da semana
-            var dayBasedTime = targetDay switch
-            {
-                System.DayOfWeek.Saturday or System.DayOfWeek.Sunday => TimeSpan.FromHours(8.5), // Fins de semana mais tarde
-                System.DayOfWeek.Monday => TimeSpan.FromHours(6.5), // Segunda mais cedo
-                _ => TimeSpan.FromHours(7) // Dias normais
-            };
-
-            predictions.Add(new OptimalTimeSlot(
-                SuggestedTime: dayBasedTime,
-                ConfidenceScore: 0.72,
-                Reasoning: $"Horário otimizado para {targetDay}",
-                Category: "sleep_pattern"
+            // Slot principal baseado na predição ML.NET
+            slots.Add(new OptimalTimeSlot(
+                SuggestedTime: mlResult.SuggestedTime,
+                ConfidenceScore: mlResult.ConfidenceScore,
+                Reasoning: $"ML.NET Prediction: {mlResult.Reasoning}",
+                Category: "ml_net_primary",
+                AlternativeTime: mlResult.AlternativeTime
             ));
 
-            return predictions.OrderByDescending(p => p.ConfidenceScore);
+            // Slot alternativo se fornecido pelo ML.NET
+            if (mlResult.AlternativeTime.HasValue)
+            {
+                slots.Add(new OptimalTimeSlot(
+                    SuggestedTime: mlResult.AlternativeTime.Value,
+                    ConfidenceScore: Math.Max(0.1, mlResult.ConfidenceScore - 0.15),
+                    Reasoning: "Horário alternativo baseado em análise ML.NET",
+                    Category: "ml_net_alternative"
+                ));
+            }
+
+            // Slot baseado no contexto específico (se fornecido)
+            if (!string.IsNullOrEmpty(context))
+            {
+                var contextTime = GetContextBasedTime(context);
+                var contextConfidence = CalculateContextConfidence(mlResult.SuggestedTime, contextTime, mlResult.ModelAccuracy);
+                
+                if (contextConfidence > 0.5) // Só adicionar se tiver confiança razoável
+                {
+                    slots.Add(new OptimalTimeSlot(
+                        SuggestedTime: contextTime,
+                        ConfidenceScore: contextConfidence,
+                        Reasoning: $"Otimizado para contexto: {context} com base em ML.NET",
+                        Category: "context_based_ml"
+                    ));
+                }
+            }
+
+            // Slot baseado no dia da semana (refinado com ML.NET)
+            var dayBasedTime = GetDayBasedTime(targetDay, mlResult.SuggestedTime);
+            var dayConfidence = CalculateDayConfidence(targetDay, mlResult.ModelAccuracy);
+            
+            slots.Add(new OptimalTimeSlot(
+                SuggestedTime: dayBasedTime,
+                ConfidenceScore: dayConfidence,
+                Reasoning: $"Otimizado para {GetDayDescription(targetDay)} baseado em análise ML.NET",
+                Category: "day_optimized_ml"
+            ));
+
+            return slots.OrderByDescending(s => s.ConfidenceScore).Take(4); // Top 4 slots
         }
 
         /// <summary>
-        /// Retorna fatores considerados na predição
+        /// Obtém horário baseado no contexto
         /// </summary>
-        private static IEnumerable<string> GetFactorsConsidered(string? context, int historicalDataCount)
+        private static TimeSpan GetContextBasedTime(string context)
         {
-            var factors = new List<string>
+            return context.ToLower() switch
             {
-                "Padrões de sono",
-                "Histórico de alarmes",
-                "Dia da semana"
+                "work" => TimeSpan.FromHours(6.5),   // 06:30
+                "exercise" => TimeSpan.FromHours(5.5), // 05:30
+                "appointment" => TimeSpan.FromHours(8), // 08:00
+                "personal" => TimeSpan.FromHours(8.5),  // 08:30
+                "sleep" => TimeSpan.FromHours(22),      // 22:00
+                _ => TimeSpan.FromHours(7)              // 07:00 padrão
+            };
+        }
+
+        /// <summary>
+        /// Calcula confiança baseada na distância entre horários ML.NET e contexto
+        /// </summary>
+        private static double CalculateContextConfidence(TimeSpan mlTime, TimeSpan contextTime, double baseAccuracy)
+        {
+            var timeDifference = Math.Abs((mlTime - contextTime).TotalHours);
+            
+            // Menor diferença = maior confiança
+            var proximityScore = Math.Max(0, 1 - (timeDifference / 12)); // Normalizar em 12h
+            return Math.Min(0.95, baseAccuracy * proximityScore);
+        }
+
+        /// <summary>
+        /// Obtém horário baseado no dia da semana, refinado com resultado ML.NET
+        /// </summary>
+        private static TimeSpan GetDayBasedTime(DayOfWeek day, TimeSpan mlSuggestedTime)
+        {
+            var baseTime = day switch
+            {
+                DayOfWeek.Saturday or DayOfWeek.Sunday => TimeSpan.FromHours(8.5), // Fins de semana
+                DayOfWeek.Monday => TimeSpan.FromHours(6.5), // Segunda mais cedo
+                DayOfWeek.Friday => TimeSpan.FromHours(7.5), // Sexta um pouco mais tarde
+                _ => TimeSpan.FromHours(7) // Dias normais
             };
 
-            if (!string.IsNullOrEmpty(context))
-                factors.Add($"Contexto: {context}");
+            // Ajustar baseado na sugestão ML.NET (média ponderada)
+            var mlHours = mlSuggestedTime.TotalHours;
+            var baseHours = baseTime.TotalHours;
+            var adjustedHours = (mlHours * 0.7) + (baseHours * 0.3); // 70% ML.NET, 30% dia
 
-            if (historicalDataCount > 10)
-                factors.Add("Análise estatística avançada");
+            return TimeSpan.FromHours(Math.Max(0, Math.Min(24, adjustedHours)));
+        }
 
-            return factors;
+        /// <summary>
+        /// Calcula confiança baseada no dia da semana
+        /// </summary>
+        private static double CalculateDayConfidence(DayOfWeek day, double baseAccuracy)
+        {
+            var dayFactor = day switch
+            {
+                DayOfWeek.Saturday or DayOfWeek.Sunday => 0.9, // Fins de semana mais previsíveis
+                DayOfWeek.Monday => 0.8, // Segunda tem padrão específico
+                DayOfWeek.Friday => 0.7, // Sexta pode variar
+                _ => 0.85 // Dias normais
+            };
+
+            return Math.Min(0.9, baseAccuracy * dayFactor);
+        }
+
+        /// <summary>
+        /// Obtém descrição amigável do dia
+        /// </summary>
+        private static string GetDayDescription(DayOfWeek day)
+        {
+            return day switch
+            {
+                DayOfWeek.Monday => "segunda-feira",
+                DayOfWeek.Tuesday => "terça-feira", 
+                DayOfWeek.Wednesday => "quarta-feira",
+                DayOfWeek.Thursday => "quinta-feira",
+                DayOfWeek.Friday => "sexta-feira",
+                DayOfWeek.Saturday => "sábado",
+                DayOfWeek.Sunday => "domingo",
+                _ => day.ToString()
+            };
         }
     }
 }
