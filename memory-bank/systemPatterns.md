@@ -42,34 +42,26 @@
 - Name tests descriptively (e.g., "should return error if...").
 - Follow the AAA pattern (Arrange, Act, Assert).
 - On the frontend, use Testing Library for React components, cover interactions, accessibility, and visual states.
-- Implement integration tests para serviços externos usando HTTP health checks para verificar disponibilidade.
-- Para testes de MinIO, Vault, e outros serviços, usar HttpClient para simplificar verificações de disponibilidade.
-- Organizar testes de integração por categoria para permitir execução seletiva (MinIO, Vault, Database, etc.).
+- Implement integration tests for external services using HTTP health checks to verify availability.
+- For tests involving MinIO, Vault, and other services, use HttpClient to simplify availability checks.
+- Organize integration tests by category to allow selective execution (e.g., MinIO, Vault, Database).
 
 ### Integration Tests
 
-- **Categorização**: Usar filtros Category e Trait para organizar e executar testes específicos
-  - Essential: MinIO, Vault, PostgreSQL, RabbitMQ
-  - Observability: Grafana, Loki, Jaeger, Prometheus
-  - Exemplo: `dotnet test --filter "Category=Integration&Trait=Essential"`
-- **Verificação de Saúde**: Preferir HTTP health endpoints para verificações de disponibilidade
+- **Categorization**: Use xUnit's `[Trait]` or `[Category]` attributes to organize tests.
+  - `[Trait("Category", "Integration")]`
+  - `[Trait("Group", "Essential")]` (e.g., Database, Storage)
+  - `[Trait("Group", "Observability")]` (e.g., Logging, Tracing)
+- **Execution**: Run specific categories using the `--filter` option.
+  - `dotnet test --filter "Category=Integration"`
+  - `dotnet test --filter "Category=Integration&Group=Essential"`
+- **Health Checks**: Prefer using service health endpoints for availability checks in tests.
   - MinIO: `/minio/health/live`
-  - Vault: `/v1/sys/health` ou `/v1/sys/seal-status`
-  - PostgreSQL: Usar `pg_isready`
-  - RabbitMQ: Usar `rabbitmqctl status`
-  - Grafana: `/api/health`
-  - Prometheus: `/-/healthy`
-  - Loki: `/ready`
-- **Orquestração com Docker**:
-  - Usar script `docker-test.sh` com verificação dinâmica de serviços
-  - Inicializar serviços condicionalmente baseado nos testes a executar
-  - Implementar diagnósticos detalhados para falhas
-  - Oferecer modos seletivos de execução (essentials, observability, debug)
-- **Isolamento e Reprodutibilidade**:
-  - Criar rede Docker dedicada para testes (`smartalarm-test`)
-  - Reiniciar serviços entre execuções para garantir estado limpo
-  - Parametrizar testes para facilitar execução em CI/CD
-  - Fornecer logs detalhados para diagnóstico de falhas
+  - Vault: `/v1/sys/health`
+  - PostgreSQL: Use `pg_isready` command.
+  - RabbitMQ: Use `rabbitmqctl status`.
+- **Orchestration**: Use Docker Compose (`docker-compose.yml`) to manage the test environment's infrastructure.
+- **Isolation**: Ensure tests are isolated and can run in parallel without interfering with each other. Use dedicated databases or schemas for testing.
 
 ### Error Handling
 
@@ -121,10 +113,10 @@
 
 ### Development Flow
 
-- Install dependencies with `npm install`.
-- Compile with `npm run compile` (or `npm run build` on the frontend).
-- Run tests with `npm run test:unit` and `npm run test:integration`.
-- Use simulation and integration scripts to validate complete scenarios.
+- Install dependencies with `dotnet restore`.
+- Compile with `dotnet build`.
+- Run tests with `dotnet test --logger "console;verbosity=detailed"`.
+- Use simulation and integration scripts to validate complete scenarios (e.g., `tests/SmartAlarm-test.sh`).
 - On the frontend, use linters (ESLint), formatters (Prettier), and check accessibility (axe, Lighthouse).
 
 ### Review and Pull Requests

@@ -1,111 +1,129 @@
-# Smart Alarm – Copilot Instructions (AI Agents)
+# Smart Alarm – GitHub Copilot Instructions
 
-## Visão Geral e Arquitetura
+## 1. Core Objective & Architecture
 
-Smart Alarm é uma plataforma modular para gestão inteligente de alarmes, rotinas e integrações, baseada 100% em C# (.NET 8+), Clean Architecture e OCI Functions (serverless). Todos os serviços seguem separação clara: Domain, Application, Infrastructure, Api. Veja `/services/` e `/src/` para exemplos.
+**Objective**: Develop a secure, modular, and scalable backend platform for intelligent alarm and routine management.
 
-**Padrões obrigatórios:**
-- Clean Architecture, SOLID, DTOs validados (FluentValidation)
-- Logging estruturado (Serilog), tracing (OpenTelemetry, Application Insights)
-- Integração externa desacoplada via HttpClientFactory, Polly, OAuth2/OpenID Connect
-- Nunca expor segredos em código/logs
+**Architecture**: The project is built on **.NET 8** following **Clean Architecture**. All services must strictly separate concerns into `Domain`, `Application`, `Infrastructure`, and `Api` layers. The system is designed for a **serverless-first** deployment on **OCI Functions**.
 
-**Referências rápidas:**
-- Padrões: [`docs/architecture/systemPatterns.md`](../docs/architecture/systemPatterns.md)
-- Observabilidade: [`src/SmartAlarm.Observability/README.md`](../src/SmartAlarm.Observability/README.md)
-- ADRs: [`docs/architecture/`](../docs/architecture/)
-- Exemplos de testes: [`tests/SmartAlarm.Tests/`](../tests/SmartAlarm.Tests/)
+**Key Architectural Principles**:
+- **SOLID**: Adhere to SOLID principles in all new and refactored code.
+- **Validation**: Use **FluentValidation** for all incoming DTOs and commands.
+- **Immutability**: Prefer immutable data structures where possible.
+- **DI**: Leverage dependency injection for loose coupling and testability.
 
-## Contexto e Memória
+---
 
-O projeto utiliza o **Memory Bank** (`memory-bank/`) para registrar contexto, decisões e progresso. Sempre consulte e mantenha alinhamento com os arquivos de contexto antes de propor mudanças arquiteturais ou padrões. Veja instruções em [`memory-bank/memory-bank.instructions.md`](../memory-bank/memory-bank.instructions.md) se disponível.
+## 2. Development Workflow & Commands
 
-## Fluxo de Desenvolvimento
+**Dependencies & Build**:
+- Restore dependencies: `dotnet restore SmartAlarm.sln`
+- Build the solution: `dotnet build SmartAlarm.sln --no-restore`
 
-**Build e dependências:**
-- `dotnet restore` para dependências
-- `dotnet build` para build local
+**Testing**:
+- **Run all tests**: `dotnet test --logger "console;verbosity=detailed"`
+- **Run integration tests**: `dotnet test --filter Category=Integration --logger "console;verbosity=detailed"`
+- **Code Coverage**: `dotnet test --collect:"XPlat Code Coverage" --settings tests/coverlet.runsettings`
+- **Test Infrastructure**: Integration tests require local Docker services. Start them with `docker compose up -d --build`.
+- **Test Pattern**: All tests must follow the **Arrange, Act, Assert (AAA)** pattern.
 
-**Testes:**
-- `dotnet test --logger "console;verbosity=detailed"` (sempre usar este logger)
-- Cobertura: `dotnet test --collect:"XPlat Code Coverage" --settings tests/coverlet.runsettings`
-- Testes de integração exigem infraestrutura local: `docker compose up -d --build` (RabbitMQ, Vault, MinIO, PostgreSQL)
-- Scripts úteis: `tests/run-auth-tests.ps1`, `tests/SmartAlarm-test.sh`
-- AAA obrigatório em todos os testes (ver exemplos em `tests/SmartAlarm.Tests/Domain/Entities/`)
+---
 
-**Debug:**
-- Use mocks (`MockStorageService`, `MockKeyVaultProvider`, etc.) para testes isolados
-- Para troubleshooting de integração, veja [`docs/development/testes-integracao.md`](../docs/development/testes-integracao.md)
+## 3. Key Technologies & Patterns
 
-## Convenções Específicas
+- **Persistence**: Multi-provider repository pattern.
+  - **Development/Testing**: PostgreSQL
+  - **Production**: Oracle
+- **Messaging**: RabbitMQ is used across all environments, configured via environment variables for production clustering/SSL.
+- **Storage**:
+  - **Development/Staging**: MinIO (via `SmartStorageService` auto-detection).
+  - **Production**: OCI Object Storage.
+- **Security & Secrets**:
+  - **Authentication**: JWT with FIDO2 support. A Redis-backed blocklist handles token revocation.
+  - **Secrets Management**: A multi-provider `IKeyVaultService` abstracts secret sources (HashiCorp Vault for Dev, OCI/Azure Vault for Prod). **Never hardcode secrets.**
+- **Observability**:
+  - **Logging**: Structured logging with **Serilog**.
+  - **Tracing & Metrics**: **OpenTelemetry** is the standard. Traces are exported via OTLP, and metrics are exposed for Prometheus.
 
-- PascalCase para classes, métodos públicos, arquivos
-- camelCase para variáveis, métodos privados
-- UPPER_SNAKE_CASE para constantes globais
-- Componentes React organizados por atomicidade (frontend)
-- Commits: siga [`.github/instructions/commit-message.instructions.md`](./instructions/commit-message.instructions.md)
+---
 
-## Segurança e Variáveis Sensíveis
+## 4. Code Conventions
 
-- Nunca exponha segredos, tokens ou credenciais em código, logs ou bundles
-- Variáveis sensíveis devem ser lidas de configuração segura ou KeyVault (ver exemplos em `src/SmartAlarm.Infrastructure/KeyVault/`)
+- **Naming**:
+  - `PascalCase` for classes, records, public methods, and properties.
+  - `camelCase` for local variables and private fields.
+  - `_camelCase` for private fields.
+- **File Organization**: Group files by feature and responsibility within the established layer structure.
+- **Asynchronous Code**: Use `async/await` correctly. Avoid `async void` except for event handlers. Append `Async` to all awaitable method names.
 
-## Pull Requests e Revisão
+---
 
-- Siga o template de PR e checklist em [`.github/instructions/pull-request.instructions.md`](./instructions/pull-request.instructions.md)
-- Sempre descreva claramente o objetivo, mudanças técnicas e pendências
-- Confirme que todos os testes passam e que não há segredos/credenciais expostos
+## 5. Code Generation Examples
 
-## Integração e Comunicação
-
-- Serviços se comunicam via REST (ver APIs em `/services/*/Api/`)
-- Repositórios desacoplados: multi-provider (PostgreSQL dev/test, Oracle prod) – veja `src/SmartAlarm.Infrastructure/README.md`
-- Mensageria: RabbitMQ (dev), stub para OCI Streaming (prod)
-- Storage: MinIO (dev), stub para OCI Object Storage (prod)
-- KeyVault: HashiCorp Vault (dev), estrutura extensível para OCI/Azure/AWS
-
-## Exemplos Frontend (se aplicável)
-
-- Componentes React seguem Atomic Design (veja exemplos em `docs/frontend/` ou `src/SmartAlarm.Frontend/` se existir)
-- Testes de componentes: utilize Testing Library, cubra interações, acessibilidade e estados visuais
-
-## Exemplos Essenciais
-
-**Handler com validação e logging:**
+**Example: MediatR Handler with Validation, Logging, and Tracing**
 ```csharp
-public class CreateAlarmHandler : IRequestHandler<CreateAlarmCommand, AlarmResponse>
+// In Application Layer
+
+public class CreateAlarmCommandHandler : IRequestHandler<CreateAlarmCommand, AlarmResponse>
 {
-    private readonly IAlarmRepository _alarmRepository;
+    private readonly ILogger<CreateAlarmCommandHandler> _logger;
     private readonly IValidator<CreateAlarmCommand> _validator;
-    private readonly ILogger<CreateAlarmHandler> _logger;
+    private readonly IAlarmRepository _alarmRepository;
+    private readonly SmartAlarmActivitySource _activitySource; // OpenTelemetry
+
+    // Constructor...
 
     public async Task<AlarmResponse> Handle(CreateAlarmCommand request, CancellationToken cancellationToken)
     {
+        using var activity = _activitySource.StartActivity(nameof(CreateAlarmCommandHandler));
+
         var validationResult = await _validator.ValidateAsync(request, cancellationToken);
         if (!validationResult.IsValid)
         {
-            _logger.LogWarning("Validation failed: {@Errors}", validationResult.Errors);
+            _logger.LogWarning("Validation failed for CreateAlarmCommand: {@Errors}", validationResult.Errors);
+            activity?.SetStatus(ActivityStatusCode.Error, "Validation failed");
             throw new ValidationException(validationResult.Errors);
         }
-        var alarm = new Alarm { /* ... */ };
-        await _alarmRepository.AddAsync(alarm);
-        _logger.LogInformation("Alarm created: {AlarmId}", alarm.Id);
-        return new AlarmResponse(alarm);
+
+        var alarm = new Alarm(request.Name, request.TriggerTime);
+        await _alarmRepository.AddAsync(alarm, cancellationToken);
+
+        _logger.LogInformation("New alarm created with ID {AlarmId}", alarm.Id);
+        activity?.AddEvent(new ActivityEvent("Alarm Created"));
+        
+        return new AlarmResponse(alarm.Id, alarm.Name);
     }
 }
 ```
 
-**Teste AAA com xUnit:**
+**Example: xUnit Test with Moq**
 ```csharp
+// In tests/SmartAlarm.Application.Tests
+
 [Fact]
-public async Task Should_ThrowValidationException_When_CommandIsInvalid()
+public async Task Handle_GivenInvalidCommand_ShouldThrowValidationException()
 {
     // Arrange
-    var handler = new CreateAlarmHandler(...);
-    var invalidCommand = new CreateAlarmCommand { /* ... */ };
+    var mockValidator = new Mock<IValidator<CreateAlarmCommand>>();
+    var invalidCommand = new CreateAlarmCommand { Name = "" }; // Invalid name
+    var validationResult = new ValidationResult(new[] { new ValidationFailure("Name", "Name is required") });
+
+    mockValidator.Setup(v => v.ValidateAsync(invalidCommand, It.IsAny<CancellationToken>()))
+                 .ReturnsAsync(validationResult);
+
+    var handler = new CreateAlarmCommandHandler(
+        Mock.Of<ILogger<CreateAlarmCommandHandler>>(),
+        mockValidator.Object,
+        Mock.Of<IAlarmRepository>(),
+        new SmartAlarmActivitySource()
+    );
+
     // Act & Assert
-    await Assert.ThrowsAsync<ValidationException>(() => handler.Handle(invalidCommand, CancellationToken.None));
+    var exception = await Assert.ThrowsAsync<ValidationException>(
+        () => handler.Handle(invalidCommand, CancellationToken.None)
+    );
+
+    exception.Errors.Should().HaveCount(1);
+    exception.Errors.First().PropertyName.Should().Be("Name");
 }
 ```
-
----

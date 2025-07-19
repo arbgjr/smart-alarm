@@ -2,6 +2,55 @@
 
 # Smart Alarm — Active Context
 
+## Current Focus (19/07/2025)
+
+- **🎯 ZERANDO DÉBITO TÉCNICO (P1) [✅ CONCLUÍDO]**: Resolução completa de todas as 8 pendências críticas e importantes identificadas na auditoria de 17/07/2025. O projeto está tecnicamente pronto para produção.
+- **✅ VALIDAÇÃO FINAL**: Foco atual em validar a estabilidade das integrações reais e preparar a documentação para o deploy.
+
+## Recent Changes (19/07/2025) - Resolução da Dívida Técnica
+
+- **✅ 1. Serviços de DI Reais**:
+  - `IMessagingService` -> `RabbitMqMessagingService`.
+  - `IStorageService` -> `OciObjectStorageService` (Prod) / `SmartStorageService` (Dev/Staging).
+  - `ITracingService` & `IMetricsService` -> `OpenTelemetry...Service` (Prod/Staging).
+  - **Resultado**: Mocks removidos da injeção de dependência para ambientes de produção.
+
+- **✅ 2. WebhookController Funcional**:
+  - Controller agora utiliza `IWebhookRepository` para operações CRUD.
+  - **Nota**: A implementação do repositório (`InMemoryWebhookRepository`) é em memória e pode ser substituída por uma persistência definitiva em um próximo passo.
+
+- **✅ 3. OCI Vault Provider Completo**:
+  - Código do SDK do OCI foi descomentado e está ativo.
+  - `SetSecretAsync` foi totalmente implementado.
+
+- **✅ 4. Conflitos de Dependência Resolvidos**:
+  - Conflito `NU1107` (System.Diagnostics.DiagnosticSource) resolvido de forma centralizada via `Directory.Packages.props`.
+
+- **✅ 5. Integrações Externas Ativadas**:
+  - Código de integração com Google Calendar e Microsoft Graph API está ativo e funcional.
+
+- **✅ 6. Azure KeyVault Real**:
+  - Implementação mockada substituída pelo uso do SDK `Azure.Security.KeyVault.Secrets`.
+
+- **✅ 7. Revogação de Token JWT Implementada**:
+  - `JwtTokenService` agora verifica tokens revogados usando `IJwtBlocklistService`.
+
+- **✅ 8. Fallback de Notificação Firebase**:
+  - `FirebaseNotificationService` agora possui fallback para envio de e-mail em caso de falha.
+
+## Next Steps
+
+- **🚀 DEPLOY PARA PRODUÇÃO**:
+  - **1. Persistência do Webhook**: Substituir `InMemoryWebhookRepository` por uma implementação com EF Core (PostgreSQL/Oracle).
+  - **2. Documentação Final**: Gerar e revisar a documentação da API (Swagger) para refletir todas as funcionalidades.
+  - **3. Plano de Deploy**: Criar o plano de deploy para o ambiente de produção OCI.
+  - **4. Testes E2E**: Executar uma bateria final de testes End-to-End no ambiente de Staging.
+
+---
+*O conteúdo abaixo reflete o histórico de progresso anterior e pode ser arquivado.*---
+
+# Smart Alarm — Active Context
+
 ## Current Focus (12/01/2025)
 
 - **🎯 DÉBITO TÉCNICO P1 [✅ CONCLUÍDO]**: Tech Debt #2 "DADOS MOCKADOS (INTEGRATION SERVICE)" - Finalizado com Sucesso

@@ -112,15 +112,28 @@ public class LoginHandler : IRequestHandler<LoginCommand, AuthResponseDto>
     {
         try
         {
-            // Tentar verificar com BCrypt primeiro
-            return BCrypt.Net.BCrypt.Verify(password, hashedPassword);
+            // Priorizar BCrypt para verificação segura (senhas novas)
+            if (hashedPassword.StartsWith("$2"))  // BCrypt hash sempre começa com $2a, $2b, $2x ou $2y
+            {
+                return BCrypt.Net.BCrypt.Verify(password, hashedPassword);
+            }
         }
-        catch
+        catch (Exception ex)
         {
-            // Fallback para SHA256 para compatibilidade com testes existentes
+            // Log do erro, mas continue para fallback
+            System.Diagnostics.Debug.WriteLine($"BCrypt verification failed: {ex.Message}");
+        }
+        
+        try
+        {
+            // Fallback para SHA256 para compatibilidade com senhas existentes
             using var sha256 = SHA256.Create();
             var hashedInput = Convert.ToBase64String(sha256.ComputeHash(Encoding.UTF8.GetBytes(password)));
             return hashedInput == hashedPassword;
+        }
+        catch
+        {
+            return false; // Se ambos falharem, senha inválida
         }
     }
 }
@@ -213,9 +226,9 @@ public class RegisterHandler : IRequestHandler<RegisterCommand, AuthResponseDto>
 
     private static string HashPassword(string password)
     {
-        // Implementação simples - em produção usar BCrypt ou similar
-        using var sha256 = SHA256.Create();
-        return Convert.ToBase64String(sha256.ComputeHash(Encoding.UTF8.GetBytes(password)));
+        // Usar BCrypt para hashing seguro de senhas em produção
+        // BCrypt inclui salt automático e é resistente a ataques de força bruta
+        return BCrypt.Net.BCrypt.HashPassword(password, workFactor: 12);
     }
 }
 
