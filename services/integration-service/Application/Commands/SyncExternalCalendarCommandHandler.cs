@@ -798,21 +798,72 @@ namespace SmartAlarm.IntegrationService.Application.Commands
         /// <summary>
         /// Integração real com Apple Calendar via CloudKit API
         /// <summary>
-        /// Integração com Apple Calendar - Em desenvolvimento
+        /// Integração com Apple Calendar via CloudKit Web Services
+        /// Implementação básica funcional para iCloud calendários
         /// </summary>
-        private Task<List<ExternalCalendarEvent>> FetchAppleCalendarEvents(
+        private async Task<List<ExternalCalendarEvent>> FetchAppleCalendarEvents(
             string accessToken, 
             DateTime fromDate, 
             DateTime toDate, 
             CancellationToken cancellationToken)
         {
-            _logger.LogWarning("Apple Calendar integration não está completamente implementada");
-            
-            // Por enquanto, retornar uma exceção informativa ao invés de falha silenciosa
-            throw new ExternalCalendarPermanentException(
-                "apple",
-                "Integração com Apple Calendar ainda não está implementada. " +
-                "Esta funcionalidade está em desenvolvimento e será disponibilizada em uma versão futura.");
+            using var activity = _activitySource.StartActivity("SyncExternalCalendarCommandHandler.FetchAppleCalendarEvents");
+            activity?.SetTag("provider", "apple");
+            activity?.SetTag("date_range", $"{fromDate:yyyy-MM-dd} to {toDate:yyyy-MM-dd}");
+
+            _logger.LogInformation("Iniciando busca de eventos Apple Calendar para período {FromDate} a {ToDate} - CorrelationId: {CorrelationId}",
+                fromDate, toDate, _correlationContext.CorrelationId);
+
+            try
+            {
+                // Validar se o token tem formato esperado para Apple
+                if (string.IsNullOrWhiteSpace(accessToken) || accessToken.Length < 10)
+                {
+                    throw new ExternalCalendarTemporaryException(
+                        "apple",
+                        "Token de acesso inválido para Apple Calendar",
+                        "InvalidToken");
+                }
+
+                var events = await FetchFromAppleCloudKitAsync(accessToken, fromDate, toDate, cancellationToken);
+                
+                _logger.LogInformation("Apple Calendar: {EventCount} eventos recuperados com sucesso - CorrelationId: {CorrelationId}",
+                    events.Count, _correlationContext.CorrelationId);
+
+                activity?.SetTag("events_count", events.Count.ToString());
+
+                return events;
+            }
+            catch (ExternalCalendarIntegrationException)
+            {
+                // Re-throw nossa exceção estruturada
+                throw;
+            }
+            catch (HttpRequestException httpEx)
+            {
+                // Problemas de conectividade com Apple servers
+                throw new ExternalCalendarTemporaryException(
+                    "apple",
+                    $"Erro de conectividade com Apple Calendar: {httpEx.Message}",
+                    "NetworkError");
+            }
+            catch (TaskCanceledException)
+            {
+                // Timeout na requisição
+                throw new ExternalCalendarTemporaryException(
+                    "apple",
+                    "Timeout na comunicação com Apple Calendar",
+                    "TimeoutError");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erro inesperado ao buscar eventos Apple Calendar - CorrelationId: {CorrelationId}",
+                    _correlationContext.CorrelationId);
+
+                throw new ExternalCalendarPermanentException(
+                    "apple",
+                    $"Erro inesperado na integração Apple Calendar: {ex.Message}");
+            }
         }
 
         private async Task<List<ExternalCalendarEvent>> FetchFromAppleCloudKitAsync(
@@ -905,7 +956,10 @@ namespace SmartAlarm.IntegrationService.Application.Commands
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error calling Apple CloudKit API");
-                throw new ExternalServiceException("Apple CloudKit API call failed", ex);
+                throw new ExternalCalendarTemporaryException(
+                    "apple",
+                    $"Falha na chamada à Apple CloudKit API: {ex.Message}",
+                    "ApiCallFailed");
             }
         }
 
@@ -913,21 +967,71 @@ namespace SmartAlarm.IntegrationService.Application.Commands
         /// Integração real com servidores CalDAV (RFC 4791)
         /// </summary>
         /// <summary>
-        /// Integração com CalDAV - Em desenvolvimento
+        /// Integração com CalDAV (RFC 4791)
         /// </summary>
-        private Task<List<ExternalCalendarEvent>> FetchCalDAVEvents(
+        private async Task<List<ExternalCalendarEvent>> FetchCalDAVEvents(
             string accessToken, 
             DateTime fromDate, 
             DateTime toDate, 
             CancellationToken cancellationToken)
         {
-            _logger.LogWarning("CalDAV integration não está completamente implementada");
+            using var activity = _activitySource.StartActivity("SyncExternalCalendarCommandHandler.FetchCalDAVEvents");
+            activity?.SetTag("calendar.provider", "caldav");
+            activity?.SetTag("calendar.date_range", $"{fromDate:yyyy-MM-dd} to {toDate:yyyy-MM-dd}");
             
-            // Por enquanto, retornar uma exceção informativa ao invés de falha silenciosa
-            throw new ExternalCalendarPermanentException(
-                "caldav",
-                "Integração com CalDAV ainda não está implementada. " +
-                "Esta funcionalidade está em desenvolvimento e será disponibilizada em uma versão futura.");
+            _logger.LogInformation("Iniciando busca de eventos CalDAV: {FromDate} - {ToDate}", 
+                fromDate, toDate);
+
+            try
+            {
+                // Validação de entrada
+                if (string.IsNullOrWhiteSpace(accessToken))
+                {
+                    _logger.LogWarning("Token de acesso CalDAV não fornecido");
+                    throw new ExternalCalendarPermanentException(
+                        "caldav", 
+                        "Token de acesso é obrigatório para integração CalDAV",
+                        "MissingAccessToken");
+                }
+
+                if (fromDate > toDate)
+                {
+                    _logger.LogWarning("Data inicial maior que data final: {FromDate} > {ToDate}", fromDate, toDate);
+                    throw new ExternalCalendarPermanentException(
+                        "caldav",
+                        "Data inicial deve ser menor ou igual à data final",
+                        "InvalidDateRange");
+                }
+
+                // Buscar eventos via CalDAV
+                var events = await FetchFromCalDAVServerAsync(accessToken, fromDate, toDate, cancellationToken);
+                
+                activity?.SetTag("calendar.events_count", events.Count);
+                _logger.LogInformation("Recuperados {EventCount} eventos do CalDAV", events.Count);
+                
+                return events;
+            }
+            catch (ExternalCalendarIntegrationException)
+            {
+                // Re-throw exceptions já tipificadas
+                throw;
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogWarning("Operação de busca CalDAV cancelada");
+                throw new ExternalCalendarTemporaryException(
+                    "caldav",
+                    "Operação cancelada pelo usuário ou timeout",
+                    "OperationCancelled");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erro inesperado na integração CalDAV");
+                throw new ExternalCalendarTemporaryException(
+                    "caldav",
+                    $"Falha na integração CalDAV: {ex.Message}",
+                    "UnexpectedError");
+            }
         }
 
         private async Task<List<ExternalCalendarEvent>> FetchFromCalDAVServerAsync(
