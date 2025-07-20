@@ -302,13 +302,53 @@ public class GlobalExceptionMiddleware
 **Last Updated**: July 19, 2025  
 **Architecture Status**: Production Ready ✅  
 **Technical Debt**: Zero critical items ✅
+**Next Phase**: MVP Implementation - Frontend & User Experience ✅
 
-### Code Organization
+## Documentation Organization (Updated 19/07/2025)
 
-- Group files by business domain and responsibility (backend) and by feature/component (frontend).
-- Keep tests close to the implemented code.
-- On the frontend, organize components in folders by atomicity (atoms, molecules, organisms, pages).
-- Document architectural decisions in `docs/architecture/`.
+### **Implementation Plans Structure**
+All implementation plans consolidated in `/docs/plan/` with standardized format:
+
+- **[Index & Overview](../docs/plan/README.md)**: Central hub for all implementation plans
+- **[MVP Roadmap Implementation](../docs/plan/feature-mvp-roadmap-implementation-1.md)**: Current active 12-week plan
+- **[Frontend Implementation](../docs/plan/feature-frontend-implementation-1.md)**: React TypeScript PWA detailed plan
+- **[Historical Evolution](../docs/plan/project-evolution-historical-1.md)**: Project evolution context
+
+### **Future Frontend Patterns (To Be Established)**
+As the frontend implementation progresses, the following patterns will be added:
+
+#### **React Architecture Patterns** (Phase 2-3)
+- Atomic Design component hierarchy
+- Custom hooks for business logic
+- Context API for state management  
+- React Query for server state
+- Error boundary implementation
+
+#### **PWA Implementation Patterns** (Phase 2)
+- Service Worker caching strategies
+- Offline-first architecture
+- IndexedDB with Dexie.js
+- Push notification integration
+
+#### **Accessibility Patterns** (All Phases)
+- WCAG 2.1 AAA compliance
+- Screen reader compatibility
+- Keyboard navigation
+- Focus management
+- ARIA implementation
+
+#### **Testing Patterns** (Phase 4)
+- React Testing Library for components
+- Playwright for E2E testing
+- Axe for accessibility testing
+- Cross-browser compatibility
+
+### **Quality Standards Evolution**
+The existing backend quality standards will be extended to include:
+- Frontend test coverage > 80%
+- Accessibility compliance validation
+- Performance budgets (Core Web Vitals)
+- Cross-platform PWA functionality
 
 ### Naming
 

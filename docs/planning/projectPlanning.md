@@ -1,4 +1,19 @@
-# Planning
+# Planning - Status Atualizado (Julho 2025)
+
+### **🎯 GAPS DE EXPERIÊNCIA DO USUÁRIO**
+
+Conforme identificado na **análise sistemática de gaps (julho 2025)**, as verdadeiras lacunas são:
+
+1. **[TASK014] Routine Management API** - Falta controller REST para rotinas
+2. **[TASK015] Frontend Application** - Nenhuma interface de usuário implementada  
+3. **[TASK016] E2E Integration Tests** - Cobertura de testes end-to-end limitada
+4. **[TASK017] Real-time Notifications** - Sistema de notificações em tempo real
+
+---
+
+## 📋 **PLANEJAMENTO ORIGINAL (IMPLEMENTADO) - MANTIDO PARA REFERÊNCIA**
+
+### Implementações Descritas Abaixo: **✅ TODAS CONCLUÍDAS**
 
 Abaixo alterações necessárias com base no [projectEvolution.md](projectEvolution.md)
 
@@ -6,7 +21,7 @@ Abaixo alterações necessárias com base no [projectEvolution.md](projectEvolut
 
 ### a) Novas Entidades/Value Objects
 
-**Holiday.cs**
+**Holiday.cs** ✅ **IMPLEMENTADO**
 
 ```csharp
 public class Holiday
@@ -24,7 +39,7 @@ public class Holiday
 }
 ```
 
-**ExceptionPeriod.cs**
+**ExceptionPeriod.cs** ✅ **IMPLEMENTADO** (como UserHolidayPreference)
 
 ```csharp
 public class ExceptionPeriod
