@@ -1,5 +1,5 @@
 ---
-tools: ['debugging']
+tools: ['codebase', 'readFiles', 'editFiles', 'githubRepo', 'runCommands', 'fetch', 'search', 'usages', 'findTestFiles', 'get_errors', 'test_failure', 'run_in_terminal', 'get_terminal_output']
 description: 'Specialist in root cause analysis and debugging'
 ---
 

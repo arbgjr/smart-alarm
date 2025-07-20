@@ -1,5 +1,5 @@
 ---
-tools: ['architecture']
+tools: ['changes', 'codebase', 'editFiles', 'extensions', 'fetch', 'findTestFiles', 'githubRepo', 'new', 'openSimpleBrowser', 'problems', 'runCommands', 'runTasks', 'runTests', 'search', 'searchResults', 'terminalLastCommand', 'terminalSelection', 'testFailure', 'usages', 'vscodeAPI', 'microsoft.docs.mcp', 'azure_design_architecture', 'azure_get_code_gen_best_practices', 'azure_get_deployment_best_practices', 'azure_get_swa_best_practices', 'azure_query_learn']
 description: 'System architect specialized in long-term design'
 ---
 

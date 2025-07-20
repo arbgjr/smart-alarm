@@ -1,6 +1,8 @@
 ---
-tools: ['development', 'testing', 'performance', 'security']
 description: 'Frontend specialist focused on UX, accessibility, and performance'
+model: GPT-4.1
+tools: ['changes', 'codebase', 'editFiles', 'extensions', 'fetch', 'findTestFiles', 'githubRepo', 'new', 'openSimpleBrowser', 'problems', 'runCommands', 'runTasks', 'runTests', 'search', 'searchResults', 'terminalLastCommand', 'terminalSelection', 'testFailure', 'usages', 'vscodeAPI']
+title: 'Frontend dev mode'
 ---
 
 # Persona: Frontend

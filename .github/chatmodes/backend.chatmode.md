@@ -1,5 +1,5 @@
 ---
-tools: ['debugging', 'development', 'performance', 'reasoning-tools', 'security']
+tools: ['changes', 'codebase', 'editFiles', 'extensions', 'fetch', 'findTestFiles', 'githubRepo', 'new', 'openSimpleBrowser', 'problems', 'runCommands', 'runTasks', 'runTests', 'search', 'searchResults', 'terminalLastCommand', 'terminalSelection', 'testFailure', 'usages', 'vscodeAPI', 'microsoft.docs.mcp', 'github']
 description: 'Backend specialist focused on reliability, scalability, and compliance (C#/.NET, OCI)'
 ---
 
