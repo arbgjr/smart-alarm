@@ -1,0 +1,101 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Git Sync (PowerShell)",
+            "type": "shell",
+            "command": "pwsh",
+            "args": [
+                "-File",
+                "${workspaceFolder}/.scripts/git-sync.ps1"
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "problemMatcher": [],
+            "runOptions": {
+                "runOn": "default"
+            },
+            "detail": "Automated Git sync using PowerShell script"
+        },
+        {
+            "label": "Git Sync (Bash)",
+            "type": "shell",
+            "command": "${workspaceFolder}/.scripts/git-sync.sh",
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "problemMatcher": [],
+            "runOptions": {
+                "runOn": "default"
+            },
+            "detail": "Automated Git sync using Bash script"
+        },
+        {
+            "label": "Git Sync with Custom Message (PowerShell)",
+            "type": "shell",
+            "command": "pwsh",
+            "args": [
+                "-File",
+                "${workspaceFolder}/.scripts/git-sync.ps1",
+                "-Message",
+                "${input:commitMessage}"
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "problemMatcher": [],
+            "runOptions": {
+                "runOn": "default"
+            },
+            "detail": "Git sync with custom commit message (PowerShell)"
+        },
+        {
+            "label": "Git Sync with Custom Message (Bash)",
+            "type": "shell",
+            "command": "${workspaceFolder}/.scripts/git-sync.sh",
+            "args": [
+                "${input:commitMessage}"
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "problemMatcher": [],
+            "runOptions": {
+                "runOn": "default"
+            },
+            "detail": "Git sync with custom commit message (Bash)"
+        }
+    ],
+    "inputs": [
+        {
+            "id": "commitMessage",
+            "type": "promptString",
+            "description": "Enter commit message (use conventional commits format)"
+        }
+    ]
+}
