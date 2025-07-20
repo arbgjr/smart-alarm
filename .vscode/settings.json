@@ -44,9 +44,10 @@
 		}
 	],
 	"chat.agent.enabled": true,
-	"chat.agent.maxRequests": 20,
+	"chat.agent.maxRequests": 25,
 	"github.copilot.chat.agent.runTasks": true,
 	"github.copilot.chat.agent.autoFix": true,
+	"chat.editing.autoAcceptDelay": 15,
 	"github.copilot.chat.edits.temporalContext.enabled": true,
 	"github.copilot.chat.edits.suggestRelatedFilesFromGitHistory": true,
 	"chat.implicitContext.enabled": {
@@ -61,7 +62,6 @@
 	"github.copilot.chat.codesearch.enabled": true,
 	"github.copilot.chat.useProjectTemplates": true,
 	"github.copilot.chat.terminalChatLocation": "chatView",
-	"chat.editing.autoAcceptDelay": 15,
 	"inlineChat.finishOnType": true,
 	"inlineChat.holdToSpeech": true,
 	"inlineChat.lineEmptyHint": true,
@@ -138,11 +138,6 @@
 	},
 	"editor.rulers": [
 		100
-	],
-	"files.associations": {
-		"*.chatmode.md": "markdown",
-		"*.instructions.md": "markdown",
-		"*.prompt.md": "markdown"
-	}
+	]
 }
 

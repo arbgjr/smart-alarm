@@ -26,7 +26,7 @@ This workflow guides you through a systematic approach to identify missing featu
 
 - Compare the documented capabilities ONLY against the actual implementation
 - Identify "placeholder" code that lacks real functionality
-- Look for features mentioned in documentation but missing robust implementation
+- Look for features mentioned in documentation, but missing robust implementation, in the `spec` folder, in the tasks of memory bank
 - Consider the user journey and identify broken or missing steps
 - Focus on core functionality first (not nice-to-have features)
 

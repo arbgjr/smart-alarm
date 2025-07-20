@@ -1,13 +1,307 @@
-# systemPatterns.md
+# System Patterns - Smart Alarm Project
 
-## General Patterns of the Smart Alarm Project
+## Current System Architecture (Updated 19/07/2025)
 
-### Architecture
+### **Production-Ready Multi-Service Architecture**
 
-- Follow Clean Architecture and SOLID principles (backend) and Atomic Design (frontend).
-- Clearly separate domain, application, infrastructure, and presentation layers (backend) and components, pages, hooks, and contexts (frontend).
-- Use dependency injection to facilitate testing and maintenance (backend) and component composition (frontend).
-- Do not introduce types or values into the global scope.
+The Smart Alarm system has evolved into a mature, enterprise-ready platform with **three specialized microservices**, all implemented in **C# .NET 8** following Clean Architecture principles:
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   AI Service    │    │  Alarm Service  │    │Integration Svc  │
+│                 │    │                 │    │                 │  
+│ • ML.NET        │    │ • Hangfire      │    │ • External APIs │
+│ • Behavioral    │    │ • Background    │    │ • Calendar      │
+│ • Predictions   │    │   Jobs          │    │ • Notifications │
+│ • Analysis      │    │ • CRUD          │    │ • Webhooks      │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         └───────────────────────┼───────────────────────┘
+                                 │
+         ┌─────────────────────────────────────────────────┐
+         │           Shared Infrastructure                 │
+         │                                                 │
+         │ • Clean Architecture (Domain/App/Infra/API)    │
+         │ • OpenTelemetry (Tracing + Metrics)           │
+         │ • Serilog (Structured Logging)                │
+         │ • Multi-Provider Storage & KeyVault           │
+         │ • JWT + FIDO2 Security                        │
+         │ • PostgreSQL (Dev) / Oracle (Prod)            │
+         │ • RabbitMQ (Dev) / OCI Streaming (Prod)       │
+         └─────────────────────────────────────────────────┘
+```
+
+### **Environment-Based Configuration Pattern**
+
+Each service automatically configures itself based on the deployment environment:
+
+- **Development**: PostgreSQL + MinIO + HashiCorp Vault + InMemory caches
+- **Staging**: PostgreSQL + MinIO + Azure KeyVault + Redis
+- **Production**: Oracle + OCI Storage + OCI Vault + Redis + SSL/TLS
+
+## Core Architectural Patterns
+
+### **Clean Architecture Implementation**
+
+All services strictly follow the 4-layer Clean Architecture:
+
+```
+┌─────────────┐ ←── Controllers, Middleware, DTOs
+│   API       │
+├─────────────┤ ←── CQRS Handlers, Services, Validation  
+│ Application │
+├─────────────┤ ←── Entities, Value Objects, Domain Services
+│   Domain    │  
+├─────────────┤ ←── Repositories, External Services, DB Context
+│Infrastructure│
+└─────────────┘
+```
+
+**Key Principles**:
+- **Domain** layer has zero external dependencies
+- **Application** layer contains business workflows (MediatR + CQRS)  
+- **Infrastructure** layer implements interfaces defined in Domain
+- **API** layer is thin - only routing, validation, and serialization
+
+### **CQRS + MediatR Pattern**
+
+All business operations use Command/Query Responsibility Segregation:
+
+```csharp
+// Commands for write operations
+public class CreateAlarmCommand : IRequest<AlarmResponse>
+public class CreateAlarmCommandHandler : IRequestHandler<CreateAlarmCommand, AlarmResponse>
+
+// Queries for read operations  
+public class GetAlarmByIdQuery : IRequest<AlarmResponse>
+public class GetAlarmByIdQueryHandler : IRequestHandler<GetAlarmByIdQuery, AlarmResponse>
+```
+
+### **Multi-Provider Repository Pattern**
+
+Database and external service access uses provider abstraction:
+
+```csharp
+// Interface defined in Domain
+public interface IAlarmRepository 
+{
+    Task<Alarm> GetByIdAsync(Guid id);
+    Task AddAsync(Alarm alarm);
+}
+
+// Implementations in Infrastructure
+public class EfAlarmRepository : IAlarmRepository // PostgreSQL/Oracle
+public class InMemoryAlarmRepository : IAlarmRepository // Testing
+```
+
+**Environment Selection**:
+- Development/Testing: In-memory or PostgreSQL
+- Staging: PostgreSQL with cloud services
+- Production: Oracle with OCI services
+
+### **Comprehensive Observability Pattern**
+
+Every service includes complete observability instrumentation:
+
+```csharp
+public class AlarmCommandHandler 
+{
+    private readonly ILogger<AlarmCommandHandler> _logger;
+    private readonly SmartAlarmActivitySource _activitySource;
+    private readonly IMeter _meter;
+
+    public async Task<AlarmResponse> Handle(CreateAlarmCommand request)
+    {
+        using var activity = _activitySource.StartActivity("CreateAlarm");
+        activity?.SetTag("user.id", request.UserId.ToString());
+        
+        _logger.LogInformation("Creating alarm for user {UserId}", request.UserId);
+        _meter.IncrementCounter("alarms_created_total");
+        
+        // Business logic...
+    }
+}
+```
+
+**Stack**: OpenTelemetry + Serilog + Prometheus + Jaeger + Grafana
+
+## Security Architecture Patterns
+
+### **Multi-Provider KeyVault Pattern**
+
+Secrets management adapts to deployment environment:
+
+```csharp
+public interface IKeyVaultService
+{
+    Task<string> GetSecretAsync(string secretName);
+    Task SetSecretAsync(string secretName, string value);
+}
+
+// Production: OciVaultProvider, AzureKeyVaultProvider
+// Development: HashiCorpVaultProvider  
+// Testing: InMemoryKeyVaultProvider
+```
+
+### **JWT + Redis Blacklist Pattern**
+
+Token revocation system for security:
+
+```csharp
+public interface IJwtBlocklistService
+{
+    Task<bool> IsTokenBlockedAsync(string tokenId);
+    Task BlockTokenAsync(string tokenId, TimeSpan expiry);
+}
+
+// Production/Staging: RedisJwtBlocklistService
+// Development: InMemoryJwtBlocklistService
+```
+
+## Integration & Resilience Patterns
+
+### **Circuit Breaker + Retry Pattern**
+
+All external service calls use Polly for resilience:
+
+```csharp
+services.AddHttpClient<GoogleCalendarService>()
+    .AddPolicyHandler(Policy
+        .Handle<HttpRequestException>()
+        .CircuitBreakerAsync(3, TimeSpan.FromSeconds(30)));
+```
+
+### **Smart Storage Fallback Pattern**
+
+Storage service automatically detects and falls back:
+
+```csharp
+public class SmartStorageService : IStorageService
+{
+    // Tries MinIO first, falls back to MockStorage if unavailable
+    public async Task<string> UploadFileAsync(Stream fileStream, string fileName)
+    {
+        try 
+        {
+            return await _minioService.UploadFileAsync(fileStream, fileName);
+        }
+        catch (MinioException)
+        {
+            _logger.LogWarning("MinIO unavailable, falling back to mock storage");
+            return await _mockStorage.UploadFileAsync(fileStream, fileName);
+        }
+    }
+}
+```
+
+## Testing Patterns
+
+### **AAA Testing Pattern** 
+All tests follow Arrange-Act-Assert structure:
+
+```csharp
+[Fact]
+public async Task Handle_ValidCommand_ShouldCreateAlarm()
+{
+    // Arrange
+    var command = new CreateAlarmCommand { Name = "Test Alarm" };
+    var mockRepo = new Mock<IAlarmRepository>();
+    var handler = new CreateAlarmHandler(mockRepo.Object, /* other deps */);
+
+    // Act  
+    var result = await handler.Handle(command, CancellationToken.None);
+
+    // Assert
+    result.Should().NotBeNull();
+    mockRepo.Verify(x => x.AddAsync(It.IsAny<Alarm>()), Times.Once);
+}
+```
+
+### **Integration Test Categorization**
+
+Tests are organized by category for selective execution:
+
+```csharp
+[Trait("Category", "Integration")]
+[Trait("Group", "Storage")]
+public class MinioStorageTests { }
+
+[Trait("Category", "Integration")]  
+[Trait("Group", "Database")]
+public class EfRepositoryTests { }
+```
+
+**Execution**: `dotnet test --filter "Category=Integration&Group=Storage"`
+
+## Code Organization Patterns
+
+### **Domain-Driven Structure**
+```
+src/
+├── SmartAlarm.Domain/          # Core business entities
+├── SmartAlarm.Application/     # Use cases and handlers  
+├── SmartAlarm.Infrastructure/  # External service implementations
+├── SmartAlarm.Api/            # REST API controllers
+├── SmartAlarm.AiService/      # AI/ML microservice
+├── SmartAlarm.AlarmService/   # Alarm management microservice
+└── SmartAlarm.IntegrationService/ # External integrations microservice
+```
+
+### **Naming Conventions**
+- **Classes**: `PascalCase` (AlarmService, CreateAlarmHandler)
+- **Methods**: `PascalCase` (GetByIdAsync, HandleAsync)  
+- **Variables**: `camelCase` (alarmId, createdAt)
+- **Constants**: `UPPER_SNAKE_CASE` (MAX_RETRY_ATTEMPTS)
+- **Private Fields**: `_camelCase` (_logger, _repository)
+
+### **Error Handling Patterns**
+
+**Domain Exceptions**: Custom exceptions for business rule violations
+```csharp
+public class AlarmNotFoundException : DomainException
+{
+    public AlarmNotFoundException(Guid alarmId) 
+        : base($"Alarm with ID {alarmId} was not found") { }
+}
+```
+
+**Global Exception Handling**: Middleware catches and formats all errors
+```csharp
+public class GlobalExceptionMiddleware
+{
+    public async Task InvokeAsync(HttpContext context, RequestDelegate next)
+    {
+        try { await next(context); }
+        catch (DomainException ex) 
+        {
+            await HandleDomainExceptionAsync(context, ex);
+        }
+    }
+}
+```
+
+## Quality Assurance Patterns
+
+### **Build Pipeline Standards**
+- ✅ All projects compile without errors
+- ✅ Unit test coverage > 80% for business logic
+- ✅ Integration tests for external dependencies
+- ✅ Static code analysis (SonarQube/CodeQL)
+- ✅ Security scanning (SAST/DAST)
+- ✅ Performance benchmarks for critical paths
+
+### **Documentation Standards**
+- XML documentation for all public APIs
+- Architecture Decision Records (ADRs) for major decisions
+- OpenAPI/Swagger for REST endpoints
+- README files for each service
+- Runbooks for operational procedures
+
+---
+
+**Last Updated**: July 19, 2025  
+**Architecture Status**: Production Ready ✅  
+**Technical Debt**: Zero critical items ✅
 
 ### Code Organization
 
