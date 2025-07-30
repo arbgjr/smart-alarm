@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
 
 import App from './App';
-import '@/styles/index.css';
+import './styles/index.css';
 
 // Create React Query client
 const queryClient = new QueryClient({
@@ -31,9 +31,8 @@ if (!rootElement) {
   throw new Error('Root element not found');
 }
 
-const root = ReactDOM.createRoot(rootElement);
-
-root.render(
+// Render app
+ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
