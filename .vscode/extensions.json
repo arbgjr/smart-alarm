@@ -15,6 +15,9 @@
         "ms-dotnettools.csdevkit",
         "visualstudioexptteam.vscodeintellicode",
         "emmanuelbeziat.vscode-great-icons",
-        "davidanson.vscode-markdownlint"
+        "davidanson.vscode-markdownlint",
+        "ms-playwright.playwright",
+        "d-biehl.robotcode",
+        "bierner.markdown-mermaid"
     ]
 }
