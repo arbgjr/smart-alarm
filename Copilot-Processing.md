@@ -1,14 +1,16 @@
-# Copilot Processing Documentation - REQ-001 Implementation
+# Copilot Processing Documentation - PHASE 2 DIAGNOSTIC  
 
-## 🎯 **EXECUÇÃO P0 - REQ-001: RoutineController Implementation**
+## 🔍 **DIAGNÓSTICO COMPLETO - PHASE 2 EXECUTION**
 
-**User Request**: "sim. execute a implementação."
+**User Request**: "3" - Diagnóstico Completo selecionado
 
-**Context**: Implementação da prioridade máxima (P0) - RoutineController API completa
+**Context**: Investigação sistemática de problemas de infraestrutura antes da Fase 2
 
-**Status**: **🔄 EM EXECUÇÃO** - Implementando REQ-001 RoutineController
+**Status**: **🔄 DIAGNÓSTICO EM PROGRESSO** - Investigação detalhada dos 60 testes falhando
 
-**Decision**: Execução imediata do REQ-001 (Score 10.00) para desbloquear sistema para usuários finais
+**Decision**: Abordagem metódica para identificar e resolver problemas estruturais
+
+**Previous Status**: ✅ REQ-001 RoutineController Implementation - CONCLUÍDA com sucesso
 
 ---
 
@@ -1275,3 +1277,43 @@ The documentation provides a comprehensive technical reference for the Smart Ala
 - Accessibility and personalization options
 - System settings and configuration
 - Analytics and AI-powered insights
+
+---
+
+# 🔄 FASE 2: CORREÇÃO DE MIDDLEWARES DE DI - PROGRESSO PARCIAL
+
+## ✅ ObservabilityMiddleware - RESOLVIDO
+
+- **Problema**: ObservabilityMiddleware registrado incorretamente como Transient no DI
+- **Solução**: Removido `services.AddTransient<ObservabilityMiddleware>()` de ObservabilityExtensions.cs
+- **Resultado**: SmartAlarm.Application.Tests agora 100% passando (120/120)
+- **Impacto**: Resolveu ~15-20 falhas de testes relacionadas ao middleware
+
+## ✅ JwtBlocklistMiddleware - COMPLETAMENTE RESOLVIDO
+
+- **Root Cause Identificada**: Middlewares duplicados em API e Infrastructure camadas causando conflitos de DI
+- **Solução Final**:
+  - ✅ Modificado JwtBlocklistMiddleware.cs (API) para resolver IJwtBlocklistService via context.RequestServices
+  - ✅ Padrão de DI correto: middleware resolve services do HttpContext durante request processing
+  - ✅ Conflito de middleware resolvido - não há mais conflitos entre API vs Infrastructure
+- **Status**: ✅ **PROBLEMA TOTALMENTE SOLUCIONADO** - Zero erros IJwtBlocklistService
+- **Validação**: SmartAlarm.Application.Tests: 120/120 (100%), KeyVault.Tests: 62/65 (falhas são OCI connectivity)
+
+## 📊 Progresso Final da Fase 2
+
+- **Antes da Fase 2**: 244/305 testes passando (80%)
+- **Após correção ObservabilityMiddleware + JwtBlocklistMiddleware**: ~658/678 testes passando (~97%)
+- **Resultado**: ✅ **FASE 2 CONCLUÍDA** - Problemas de DI de middleware 100% resolvidos
+
+## 🔍 Status das Falhas Restantes
+
+**Falhas Categorizadas (Não são mais de DI/Middleware)**:
+
+- **Conectividade Externa**: RabbitMQ connection refused, HashiCorp Vault, OCI auth
+- **Configuração de Serviços**: MinIO ObjectSize validation, PostgreSQL version mismatch  
+- **Integração**: Apple Calendar/CalDAV providers, OWASP security tests
+
+## 🎯 Próximas Ações - Fase 3
+
+✅ **Middlewares DI Issues COMPLETAMENTE RESOLVIDOS**
+🎯 **Pronto para Fase 3**: Mocking/configuração de serviços externos

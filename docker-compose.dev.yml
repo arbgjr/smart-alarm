@@ -63,7 +63,7 @@ services:
     image: grafana/grafana:10.2.2
     container_name: smartalarm-grafana
     ports:
-      - "3000:3000"
+      - "3001:3000"
     environment:
       GF_SECURITY_ADMIN_PASSWORD: admin
     volumes:
@@ -84,6 +84,12 @@ services:
       Redis__ConnectionString: "redis:6379,password=smartalarm123"
       Jaeger__AgentHost: jaeger
       Jaeger__AgentPort: 6831
+      KeyVault__Enabled: true
+      HashiCorpVault__ServerAddress: http://vault:8200
+      HashiCorpVault__Token: dev-token
+      Storage__Endpoint: minio:9000
+      Storage__AccessKey: minio
+      Storage__SecretKey: minio123
     depends_on:
       postgres:
         condition: service_healthy
@@ -91,6 +97,10 @@ services:
         condition: service_healthy
       jaeger:
         condition: service_started
+      vault:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
@@ -110,11 +120,21 @@ services:
       ConnectionStrings__DefaultConnection: "Host=postgres;Database=smartalarm;Username=smartalarm;Password=smartalarm123"
       Jaeger__AgentHost: jaeger
       Jaeger__AgentPort: 6831
+      KeyVault__Enabled: true
+      HashiCorpVault__ServerAddress: http://vault:8200
+      HashiCorpVault__Token: dev-token
+      Storage__Endpoint: minio:9000
+      Storage__AccessKey: minio
+      Storage__SecretKey: minio123
     depends_on:
       postgres:
         condition: service_healthy
       jaeger:
         condition: service_started
+      vault:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
@@ -135,11 +155,21 @@ services:
       ConnectionStrings__HangfireConnection: "Host=postgres;Database=smartalarm_hangfire;Username=smartalarm;Password=smartalarm123"
       Jaeger__AgentHost: jaeger
       Jaeger__AgentPort: 6831
+      KeyVault__Enabled: true
+      HashiCorpVault__ServerAddress: http://vault:8200
+      HashiCorpVault__Token: dev-token
+      Storage__Endpoint: minio:9000
+      Storage__AccessKey: minio
+      Storage__SecretKey: minio123
     depends_on:
       postgres:
         condition: service_healthy
       jaeger:
         condition: service_started
+      vault:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
@@ -161,13 +191,71 @@ services:
       Jaeger__AgentPort: 6831
       ExternalServices__AiServiceUrl: "http://ai-service:8080"
       ExternalServices__AlarmServiceUrl: "http://alarm-service:8080"
+      KeyVault__Enabled: true
+      HashiCorpVault__ServerAddress: http://vault:8200
+      HashiCorpVault__Token: dev-token
+      Storage__Endpoint: minio:9000
+      Storage__AccessKey: minio
+      Storage__SecretKey: minio123
     depends_on:
       postgres:
         condition: service_healthy
       jaeger:
         condition: service_started
+      vault:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # MinIO para object storage
+  minio:
+    image: minio/minio:latest
+    container_name: smartalarm-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=minio
+      - MINIO_ROOT_PASSWORD=minio123
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    volumes:
+      - minio_data:/data
+
+  # HashiCorp Vault para secrets management
+  vault:
+    image: hashicorp/vault:1.15
+    container_name: smartalarm-vault
+    ports:
+      - "8200:8200"
+    environment:
+      - VAULT_DEV_ROOT_TOKEN_ID=dev-token
+      - VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:8200
+    command: ["vault", "server", "-dev"]
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:8200/v1/sys/seal-status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Loki para log aggregation
+  loki:
+    image: grafana/loki:2.9.4
+    container_name: smartalarm-loki
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3100/ready"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -175,6 +263,7 @@ services:
 volumes:
   postgres_data:
   grafana_data:
+  minio_data:
 
 networks:
   default:

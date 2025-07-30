@@ -145,8 +145,8 @@ namespace SmartAlarm.Observability.Extensions
             // Tracing customizado
             services.AddSingleton<SmartAlarmActivitySource>();
 
-            // Middleware de observabilidade
-            services.AddTransient<ObservabilityMiddleware>();
+            // Middleware de observabilidade não deve ser registrado como serviço
+            // Ele será criado diretamente pelo UseMiddleware<>()
 
             // Informações de versão
             services.AddSingleton<IVersionInfo, VersionInfo>();

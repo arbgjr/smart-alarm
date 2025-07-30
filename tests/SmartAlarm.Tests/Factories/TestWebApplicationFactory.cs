@@ -23,11 +23,11 @@ namespace SmartAlarm.Tests.Factories
     public class TestWebApplicationFactory : WebApplicationFactory<SmartAlarm.Api.Program>
     {
         private static readonly string DatabaseName = $"SmartAlarmTestDb_{Guid.NewGuid():N}";
-        
+
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             builder.UseEnvironment("Testing");
-            
+
             // Configure para forçar InMemory antes dos serviços serem registrados
             builder.ConfigureAppConfiguration(config =>
             {
@@ -36,14 +36,16 @@ namespace SmartAlarm.Tests.Factories
                 {
                     new KeyValuePair<string, string?>("Database:Provider", "InMemory"),
                     new KeyValuePair<string, string?>("ConnectionStrings:OracleDb", null),
-                    new KeyValuePair<string, string?>("ConnectionStrings:PostgresDb", null)
+                    new KeyValuePair<string, string?>("ConnectionStrings:PostgresDb", null),
+                    // Configuração do Redis para testes com senha (usando ConnectionStrings)
+                    new KeyValuePair<string, string?>("ConnectionStrings:Redis", "localhost:6379,password=smartalarm123")
                 });
             });
-            
+
             builder.ConfigureServices(services =>
             {
                 // Remove TODOS os serviços relacionados ao SmartAlarm Infrastructure
-                var infraDescriptors = services.Where(d => 
+                var infraDescriptors = services.Where(d =>
                     d.ServiceType == typeof(DbContextOptions<SmartAlarmDbContext>) ||
                     d.ServiceType == typeof(SmartAlarmDbContext) ||
                     d.ServiceType.IsGenericType && d.ServiceType.GetGenericTypeDefinition() == typeof(DbContextOptions<>) ||
@@ -51,7 +53,7 @@ namespace SmartAlarm.Tests.Factories
                     (d.ImplementationType?.Assembly?.GetName()?.Name?.Contains("SmartAlarm.Infrastructure") == true) ||
                     d.ServiceType.Name.Contains("Repository") ||
                     d.ServiceType.Name.Contains("UnitOfWork")).ToArray();
-                
+
                 foreach (var descriptor in infraDescriptors)
                 {
                     services.Remove(descriptor);
@@ -66,23 +68,23 @@ namespace SmartAlarm.Tests.Factories
                     options.UseInMemoryDatabase(DatabaseName);
                     options.ConfigureWarnings(warnings => warnings.Ignore(InMemoryEventId.TransactionIgnoredWarning));
                 }, ServiceLifetime.Scoped);
-                
+
                 // Substituir o CurrentUserService real pelo mock de teste
                 var descriptors = services.Where(d => d.ServiceType == typeof(ICurrentUserService)).ToList();
                 foreach (var descriptor in descriptors)
                 {
                     services.Remove(descriptor);
                 }
-                
+
                 // Remover todos os outros serviços relacionados ao CurrentUserService
                 var currentUserDescriptors = services.Where(d => d.ImplementationType == typeof(CurrentUserService)).ToList();
                 foreach (var descriptor in currentUserDescriptors)
                 {
                     services.Remove(descriptor);
                 }
-                
+
                 services.AddScoped<ICurrentUserService, TestCurrentUserService>();
-                
+
                 // Adicionar o MockJwtTokenService para evitar dependências não resolvidas
                 var jwtDescriptors = services.Where(d => d.ServiceType == typeof(SmartAlarm.Domain.Abstractions.IJwtTokenService)).ToList();
                 foreach (var desc in jwtDescriptors)
@@ -90,7 +92,7 @@ namespace SmartAlarm.Tests.Factories
                     services.Remove(desc);
                 }
                 services.AddSingleton<SmartAlarm.Domain.Abstractions.IJwtTokenService, MockJwtTokenService>();
-                
+
                 // Adicionar o MockFido2Service para evitar dependências não resolvidas
                 var fido2Descriptors = services.Where(d => d.ServiceType == typeof(SmartAlarm.Domain.Abstractions.IFido2Service)).ToList();
                 foreach (var desc in fido2Descriptors)
@@ -98,22 +100,22 @@ namespace SmartAlarm.Tests.Factories
                     services.Remove(desc);
                 }
                 services.AddSingleton<SmartAlarm.Domain.Abstractions.IFido2Service, MockFido2Service>();
-                
+
                 // Remover validators problemáticos em ambiente de teste
-                var validatorDescriptors = services.Where(d => 
-                    d.ServiceType.IsGenericType && 
+                var validatorDescriptors = services.Where(d =>
+                    d.ServiceType.IsGenericType &&
                     d.ServiceType.GetGenericTypeDefinition() == typeof(FluentValidation.IValidator<>) &&
                     (d.ServiceType.GenericTypeArguments[0].Name.Contains("DeleteUserHolidayPreferenceCommand") ||
                      d.ServiceType.GenericTypeArguments[0].Name.Contains("UpdateUserHolidayPreferenceCommand"))
                 ).ToList();
-                
+
                 foreach (var desc in validatorDescriptors)
                 {
                     services.Remove(desc);
                 }
-                
 
-                
+
+
                 // Remover autenticação JWT e configurar autenticação de teste
                 services.AddAuthentication(options =>
                 {
@@ -135,7 +137,7 @@ namespace SmartAlarm.Tests.Factories
         {
             var client = CreateClient();
             // Força o seeding a ser executado de forma síncrona e garantir que complete
-            try 
+            try
             {
                 _seedingTask.Value.Wait(TimeSpan.FromSeconds(30)); // Timeout de 30 segundos
             }
@@ -152,31 +154,31 @@ namespace SmartAlarm.Tests.Factories
             using var scope = Services.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<SmartAlarmDbContext>();
             var userRepo = scope.ServiceProvider.GetRequiredService<SmartAlarm.Domain.Repositories.IUserRepository>();
-            
+
             // Garantir que o database foi criado
             await context.Database.EnsureCreatedAsync();
-            
+
             // Verificar se o usuário já existe para evitar duplicação
             var existingUser = await userRepo.GetByEmailAsync("test@example.com");
             if (existingUser == null)
             {
                 var testUser = new SmartAlarm.Domain.Entities.User(
-                    Guid.Parse("12345678-1234-1234-1234-123456789012"), 
-                    "Test User", 
-                    "test@example.com", 
+                    Guid.Parse("12345678-1234-1234-1234-123456789012"),
+                    "Test User",
+                    "test@example.com",
                     true
                 );
-                
+
                 // Set password hash for test user (BCrypt hash for "ValidPassword123!")
                 var passwordHash = BCrypt.Net.BCrypt.HashPassword("ValidPassword123!");
                 testUser.SetPasswordHash(passwordHash);
-                
+
                 await userRepo.AddAsync(testUser);
-                
+
                 // Força o contexto a salvar imediatamente para testes InMemory
                 await context.SaveChangesAsync();
             }
-            
+
             // Criar Holiday de teste se não existir
             var testHolidayId = Guid.Parse("123e4567-e89b-12d3-a456-426614174001");
             var existingHoliday = await context.Holidays.FirstOrDefaultAsync(h => h.Id == testHolidayId);
@@ -212,10 +214,10 @@ namespace SmartAlarm.Tests.Factories
             }
 
             var token = authHeader.Substring("Bearer ".Length).Trim();
-            
+
             // Tokens específicos para falha
-            if (token == "invalid-token" || 
-                token == "malformed-token" || 
+            if (token == "invalid-token" ||
+                token == "malformed-token" ||
                 token == "expired-token" ||
                 token == "wrong-signature-token" ||
                 token == "tampered-token")

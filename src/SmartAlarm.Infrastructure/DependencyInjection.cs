@@ -84,7 +84,7 @@ namespace SmartAlarm.Infrastructure
             services.AddSingleton<IScheduleRepository, InMemoryScheduleRepository>();
             services.AddSingleton<IRoutineRepository, InMemoryRoutineRepository>();
             services.AddSingleton<IIntegrationRepository, InMemoryIntegrationRepository>();
-            
+
             // Register EntityFramework repositories for complex entities that don't have in-memory implementations
             services.AddScoped<IHolidayRepository, EfHolidayRepository>();
             services.AddScoped<IUserHolidayPreferenceRepository, EfUserHolidayPreferenceRepository>();
@@ -125,27 +125,27 @@ namespace SmartAlarm.Infrastructure
             services.AddScoped<IEmailService, LoggingEmailService>();
             services.AddScoped<INotificationService, LoggingNotificationService>();
             services.AddScoped<IFileParser, CsvFileParser>();
-            
+
             // Register repositories
             services.AddSingleton<Domain.Repositories.IWebhookRepository, Repositories.InMemoryWebhookRepository>();
-            
+
             // Register security services with environment-based configuration
             services.AddScoped<IJwtTokenService>(provider =>
             {
                 var keyVault = provider.GetRequiredService<SmartAlarm.KeyVault.Abstractions.IKeyVaultService>();
                 var logger = provider.GetRequiredService<ILogger<JwtTokenService>>();
                 var tokenStorage = provider.GetRequiredService<Security.ITokenStorage>();
-                
+
                 return new JwtTokenService(keyVault, logger, tokenStorage);
             });
-            
+
             // Token storage with distributed revocation support
             services.AddScoped<Security.ITokenStorage>(provider =>
             {
                 var config = provider.GetRequiredService<IConfiguration>();
                 var environment = config["Environment"] ?? config["ASPNETCORE_ENVIRONMENT"] ?? "Development";
                 var logger = provider.GetRequiredService<ILogger<Security.InMemoryTokenStorage>>();
-                
+
                 return environment switch
                 {
                     "Production" => new Security.DistributedTokenStorage(
@@ -154,7 +154,7 @@ namespace SmartAlarm.Infrastructure
                     ),
                     "Staging" => new Security.DistributedTokenStorage(
                         provider.GetRequiredService<ILogger<Security.DistributedTokenStorage>>(),
-                        config.GetConnectionString("Redis") ?? "localhost:6379"
+                        config.GetConnectionString("Redis") ?? "localhost:6379,password=smartalarm123"
                     ),
                     _ => new Security.InMemoryTokenStorage(logger) // Para desenvolvimento e testes
                 };
@@ -169,7 +169,7 @@ namespace SmartAlarm.Infrastructure
                 var meter = provider.GetRequiredService<SmartAlarm.Observability.Metrics.SmartAlarmMeter>();
                 var correlationContext = provider.GetRequiredService<SmartAlarm.Observability.Context.ICorrelationContext>();
                 var activitySource = provider.GetRequiredService<SmartAlarm.Observability.Tracing.SmartAlarmActivitySource>();
-                
+
                 return environment switch
                 {
                     "Production" => new Security.RedisJwtBlocklistService(
@@ -178,11 +178,11 @@ namespace SmartAlarm.Infrastructure
                     ),
                     "Staging" => new Security.RedisJwtBlocklistService(
                         logger, meter, correlationContext, activitySource,
-                        config.GetConnectionString("Redis") ?? "localhost:6379"
+                        config.GetConnectionString("Redis") ?? "localhost:6379,password=smartalarm123"
                     ),
                     _ => new Security.RedisJwtBlocklistService(
                         logger, meter, correlationContext, activitySource,
-                        config.GetConnectionString("Redis") ?? "localhost:6379"
+                        config.GetConnectionString("Redis") ?? "localhost:6379,password=smartalarm123"
                     )
                 };
             });
@@ -196,14 +196,14 @@ namespace SmartAlarm.Infrastructure
                 var meter = provider.GetRequiredService<SmartAlarm.Observability.Metrics.SmartAlarmMeter>();
                 var correlationContext = provider.GetRequiredService<SmartAlarm.Observability.Context.ICorrelationContext>();
                 var activitySource = provider.GetRequiredService<SmartAlarm.Observability.Tracing.SmartAlarmActivitySource>();
-                
+
                 // Todos os ambientes usam a mesma implementação RabbitMQ
                 // A diferença está na configuração de SSL/clustering via variáveis de ambiente
                 return new Messaging.RabbitMqMessagingService(
                     logger, meter, correlationContext, activitySource
                 );
             });
-            
+
             // Register storage service with smart provider that detects MinIO availability
             services.AddScoped<Storage.IStorageService>(provider =>
             {
@@ -213,13 +213,13 @@ namespace SmartAlarm.Infrastructure
                 var meter = provider.GetRequiredService<SmartAlarm.Observability.Metrics.SmartAlarmMeter>();
                 var correlationContext = provider.GetRequiredService<SmartAlarm.Observability.Context.ICorrelationContext>();
                 var activitySource = provider.GetRequiredService<SmartAlarm.Observability.Tracing.SmartAlarmActivitySource>();
-                
+
                 return environment switch
                 {
                     "Production" => new Storage.OciObjectStorageService(
                         config,
                         provider.GetRequiredService<ILogger<Storage.OciObjectStorageService>>(),
-                        meter, 
+                        meter,
                         activitySource,
                         provider.GetRequiredService<HttpClient>()
                     ),
@@ -228,20 +228,20 @@ namespace SmartAlarm.Infrastructure
                         provider.GetRequiredService<ILogger<Storage.SmartStorageService>>(),
                         provider.GetRequiredService<ILogger<Storage.MinioStorageService>>(),
                         provider.GetRequiredService<ILogger<Storage.MockStorageService>>(),
-                        configResolver, 
-                        meter, 
-                        correlationContext, 
+                        configResolver,
+                        meter,
+                        correlationContext,
                         activitySource
                     )
                 };
             });
-            
+
             // Register observability services with environment-based implementations
             services.AddScoped<Observability.ITracingService>(provider =>
             {
                 var config = provider.GetRequiredService<IConfiguration>();
                 var environment = config["Environment"] ?? config["ASPNETCORE_ENVIRONMENT"] ?? "Development";
-                
+
                 return environment switch
                 {
                     "Production" => new Observability.OpenTelemetryTracingService(
@@ -257,12 +257,12 @@ namespace SmartAlarm.Infrastructure
                     )
                 };
             });
-            
+
             services.AddScoped<Observability.IMetricsService>(provider =>
             {
                 var config = provider.GetRequiredService<IConfiguration>();
                 var environment = config["Environment"] ?? config["ASPNETCORE_ENVIRONMENT"] ?? "Development";
-                
+
                 return environment switch
                 {
                     "Production" => new Observability.OpenTelemetryMetricsService(
@@ -278,7 +278,7 @@ namespace SmartAlarm.Infrastructure
                     )
                 };
             });
-            
+
             // Note: Observability services (SmartAlarmActivitySource and SmartAlarmMeter) are handled by SmartAlarm.Observability package
             // They are registered via AddSmartAlarmObservability() in the API startup configuration, not here in Infrastructure layer
 
