@@ -10,7 +10,12 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:e2e:responsive": "playwright test tests/e2e/responsive-comprehensive.spec.ts",
+    "test:e2e:loading": "playwright test tests/e2e/loading-states-responsive.spec.ts",
+    "test:e2e:navigation": "playwright test tests/e2e/component-navigation.spec.ts",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:debug": "playwright test --debug"
   },
   "dependencies": {
     "@heroicons/react": "^2.0.18",
@@ -21,6 +26,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dexie": "^3.2.4",
+    "lucide-react": "^0.534.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.15.0",

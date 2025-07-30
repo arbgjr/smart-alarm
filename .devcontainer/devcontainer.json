@@ -1,34 +1,69 @@
 // Devcontainer para Smart Alarm
-// Baseado em .NET 8, OCI CLI, Node.js (para frontend/PWA), e utilitários essenciais
+// Baseado em .NET 8, Azure CLI, Node.js (para frontend/PWA), e utilitários essenciais
 {
     "name": "Smart Alarm DevContainer",
     "image": "mcr.microsoft.com/devcontainers/dotnet:8.0",
     "features": {
-        "ghcr.io/devcontainers/features/docker-in-docker:2": {},
-        "ghcr.io/devcontainers/features/azure-cli:1": {},
-        "ghcr.io/devcontainers/features/node:1": {
-            "version": "lts"
+        "ghcr.io/devcontainers/features/docker-in-docker:2": {
+            "moby": true,
+            "azureDnsAutoDetection": true,
+            "installDockerBuildx": true
         },
-        "ghcr.io/devcontainers/features/powershell:1": {}
+        "ghcr.io/devcontainers/features/azure-cli:1": {
+            "installBicep": true,
+            "version": "latest"
+        },
+        "ghcr.io/devcontainers/features/node:1": {
+            "version": "lts",
+            "nodeGypDependencies": true,
+            "installYarnUsingApt": true
+        },
+        "ghcr.io/devcontainers/features/powershell:1": {
+            "version": "latest"
+        }
     },
     "customizations": {
         "vscode": {
             "settings": {
                 "terminal.integrated.defaultProfile.linux": "bash",
-                "dotnet.defaultSolution": "SmartAlarm.sln"
+                "dotnet.defaultSolution": "SmartAlarm.sln",
+                "docker.dockerPath": "/usr/local/bin/docker",
+                "files.watcherExclude": {
+                    "**/node_modules/**": true,
+                    "**/bin/**": true,
+                    "**/obj/**": true,
+                    "**/TestResults/**": true
+                }
             },
             "extensions": [
                 "ms-dotnettools.csharp",
+                "ms-dotnettools.csdevkit",
                 "ms-azuretools.vscode-docker",
                 "ms-vscode.powershell",
                 "esbenp.prettier-vscode",
-                "dbaeumer.vscode-eslint"
+                "dbaeumer.vscode-eslint",
+                "ms-vscode.vscode-json",
+                "GitHub.copilot",
+                "GitHub.copilot-chat"
             ]
         }
     },
-    "postCreateCommand": "dotnet restore || true",
+    "postCreateCommand": "bash -c 'dotnet restore SmartAlarm.sln && npm install --prefix frontend || true'",
+    "postStartCommand": "git config --global --add safe.directory /workspaces/smart-alarm",
     "remoteUser": "vscode",
+    "workspaceFolder": "/workspaces/smart-alarm",
     "mounts": [
-        "source=${localWorkspaceFolder}/memory-bank,target=/workspace/memory-bank,type=bind,consistency=cached"
-    ]
+        "source=${localWorkspaceFolder}/memory-bank,target=/workspaces/smart-alarm/memory-bank,type=bind,consistency=cached",
+        "source=smart-alarm-node-modules,target=/workspaces/smart-alarm/frontend/node_modules,type=volume"
+    ],
+    "containerEnv": {
+        "DOTNET_CLI_TELEMETRY_OPTOUT": "1",
+        "DOTNET_SKIP_FIRST_TIME_EXPERIENCE": "1",
+        "ASPNETCORE_ENVIRONMENT": "Development"
+    },
+    "runArgs": [
+        "--init",
+        "--privileged"
+    ],
+    "shutdownAction": "stopContainer"
 }

@@ -6,8 +6,12 @@ import { LoginForm } from './components/molecules/LoginForm/LoginForm';
 import { RegisterForm } from './components/molecules/RegisterForm/RegisterForm';
 import { ProtectedRoute, PublicRoute } from './components/molecules/ProtectedRoute/ProtectedRoute';
 import { ComponentShowcase } from './components/organisms/ComponentShowcase';
+import { Dashboard } from './pages/Dashboard';
+import { AlarmsPage } from './pages/Alarms';
+import { RoutinesPage } from './pages/Routines';
 import { useAuth } from './hooks/useAuth';
-import { LoadingSpinner } from './components/atoms/LoadingSpinner/LoadingSpinner';
+import { LoadingSpinner } from './components/molecules/Loading';
+import { ErrorBoundary } from './components/molecules/ErrorBoundary/ErrorBoundary';
 
 // Create React Query client
 const queryClient = new QueryClient({
@@ -19,39 +23,6 @@ const queryClient = new QueryClient({
     },
   },
 });
-
-// Dashboard placeholder component
-const Dashboard: React.FC = () => {
-  const { user, logout } = useAuth();
-
-  return (
-    <div className="min-h-screen bg-neutral-50">
-      <div className="container mx-auto p-8">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-neutral-900">
-            Smart Alarm Dashboard
-          </h1>
-          <button
-            onClick={() => logout()}
-            className="text-neutral-600 hover:text-neutral-800 text-sm underline"
-          >
-            Sair
-          </button>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Bem-vindo, {user?.name}!</h2>
-          <p className="text-neutral-600 mb-4">
-            Email: {user?.email}
-          </p>
-          <p className="text-neutral-500">
-            Dashboard em desenvolvimento... 🚧
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 // App Routes Component
 const AppRoutes: React.FC = () => {
@@ -100,6 +71,22 @@ const AppRoutes: React.FC = () => {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/alarms"
+        element={
+          <ProtectedRoute>
+            <AlarmsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/routines"
+        element={
+          <ProtectedRoute>
+            <RoutinesPage />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Root redirect based on authentication */}
       <Route
@@ -124,9 +111,11 @@ const AppRoutes: React.FC = () => {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="min-h-screen bg-neutral-50">
-        <AppRoutes />
-      </div>
+      <ErrorBoundary>
+        <div className="min-h-screen bg-neutral-50">
+          <AppRoutes />
+        </div>
+      </ErrorBoundary>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   );

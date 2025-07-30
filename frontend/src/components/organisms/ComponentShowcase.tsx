@@ -5,9 +5,9 @@ import {
   Card,
   CardHeader,
   CardTitle,
-  CardContent,
-  LoadingSpinner
+  CardContent
 } from '../atoms';
+import { LoadingSpinner } from '../molecules/Loading';
 
 export const ComponentShowcase: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -205,7 +205,7 @@ export const ComponentShowcase: React.FC = () => {
               </div>
 
               <div className="text-center">
-                <LoadingSpinner size="default" />
+                <LoadingSpinner size="md" />
                 <p className="text-xs text-neutral-500 mt-2">Default</p>
               </div>
 
@@ -215,8 +215,8 @@ export const ComponentShowcase: React.FC = () => {
               </div>
 
               <div className="text-center">
-                <LoadingSpinner size="xl" showText label="Processing..." />
-                <p className="text-xs text-neutral-500 mt-2">With Text</p>
+                <LoadingSpinner size="xl" />
+                <p className="text-xs text-neutral-500 mt-2">Extra Large</p>
               </div>
             </div>
           </CardContent>
