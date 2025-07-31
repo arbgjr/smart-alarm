@@ -18,7 +18,9 @@ export default defineConfig({
     }
   },
   server: {
-    port: 3000,
+    host: '0.0.0.0',  // Permite acesso externo (Windows)
+    port: 5173,       // Porta padrão do Vite
+    strictPort: true, // Falha se a porta estiver ocupada
     proxy: {
       '/api': {
         target: 'http://localhost:5000',

@@ -45,17 +45,20 @@ To run Smart Alarm locally, you need:
 ### Quick Start
 
 1. **Clone the repository**:
+
    ```bash
    git clone https://github.com/arbgjr/smart-alarm.git
    cd smart-alarm
    ```
 
 2. **Start infrastructure services**:
+
    ```bash
    docker compose up -d
    ```
 
 3. **Build and run the application**:
+
    ```bash
    dotnet restore SmartAlarm.sln
    dotnet build SmartAlarm.sln --no-restore
@@ -63,6 +66,7 @@ To run Smart Alarm locally, you need:
    ```
 
 4. **Run tests**:
+
    ```bash
    dotnet test --logger "console;verbosity=detailed"
    ```
@@ -71,6 +75,23 @@ The API will be available at `https://localhost:8080` with Swagger documentation
 
 > [!NOTE]
 > The Docker Compose setup includes all necessary infrastructure services including PostgreSQL, Redis, RabbitMQ, HashiCorp Vault, and observability stack (Prometheus, Grafana, Jaeger).
+
+### WSL Development (Windows + Linux)
+
+For Windows users developing with WSL:
+
+1. **Quick Setup**:
+
+   ```bash
+   # Run the automated WSL setup script
+   ./start-wsl-dev.sh
+   ```
+
+2. **Access from Windows**:
+   - Script shows WSL IP automatically
+   - Access: `http://[WSL-IP]:5173`
+
+📖 **Complete WSL Guide**: [docs/development/WSL-SETUP-GUIDE.md](./docs/development/WSL-SETUP-GUIDE.md)
 
 ### Development Environment
 
@@ -90,28 +111,33 @@ dotnet test --collect:"XPlat Code Coverage" --settings tests/coverlet.runsetting
 ## Technology Stack
 
 ### Core Technologies
+
 - **Backend**: C# (.NET 8), ASP.NET Core, Clean Architecture
 - **Patterns**: CQRS with MediatR, Repository with Unit of Work, Domain Events
 - **Authentication**: JWT with FIDO2 support, Redis-backed token blacklist
 - **Validation**: FluentValidation for all DTOs and commands
 
 ### Persistence & Storage
+
 - **Databases**: Entity Framework Core with PostgreSQL (dev/test) and Oracle (production)
 - **Cache**: StackExchange.Redis for distributed caching and JWT blacklisting
 - **Storage**: MinIO (dev/test), OCI Object Storage (production) with auto-detection
 
 ### Cloud & Infrastructure
+
 - **Deployment**: Oracle Cloud Infrastructure (OCI) Functions, serverless-first design
 - **Secrets**: Multi-provider support (HashiCorp Vault, Azure Key Vault, OCI Vault)
 - **Infrastructure**: Docker, Kubernetes, Terraform for multi-cloud deployments
 
 ### Observability Stack
+
 - **Logging**: Serilog with structured logging and Loki aggregation
 - **Tracing**: OpenTelemetry with Jaeger for distributed tracing
 - **Metrics**: OpenTelemetry metrics exported to Prometheus
 - **Visualization**: Grafana dashboards for comprehensive monitoring
 
 ### Microservices
+
 - **AI Service**: ML.NET for behavioral pattern analysis and intelligent recommendations
 - **Alarm Service**: Hangfire for background job processing and task scheduling
 - **Integration Service**: Polly for resilience patterns with external APIs
@@ -248,21 +274,25 @@ terraform apply
 Smart Alarm provides comprehensive observability out of the box:
 
 ### Metrics
+
 - Application metrics via OpenTelemetry
 - Custom business metrics for alarm operations
 - Infrastructure metrics via Prometheus
 
 ### Logging  
+
 - Structured logging with Serilog
 - Correlation IDs for request tracing
 - Log aggregation with Loki
 
 ### Tracing
+
 - Distributed tracing with OpenTelemetry
 - Jaeger for trace visualization
 - Custom spans for business operations
 
 ### Health Checks
+
 - Comprehensive health endpoints
 - Dependency health monitoring
 - Kubernetes liveness/readiness probes
@@ -325,6 +355,7 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 Common issues and solutions can be found in our [Troubleshooting Guide](./docs/troubleshooting.md).
 
 If you encounter issues not covered in the documentation, please [open an issue](https://github.com/arbgjr/smart-alarm/issues) with:
+
 - Detailed problem description
 - Steps to reproduce
 - Environment information
