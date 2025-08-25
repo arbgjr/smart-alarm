@@ -5,6 +5,7 @@ import { BrowserRouter } from 'react-router-dom';
 
 import App from './App';
 import './styles/index.css';
+import { initServiceWorker } from './utils/serviceWorker';
 
 // Create React Query client
 const queryClient = new QueryClient({
@@ -30,6 +31,9 @@ const rootElement = document.getElementById('root');
 if (!rootElement) {
   throw new Error('Root element not found');
 }
+
+// Initialize service worker
+initServiceWorker().catch(console.error);
 
 // Render app
 ReactDOM.createRoot(rootElement).render(

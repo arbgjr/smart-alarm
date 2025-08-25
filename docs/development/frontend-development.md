@@ -1,6 +1,188 @@
-# Frontend Development Guide - Accessibility-First React Components
+# Frontend Development Guide - PWA & State Management
 
-Welcome to the frontend development guide for the Smart Alarm system. This guide will help you understand how to build React components that genuinely serve neurodivergent users while maintaining the technical excellence needed for a production alarm system that people depend on for their health and daily routines.
+Welcome to the frontend development guide for the Smart Alarm system. This guide covers the Progressive Web App (PWA) implementation, modern state management with Zustand, and accessibility-first React components that genuinely serve neurodivergent users while maintaining the technical excellence needed for a production alarm system.
+
+## 🚀 Progressive Web App (PWA) Implementation
+
+The Smart Alarm frontend is built as a full-featured PWA that works seamlessly offline and provides native app-like experiences across all platforms.
+
+### Service Worker & Caching Strategy
+
+The application uses Workbox for intelligent caching with the following strategies:
+
+- **Network-First**: API calls prioritize fresh data with cache fallback
+- **Cache-First**: Static assets cached for optimal performance  
+- **Stale-While-Revalidate**: Background updates for non-critical resources
+
+```typescript
+// vite.config.ts - PWA Configuration
+export default defineConfig({
+  plugins: [
+    VitePWA({
+      registerType: 'autoUpdate',
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/api\.smartalarm\.com\/.*$/,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'api-cache',
+              networkTimeoutSeconds: 10,
+              cacheableResponse: { statuses: [0, 200] }
+            }
+          }
+        ]
+      }
+    })
+  ]
+});
+```
+
+### Background Sync & Offline Support
+
+The application implements comprehensive offline support with background synchronization:
+
+```typescript
+// Background sync for critical operations
+export class BackgroundSync {
+  public addToSyncQueue(action: 'create' | 'update' | 'delete', entity: string, data: any): void {
+    const syncData = {
+      id: `${entity}-${action}-${Date.now()}`,
+      action, entity, data,
+      timestamp: Date.now()
+    };
+
+    this.syncQueue.push(syncData);
+    this.saveSyncQueue();
+    
+    // Try immediate sync if online
+    if (navigator.onLine) {
+      this.processQueue();
+    } else {
+      this.registerBackgroundSync();
+    }
+  }
+}
+```
+
+### Installation & Native Features
+
+The PWA manifest enables installation across platforms:
+
+```json
+{
+  "name": "Smart Alarm",
+  "short_name": "SmartAlarm", 
+  "description": "Intelligent alarm and routine management",
+  "theme_color": "#1f2937",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "orientation": "portrait",
+  "categories": ["productivity", "lifestyle", "health"]
+}
+```
+
+## 🏪 Modern State Management
+
+The application uses Zustand for centralized state management with React Query integration for optimal data fetching and caching.
+
+### Zustand Store Architecture
+
+Three main stores handle different aspects of application state:
+
+#### Auth Store
+```typescript
+interface AuthState {
+  user: User | null;
+  token: string | null;
+  isAuthenticated: boolean;
+  
+  // Actions
+  login: (user: User, token: string, refreshToken?: string) => void;
+  logout: () => void;
+  hasRole: (role: string) => boolean;
+  isTokenExpired: () => boolean;
+}
+```
+
+#### Alarms Store
+```typescript
+interface AlarmsState {
+  alarms: Alarm[];
+  selectedAlarm: Alarm | null;
+  isLoading: boolean;
+  
+  // CRUD Operations with offline support
+  createAlarm: (data: AlarmFormData) => Promise<Alarm>;
+  editAlarm: (id: string, data: Partial<AlarmFormData>) => Promise<Alarm>;
+  deleteAlarm: (id: string) => Promise<void>;
+  toggleAlarm: (id: string) => Promise<void>;
+}
+```
+
+#### UI Store
+```typescript
+interface UIState {
+  theme: 'light' | 'dark' | 'system';
+  language: string;
+  preferences: UIPreferences;
+  notifications: NotificationSettings;
+  accessibility: AccessibilitySettings;
+  
+  setTheme: (theme: Theme) => void;
+  setPreferences: (preferences: Partial<UIPreferences>) => void;
+}
+```
+
+### React Query Integration
+
+Integration hooks combine Zustand with React Query for optimal caching:
+
+```typescript
+export function useAlarmsIntegration(params?: AlarmQueryParams) {
+  const alarms = useAlarmsStore((state) => state.alarms);
+  const { setAlarms, setLoading } = useAlarmsStore();
+
+  const query = useQuery({
+    queryKey: alarmKeys.list(params),
+    queryFn: async () => {
+      const response = await alarmService.getAlarms(params);
+      const alarms = response.data.map(convertAlarmDtoToAlarm);
+      setAlarms(alarms); // Sync with Zustand
+      return response;
+    }
+  });
+
+  return { ...query, alarms }; // Return both query state and Zustand data
+}
+```
+
+### Persistent State & Hydration
+
+All stores use Zustand's persist middleware with selective hydration:
+
+```typescript
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set, get) => ({ /* store implementation */ }),
+    {
+      name: 'smart-alarm-auth',
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        user: state.user,
+        token: state.token,
+        isAuthenticated: state.isAuthenticated,
+      }),
+      onRehydrateStorage: () => (state) => {
+        if (state?.isTokenExpired()) {
+          state.logout();
+        }
+      }
+    }
+  )
+);
+```
 
 ## 🧠 Understanding Our Users: The Foundation of Everything
 

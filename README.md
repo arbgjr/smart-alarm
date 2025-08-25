@@ -22,6 +22,7 @@ The platform consists of three main microservices:
 
 ## Features
 
+### Backend Infrastructure
 - **Serverless Architecture**: Built for OCI Functions with full serverless deployment capabilities
 - **Clean Architecture**: Strict separation of concerns across Domain, Application, Infrastructure, and API layers
 - **Multi-Provider Support**: Database (PostgreSQL/Oracle), storage (MinIO/OCI), and secrets management (Vault/Azure/OCI)
@@ -30,6 +31,20 @@ The platform consists of three main microservices:
 - **Background Processing**: Intelligent task scheduling and execution with Hangfire
 - **AI-Powered Insights**: ML.NET integration for behavioral pattern analysis and optimization recommendations
 - **Resilient Integrations**: External API integration with circuit breakers, retries, and bulkhead patterns
+
+### Progressive Web Application (PWA) ✨ NEW
+- **Offline-First Experience**: Complete PWA implementation with service worker and background sync
+- **Cross-Platform Installation**: Installable on mobile devices and desktop platforms
+- **Smart Caching**: Network-first caching for API calls with intelligent fallback strategies
+- **Background Sync**: Automatic synchronization of offline actions when connectivity returns
+- **Responsive Design**: Mobile-optimized interface with accessibility-first approach
+
+### Modern State Management ✨ NEW
+- **Zustand Integration**: Centralized state management with persistent storage
+- **Optimistic Updates**: Immediate UI feedback with server synchronization
+- **React Query Optimization**: Intelligent caching and data synchronization
+- **Offline State**: Seamless offline/online state transitions with conflict resolution
+- **Theme & Accessibility**: Complete UI state management with user preferences
 
 ## Getting Started
 

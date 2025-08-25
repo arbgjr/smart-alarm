@@ -11,9 +11,28 @@
 			"type": "promptString",
 			"description": "Path to the memory storage file",
 			"password": false
-		}
+		},
+        {
+            "id": "everai_token",
+            "type": "promptString",
+            "description": "Ever.AI Personal Access Token",
+            "password": true
+        }
     ],
     "servers": {
+        "everai-mcp": {
+            "url": "http://10.80.47.6:5001/sse",
+            "headers" : {
+                "x-everai-api-key": "${input:everai_token}",
+                "x-everai-llm-prompt": "<seu-prompt-personalizado>",
+                "x-everai-llm-model": "gpt-4-1-mini",
+                "x-everai-llm-family": "openai",
+                "x-everai-etl-results": "10",
+                "x-everai-etl-kb": "DocAgent",
+                "x-everai-etl-theme": "B28S - 2025-07-29 16:53:16.754",
+                "x-everai-mcp-mode": "rag"
+            }
+        },
         "github": {
             "command": "npx",
             "args": [
@@ -40,7 +59,7 @@
 			"type": "stdio",
             "command": "npx",
             "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
-        },        
+        },
         "everything": {
             "command": "npx",
             "args": ["-y", "@modelcontextprotocol/server-everything"]
