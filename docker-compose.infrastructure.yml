@@ -30,6 +30,22 @@ services:
       timeout: 3s
       retries: 5
 
+  # RabbitMQ para mensageria
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: smartalarm-rabbitmq
+    ports:
+      - "5672:5672"  # AMQP port
+      - "15672:15672"  # Management UI
+    environment:
+      - RABBITMQ_DEFAULT_USER=smartalarm
+      - RABBITMQ_DEFAULT_PASS=smartalarm123
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   # Jaeger para observabilidade distribuída
   jaeger:
     image: jaegertracing/all-in-one:1.52

@@ -1,0 +1,151 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Test Database
+  test-database:
+    image: postgres:15-alpine
+    container_name: smart-alarm-test-db
+    environment:
+      POSTGRES_DB: smartalarm_test
+      POSTGRES_USER: testuser
+      POSTGRES_PASSWORD: testpass
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    ports:
+      - "5433:5432"
+    volumes:
+      - test_postgres_data:/var/lib/postgresql/data
+      - ./tests/e2e/fixtures/database:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U testuser -d smartalarm_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - smart-alarm-test
+
+  # Redis Test Cache
+  test-redis:
+    image: redis:7-alpine
+    container_name: smart-alarm-test-redis
+    ports:
+      - "6380:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - test_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - smart-alarm-test
+
+  # Backend API for Testing (if you want to run backend in container)
+  test-backend:
+    build:
+      context: ../../backend
+      dockerfile: Dockerfile
+      target: development
+    container_name: smart-alarm-test-backend
+    environment:
+      NODE_ENV: test
+      PORT: 5000
+      DATABASE_URL: postgresql://testuser:testpass@test-database:5432/smartalarm_test
+      REDIS_URL: redis://test-redis:6379
+      JWT_SECRET: test-jwt-secret-key-for-e2e-tests
+      JWT_REFRESH_SECRET: test-refresh-secret-key-for-e2e-tests
+      CORS_ORIGIN: http://localhost:5173
+      LOG_LEVEL: info
+      # SignalR Settings
+      SIGNALR_ENABLED: "true"
+      # ML.NET Settings
+      ML_ENABLED: "false"
+      # Disable external services for testing
+      EMAIL_ENABLED: "false"
+      PUSH_NOTIFICATIONS_ENABLED: "false"
+    ports:
+      - "5001:5000"
+    depends_on:
+      test-database:
+        condition: service_healthy
+      test-redis:
+        condition: service_healthy
+    volumes:
+      - ../../backend:/app
+      - /app/node_modules
+    networks:
+      - smart-alarm-test
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend for E2E Testing (optional, if you want to run in container)
+  test-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: smart-alarm-test-frontend
+    environment:
+      NODE_ENV: test
+      VITE_API_BASE_URL: http://test-backend:5000/api
+      VITE_SIGNALR_HUB_URL: http://test-backend:5000/smartalarmhub
+      # Disable real external services
+      VITE_ENABLE_PWA: "false"
+      VITE_ENABLE_NOTIFICATIONS: "false"
+    ports:
+      - "5174:5173"
+    depends_on:
+      test-backend:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - /app/node_modules
+    networks:
+      - smart-alarm-test
+
+  # Mailhog for Email Testing
+  test-mailhog:
+    image: mailhog/mailhog:latest
+    container_name: smart-alarm-test-mailhog
+    ports:
+      - "8026:8025"  # Web UI
+      - "1026:1025"  # SMTP
+    networks:
+      - smart-alarm-test
+
+  # MinIO for Object Storage Testing (if needed)
+  test-minio:
+    image: minio/minio:latest
+    container_name: smart-alarm-test-minio
+    environment:
+      MINIO_ROOT_USER: testuser
+      MINIO_ROOT_PASSWORD: testpassword
+    ports:
+      - "9001:9000"
+      - "9091:9090"
+    volumes:
+      - test_minio_data:/data
+    command: server /data --console-address ":9090"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - smart-alarm-test
+
+volumes:
+  test_postgres_data:
+    driver: local
+  test_redis_data:
+    driver: local
+  test_minio_data:
+    driver: local
+
+networks:
+  smart-alarm-test:
+    driver: bridge
+    name: smart-alarm-test-network

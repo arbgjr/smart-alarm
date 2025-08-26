@@ -14,14 +14,30 @@ export default defineConfig({
   /* Opt out of parallel tests on CI. */
   workers: process.env.CI ? 1 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: 'html',
+  reporter: [
+    ['html', { outputFolder: 'test-results/playwright-html-report' }],
+    ['json', { outputFile: 'test-results/playwright-results.json' }],
+    ['line']
+  ],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: 'http://localhost:5173',
-
+    baseURL: process.env.E2E_BASE_URL || 'http://localhost:5173',
+    
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
+    
+    /* Capture screenshot on failure */
+    screenshot: 'only-on-failure',
+    
+    /* Capture video on failure */
+    video: 'retain-on-failure',
+    
+    /* Global test timeout */
+    actionTimeout: 30000,
+    
+    /* Ignore HTTPS errors */
+    ignoreHTTPSErrors: true,
   },
 
   /* Configure projects for major browsers and devices */
@@ -73,4 +89,38 @@ export default defineConfig({
       },
     },
   ],
+
+  /* Run your local dev server before starting the tests */
+  webServer: {
+    command: 'npm run dev',
+    url: 'http://localhost:5173',
+    reuseExistingServer: !process.env.CI,
+    timeout: 120000,
+  },
+
+  /* Test output directories */
+  outputDir: 'test-results/artifacts',
+  
+  /* Global setup and teardown */
+  globalSetup: './tests/e2e/global-setup.ts',
+  globalTeardown: './tests/e2e/global-teardown.ts',
+  
+  /* Expect options */
+  expect: {
+    /* Maximum time expect() should wait for the condition to be met */
+    timeout: 10000,
+    
+    /* Threshold for pixel comparisons */
+    threshold: 0.2,
+  },
+
+  /* Test timeout */
+  timeout: 60000,
+
+  /* Metadata */
+  metadata: {
+    'test-environment': process.env.NODE_ENV || 'test',
+    'base-url': process.env.E2E_BASE_URL || 'http://localhost:5173',
+    'backend-url': process.env.E2E_BACKEND_URL || 'http://localhost:5000',
+  },
 });

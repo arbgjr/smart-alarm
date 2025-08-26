@@ -128,7 +128,7 @@ namespace SmartAlarm.Infrastructure.Tests.Integration
             // Arrange
             var path = $"empty-file-{Guid.NewGuid()}.txt";
             _uploadedFiles.Add(path);
-            using var ms = new MemoryStream();
+            using var ms = new MemoryStream(new byte[0]); // MinIO needs explicit empty byte array
 
             // Act
             await _service.UploadAsync(path, ms);

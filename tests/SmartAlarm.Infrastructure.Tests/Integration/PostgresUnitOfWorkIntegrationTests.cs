@@ -112,7 +112,8 @@ namespace SmartAlarm.Infrastructure.Tests.Integration
             
             // Create repositories with mock dependencies
             var pgAlarmRepository = new EfAlarmRepository(_context, pgLogger.Object, pgMeter.Object, pgCorrelationContext.Object, pgActivitySource.Object);
-            var pgUserRepository = new Mock<IUserRepository>().Object;
+            var pgUserLogger = new Mock<ILogger<EfUserRepository>>();
+            var pgUserRepository = new EfUserRepository(_context, pgUserLogger.Object, pgMeter.Object, pgCorrelationContext.Object, pgActivitySource.Object);
             var pgScheduleRepository = new Mock<IScheduleRepository>().Object;
             var pgRoutineRepository = new Mock<IRoutineRepository>().Object;
             var pgIntegrationRepository = new Mock<IIntegrationRepository>().Object;

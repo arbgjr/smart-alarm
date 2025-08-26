@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { backgroundSync } from '@/utils/backgroundSync';
+import { mlDataCollector } from '@/utils/mlDataCollector';
 import type { AlarmDto } from '@/services/alarmService';
 
 interface Alarm {
@@ -202,6 +203,16 @@ export const useAlarmsStore = create<AlarmsState>()(
 
           // Add optimistically
           addAlarm(optimisticAlarm);
+
+          // Track alarm creation for ML
+          mlDataCollector.trackAlarmCreated(
+            optimisticAlarm.id,
+            data.time,
+            {
+              dayOfWeek: new Date().toLocaleDateString('en', { weekday: 'long' }).toLowerCase(),
+              deviceType: /Mobile|Android|iPhone|iPad/.test(navigator.userAgent) ? 'mobile' : 'desktop',
+            }
+          );
 
           if (navigator.onLine) {
             // Try online creation

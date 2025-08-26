@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
-import { useAuthStore } from '../authStore';
+import { renderHook } from '@testing-library/react';
+import { act } from 'react';
+import { useAuthStore, useIsAuthenticated, useCurrentUser, useAuthToken } from '../authStore';
 import type { User } from '@/types/auth';
 
 // Mock localStorage
@@ -214,6 +215,7 @@ describe('AuthStore', () => {
       });
 
       const expiry = result.current.getTokenExpiry();
+      expect(expiry).toBeDefined();
       expect(expiry).toBeInstanceOf(Date);
       // Token expires at timestamp 1737641400 (2025-01-23)
       expect(expiry?.getTime()).toBe(1737641400000);
@@ -249,12 +251,15 @@ describe('AuthStore', () => {
   });
 
   describe('Persistence', () => {
-    it('should persist auth state to localStorage', () => {
+    it('should persist auth state to localStorage', async () => {
       const { result } = renderHook(() => useAuthStore());
       
       act(() => {
         result.current.login(mockUser, mockToken, 'refresh-token');
       });
+
+      // Wait for persistence to complete
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       // Check if localStorage was called with correct data
       expect(localStorageMock.setItem).toHaveBeenCalled();
@@ -262,16 +267,17 @@ describe('AuthStore', () => {
       const persistCall = setItemCalls.find(call => call[0] === 'smart-alarm-auth');
       
       expect(persistCall).toBeDefined();
-      const persistedData = JSON.parse(persistCall![1]);
-      expect(persistedData.state.user).toEqual(mockUser);
-      expect(persistedData.state.token).toBe(mockToken);
-      expect(persistedData.state.isAuthenticated).toBe(true);
+      if (persistCall) {
+        const persistedData = JSON.parse(persistCall[1]);
+        expect(persistedData.state.user).toEqual(mockUser);
+        expect(persistedData.state.token).toBe(mockToken);
+        expect(persistedData.state.isAuthenticated).toBe(true);
+      }
     });
   });
 
   describe('Selective Hooks', () => {
     it('should provide selective auth hooks', () => {
-      const { useIsAuthenticated, useCurrentUser, useAuthToken } = require('../authStore');
       
       const { result: authResult } = renderHook(() => useAuthStore());
       const { result: isAuthResult } = renderHook(() => useIsAuthenticated());
