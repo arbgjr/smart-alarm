@@ -1,6 +1,0 @@
-Add comprehensive OAuth tests for UserOAuth and OAuth providers
-
-- Implement unit tests for UserOAuth entity, covering external provider setting, clearing, and validation.
-- Create integration tests for Google and GitHub OAuth providers, validating authorization URL generation and token exchange.
-- Add end-to-end tests for OAuth flow, including authorization URL, callback handling, and unsupported provider scenarios.
-- Ensure proper HTTP method handling and content type validation for OAuth endpoints.
