@@ -6,7 +6,7 @@ using SmartAlarm.Application.DTOs;
 using SmartAlarm.Application.DTOs.Import;
 using SmartAlarm.Domain.Entities;
 using SmartAlarm.Domain.Repositories;
-using SmartAlarm.Infrastructure.Services;
+using SmartAlarm.Application.Services;
 
 namespace SmartAlarm.Application.Handlers.Import;
 
@@ -31,11 +31,6 @@ public class ImportAlarmsHandler : IRequestHandler<ImportAlarmsCommand, ImportAl
 
     public async Task<ImportAlarmsResponseDto> Handle(ImportAlarmsCommand request, CancellationToken cancellationToken)
     {
-        using var activity = SmartAlarmTracing.ActivitySource.StartActivity("ImportAlarmsHandler.Handle");
-        activity?.SetTag("user.id", request.UserId.ToString());
-        activity?.SetTag("file.name", request.FileName);
-        activity?.SetTag("overwrite.existing", request.OverwriteExisting.ToString());
-
         _logger.LogInformation("Iniciando importação de alarmes. Usuário: {UserId}, Arquivo: {FileName}", 
             request.UserId, request.FileName);
 
@@ -55,7 +50,6 @@ public class ImportAlarmsHandler : IRequestHandler<ImportAlarmsCommand, ImportAl
                 });
                 
                 _logger.LogWarning("Formato de arquivo não suportado: {FileName}", request.FileName);
-                activity?.SetStatus(ActivityStatusCode.Error, "Unsupported file format");
                 return response;
             }
 
@@ -75,7 +69,6 @@ public class ImportAlarmsHandler : IRequestHandler<ImportAlarmsCommand, ImportAl
                 });
                 
                 _logger.LogError(ex, "Erro ao fazer parsing do arquivo: {FileName}", request.FileName);
-                activity?.SetStatus(ActivityStatusCode.Error, "File parsing failed");
                 return response;
             }
 
@@ -176,13 +169,6 @@ public class ImportAlarmsHandler : IRequestHandler<ImportAlarmsCommand, ImportAl
             _logger.LogInformation("Importação concluída. {Success} sucessos, {Updated} atualizações, {Failed} falhas", 
                 response.SuccessfulImports, response.UpdatedImports, response.FailedImports);
 
-            // Métricas
-            SmartAlarmMetrics.AlarmsCreatedCounter.Add(response.SuccessfulImports);
-            activity?.SetTag("import.successful", response.SuccessfulImports.ToString());
-            activity?.SetTag("import.failed", response.FailedImports.ToString());
-            activity?.SetTag("import.updated", response.UpdatedImports.ToString());
-            activity?.SetStatus(ActivityStatusCode.Ok);
-
             return response;
         }
         catch (Exception ex)
@@ -196,7 +182,6 @@ public class ImportAlarmsHandler : IRequestHandler<ImportAlarmsCommand, ImportAl
                 ErrorCode = "SYSTEM_ERROR"
             });
             
-            activity?.SetStatus(ActivityStatusCode.Error, "Unexpected error during import");
             return response;
         }
     }

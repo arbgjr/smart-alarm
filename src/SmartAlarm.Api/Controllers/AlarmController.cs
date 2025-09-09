@@ -14,6 +14,7 @@ using SmartAlarm.Application.DTOs;
 using SmartAlarm.Application.DTOs.Import;
 using SmartAlarm.Application.Queries;
 using SmartAlarm.Api.Services;
+using SmartAlarm.Application.Services;
 
 namespace SmartAlarm.Api.Controllers
 {
@@ -26,12 +27,18 @@ namespace SmartAlarm.Api.Controllers
         private readonly IMediator _mediator;
         private readonly ILogger<AlarmController> _logger;
         private readonly ICurrentUserService _currentUserService;
+        private readonly IAlarmEventService _alarmEventService;
 
-        public AlarmController(IMediator mediator, ILogger<AlarmController> logger, ICurrentUserService currentUserService)
+        public AlarmController(
+            IMediator mediator, 
+            ILogger<AlarmController> logger, 
+            ICurrentUserService currentUserService,
+            IAlarmEventService alarmEventService)
         {
             _mediator = mediator;
             _logger = logger;
             _currentUserService = currentUserService;
+            _alarmEventService = alarmEventService;
         }
 
         /// <summary>
@@ -54,6 +61,23 @@ namespace SmartAlarm.Api.Controllers
                 var command = new CreateAlarmCommand(dto);
                 var result = await _mediator.Send(command, cancellationToken);
                 _logger.LogInformation("Alarm created: {AlarmId}", result.Id);
+                
+                // Automatically record alarm creation event
+                try
+                {
+                    await _alarmEventService.RecordAlarmCreatedAsync(
+                        result.Id, 
+                        userId, 
+                        $"Alarm '{result.Name}' created at {result.Time}", 
+                        cancellationToken);
+                    _logger.LogDebug("Alarm creation event recorded for: {AlarmId}", result.Id);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to record alarm creation event for: {AlarmId}", result.Id);
+                    // Don't fail the request if event recording fails
+                }
+                
                 return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
             }
             catch (FluentValidation.ValidationException ex)

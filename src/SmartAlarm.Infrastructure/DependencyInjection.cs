@@ -11,6 +11,9 @@ using SmartAlarm.Infrastructure.Services;
 using SmartAlarm.Infrastructure.Security;
 using SmartAlarm.Infrastructure.Security.OAuth;
 using SmartAlarm.Domain.Abstractions;
+using SmartAlarm.Application.Services;
+using SmartAlarm.Application.Services.External;
+using SmartAlarm.Infrastructure.Services.External;
 
 namespace SmartAlarm.Infrastructure
 {
@@ -48,6 +51,7 @@ namespace SmartAlarm.Infrastructure
                 services.AddScoped<IHolidayRepository, EfHolidayRepository>();
                 services.AddScoped<IUserHolidayPreferenceRepository, EfUserHolidayPreferenceRepository>();
                 services.AddScoped<IExceptionPeriodRepository, EfExceptionPeriodRepository>();
+                services.AddScoped<IAlarmEventRepository, EfAlarmEventRepository>();
             }
             else
             {
@@ -69,6 +73,7 @@ namespace SmartAlarm.Infrastructure
                 services.AddScoped<IHolidayRepository, EfHolidayRepository>();
                 services.AddScoped<IUserHolidayPreferenceRepository, EfUserHolidayPreferenceRepository>();
                 services.AddScoped<IExceptionPeriodRepository, EfExceptionPeriodRepository>();
+                services.AddScoped<IAlarmEventRepository, EfAlarmEventRepository>();
             }
 
             return services.AddCommonInfrastructureServices();
@@ -126,6 +131,14 @@ namespace SmartAlarm.Infrastructure
             services.AddScoped<IEmailService, LoggingEmailService>();
             services.AddScoped<INotificationService, LoggingNotificationService>();
             services.AddScoped<IFileParser, CsvFileParser>();
+            
+            // Register new services for Phase 1 & 2
+            services.AddScoped<IAlarmEventService, AlarmEventService>();
+            services.AddScoped<IHolidayCacheService, HolidayCacheService>();
+            services.AddScoped<ICalendarificService, CalendarificService>();
+            services.AddScoped<IGoogleCalendarService, GoogleCalendarService>();
+            services.AddScoped<ISmartAlarmService, SmartAlarmService>();
+            services.AddScoped<IPatternDetectionService, PatternDetectionService>();
 
             // Register repositories
             services.AddSingleton<Domain.Repositories.IWebhookRepository, Repositories.InMemoryWebhookRepository>();
