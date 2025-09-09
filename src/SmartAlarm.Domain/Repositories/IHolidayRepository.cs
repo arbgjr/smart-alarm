@@ -74,5 +74,15 @@ namespace SmartAlarm.Domain.Repositories
         /// Verifica se existe um feriado em uma data específica.
         /// </summary>
         Task<bool> ExistsOnDateAsync(DateOnly date, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Busca um feriado por data e país/estado.
+        /// </summary>
+        Task<Holiday?> GetByDateAndCountryAsync(DateTime date, string country, string? state = null, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Salva as alterações no repositório.
+        /// </summary>
+        Task SaveChangesAsync(CancellationToken cancellationToken = default);
     }
 }

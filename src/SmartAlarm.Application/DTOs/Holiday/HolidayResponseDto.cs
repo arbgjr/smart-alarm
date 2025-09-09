@@ -18,9 +18,29 @@ namespace SmartAlarm.Application.DTOs.Holiday
         public DateTime Date { get; set; }
 
         /// <summary>
+        /// Nome do feriado.
+        /// </summary>
+        public string Name { get; set; } = string.Empty;
+
+        /// <summary>
         /// Descrição do feriado.
         /// </summary>
         public string Description { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Tipo do feriado.
+        /// </summary>
+        public string Type { get; set; } = string.Empty;
+
+        /// <summary>
+        /// País do feriado.
+        /// </summary>
+        public string Country { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Estado do feriado (opcional).
+        /// </summary>
+        public string? State { get; set; }
 
         /// <summary>
         /// Data de criação do feriado.
