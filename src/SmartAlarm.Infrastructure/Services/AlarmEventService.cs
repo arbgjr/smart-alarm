@@ -52,9 +52,8 @@ public class AlarmEventService : IAlarmEventService
 
         var stopwatch = Stopwatch.StartNew();
 
-        _logger.LogInformation(LogTemplates.ServiceOperationStarted,
-            "RecordAlarmEvent",
-            new { AlarmId = alarmId, UserId = userId, EventType = eventType });
+        _logger.LogInformation("Recording alarm event: AlarmId={AlarmId}, UserId={UserId}, EventType={EventType}", 
+            alarmId, userId, eventType);
 
         try
         {
@@ -72,12 +71,9 @@ public class AlarmEventService : IAlarmEventService
             await _repository.AddAsync(alarmEvent, cancellationToken);
             stopwatch.Stop();
 
-            _meter.RecordServiceOperationDuration(stopwatch.ElapsedMilliseconds, "RecordEvent", "AlarmEvent");
+            _meter.RecordDatabaseQueryDuration(stopwatch.ElapsedMilliseconds, "RecordEvent", "AlarmEvent");
 
-            _logger.LogInformation(LogTemplates.ServiceOperationCompleted,
-                "RecordAlarmEvent",
-                stopwatch.ElapsedMilliseconds,
-                "event recorded successfully");
+            _logger.LogInformation("Alarm event recorded successfully in {ElapsedMs}ms", stopwatch.ElapsedMilliseconds);
 
             activity?.SetStatus(ActivityStatusCode.Ok);
         }
@@ -87,11 +83,8 @@ public class AlarmEventService : IAlarmEventService
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
             _meter.IncrementErrorCount("SERVICE", "AlarmEvent", "RecordError");
 
-            _logger.LogError(LogTemplates.ServiceOperationFailed,
-                "RecordAlarmEvent",
-                "AlarmEvent",
-                stopwatch.ElapsedMilliseconds,
-                ex.Message);
+            _logger.LogError(ex, "Failed to record alarm event in {ElapsedMs}ms: {Error}", 
+                stopwatch.ElapsedMilliseconds, ex.Message);
 
             throw;
         }
@@ -161,21 +154,17 @@ public class AlarmEventService : IAlarmEventService
 
         var stopwatch = Stopwatch.StartNew();
 
-        _logger.LogInformation(LogTemplates.ServiceOperationStarted,
-            "GetUserEventHistory",
-            new { UserId = userId, Days = days });
+        _logger.LogInformation("Starting GetUserEventHistory for user {UserId}, days {Days}", userId, days);
 
         try
         {
             var events = await _repository.GetByUserIdAsync(userId, days, cancellationToken);
             stopwatch.Stop();
 
-            _meter.RecordServiceOperationDuration(stopwatch.ElapsedMilliseconds, "GetHistory", "AlarmEvent");
+            _meter.RecordDatabaseQueryDuration(stopwatch.ElapsedMilliseconds, "GetHistory", "AlarmEvent");
 
-            _logger.LogInformation(LogTemplates.ServiceOperationCompleted,
-                "GetUserEventHistory",
-                stopwatch.ElapsedMilliseconds,
-                events.Count());
+            _logger.LogInformation("Completed GetUserEventHistory in {ElapsedMs}ms, found {Count} events", 
+                stopwatch.ElapsedMilliseconds, events.Count());
 
             activity?.SetStatus(ActivityStatusCode.Ok);
             return events.ToList();
@@ -186,11 +175,8 @@ public class AlarmEventService : IAlarmEventService
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
             _meter.IncrementErrorCount("SERVICE", "AlarmEvent", "QueryError");
 
-            _logger.LogError(LogTemplates.ServiceOperationFailed,
-                "GetUserEventHistory",
-                "AlarmEvent",
-                stopwatch.ElapsedMilliseconds,
-                ex.Message);
+            _logger.LogError(ex, "Failed GetUserEventHistory for AlarmEvent in {ElapsedMs}ms: {Error}", 
+                stopwatch.ElapsedMilliseconds, ex.Message);
 
             throw;
         }
@@ -207,21 +193,20 @@ public class AlarmEventService : IAlarmEventService
 
         var stopwatch = Stopwatch.StartNew();
 
-        _logger.LogInformation(LogTemplates.ServiceOperationStarted,
-            "GetUserEventStats",
-            new { UserId = userId, Days = days });
+        _logger.LogInformation("Starting GetUserEventStats for user {UserId}, days {Days}", userId, days);
 
         try
         {
-            var stats = await _repository.GetEventStatsByUserAsync(userId, days, cancellationToken);
+            // Get events and calculate stats manually since GetEventStatsByUserAsync doesn't exist
+            var events = await _repository.GetByUserIdAsync(userId, days, cancellationToken);
+            var stats = events.GroupBy(e => e.EventType)
+                            .ToDictionary(g => g.Key, g => g.Count());
             stopwatch.Stop();
 
-            _meter.RecordServiceOperationDuration(stopwatch.ElapsedMilliseconds, "GetStats", "AlarmEvent");
+            _meter.RecordDatabaseQueryDuration(stopwatch.ElapsedMilliseconds, "GetStats", "AlarmEvent");
 
-            _logger.LogInformation(LogTemplates.ServiceOperationCompleted,
-                "GetUserEventStats",
-                stopwatch.ElapsedMilliseconds,
-                stats.Count);
+            _logger.LogInformation("Completed GetUserEventStats in {ElapsedMs}ms, found {Count} event types", 
+                stopwatch.ElapsedMilliseconds, stats.Count);
 
             activity?.SetStatus(ActivityStatusCode.Ok);
             return stats;
@@ -232,11 +217,8 @@ public class AlarmEventService : IAlarmEventService
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
             _meter.IncrementErrorCount("SERVICE", "AlarmEvent", "QueryError");
 
-            _logger.LogError(LogTemplates.ServiceOperationFailed,
-                "GetUserEventStats",
-                "AlarmEvent",
-                stopwatch.ElapsedMilliseconds,
-                ex.Message);
+            _logger.LogError(ex, "Failed GetUserEventStats for AlarmEvent in {ElapsedMs}ms: {Error}", 
+                stopwatch.ElapsedMilliseconds, ex.Message);
 
             throw;
         }
@@ -253,9 +235,7 @@ public class AlarmEventService : IAlarmEventService
 
         var stopwatch = Stopwatch.StartNew();
 
-        _logger.LogInformation(LogTemplates.ServiceOperationStarted,
-            "GetUserBehaviorPattern",
-            new { UserId = userId, Days = days });
+        _logger.LogInformation("Starting GetUserBehaviorPattern for user {UserId}, days {Days}", userId, days);
 
         try
         {
@@ -263,12 +243,10 @@ public class AlarmEventService : IAlarmEventService
             var pattern = AnalyzeBehaviorPattern(userId, events, days);
             stopwatch.Stop();
 
-            _meter.RecordServiceOperationDuration(stopwatch.ElapsedMilliseconds, "GetPattern", "AlarmEvent");
+            _meter.RecordDatabaseQueryDuration(stopwatch.ElapsedMilliseconds, "GetPattern", "AlarmEvent");
 
-            _logger.LogInformation(LogTemplates.ServiceOperationCompleted,
-                "GetUserBehaviorPattern",
-                stopwatch.ElapsedMilliseconds,
-                pattern.TotalEvents);
+            _logger.LogInformation("Completed GetUserBehaviorPattern in {ElapsedMs}ms, found {TotalEvents} events", 
+                stopwatch.ElapsedMilliseconds, pattern.TotalEvents);
 
             activity?.SetStatus(ActivityStatusCode.Ok);
             return pattern;
@@ -279,11 +257,8 @@ public class AlarmEventService : IAlarmEventService
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
             _meter.IncrementErrorCount("SERVICE", "AlarmEvent", "AnalysisError");
 
-            _logger.LogError(LogTemplates.ServiceOperationFailed,
-                "GetUserBehaviorPattern",
-                "AlarmEvent",
-                stopwatch.ElapsedMilliseconds,
-                ex.Message);
+            _logger.LogError(ex, "Failed GetUserBehaviorPattern for AlarmEvent in {ElapsedMs}ms: {Error}", 
+                stopwatch.ElapsedMilliseconds, ex.Message);
 
             throw;
         }

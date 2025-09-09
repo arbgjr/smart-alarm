@@ -61,6 +61,16 @@ namespace SmartAlarm.Infrastructure.Repositories
             return Task.FromResult(result!);
         }
 
+        public Task<Integration?> GetByUserAndTypeAsync(Guid userId, string integrationType)
+        {
+            // Busca integração por tipo e usuário
+            var result = _integrations.Values.FirstOrDefault(i =>
+                i.Provider == integrationType &&
+                (i.AlarmId.GetHashCode() % 100) == (userId.GetHashCode() % 100)
+            );
+            return Task.FromResult(result);
+        }
+
         public Task UpdateAsync(Integration integration)
         {
             _integrations[integration.Id] = integration;
