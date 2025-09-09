@@ -1,6 +1,9 @@
 import { chromium, FullConfig } from '@playwright/test';
 import { execSync } from 'child_process';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 async function globalSetup(config: FullConfig) {
   console.log('🚀 Starting E2E test setup...');
@@ -111,7 +114,7 @@ async function startBackendServices(): Promise<void> {
     }
 
     // Start backend in test mode using Docker Compose
-    const composeFile = path.resolve(__dirname, '../../docker-compose.test.yml');
+    const composeFile = path.resolve(__dirname, '../../docker-compose.full.yml');
     
     try {
       execSync(`docker-compose -f ${composeFile} up -d`, { 

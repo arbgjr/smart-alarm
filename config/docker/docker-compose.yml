@@ -1,0 +1,170 @@
+services:
+  vault:
+    image: hashicorp/vault:1.15
+    networks:
+      - smart-alarm-network
+    ports:
+      - "8200:8200"
+    environment:
+      - VAULT_DEV_ROOT_TOKEN_ID=dev-token
+      - VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:8200
+    command: ["vault", "server", "-dev"]
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:8200/v1/sys/seal-status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  api:
+    build:
+      context: .
+      dockerfile: src/SmartAlarm.Api/Dockerfile
+    ports:
+      - "8080:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - KeyVault__Enabled=true
+      - HashiCorpVault__ServerAddress=http://vault:8200
+      - HashiCorpVault__Token=dev-token
+      - HashiCorpVault__MountPath=secret
+      - HashiCorpVault__KvVersion=2
+      - HashiCorpVault__SkipTlsVerification=true
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_USER=guest
+      - RABBITMQ_PASS=guest
+    depends_on:
+      vault:
+        condition: service_healthy
+      loki:
+        condition: service_started
+      jaeger:
+        condition: service_started
+      prometheus:
+        condition: service_started
+      grafana:
+        condition: service_started
+
+  loki:
+    image: grafana/loki:2.9.4
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.57
+    ports:
+      - "16686:16686" # UI
+      - "6831:6831/udp" # agent
+      - "14268:14268" # collector
+      - "4317:4317" # OTLP gRPC
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infrastructure/docker/prometheus.yml:/etc/prometheus/prometheus.yml
+
+  grafana:
+    image: grafana/grafana:10.4.2
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - prometheus
+      - loki
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    networks:
+      - smart-alarm-network
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  minio:
+    image: minio/minio:latest
+    networks:
+      - smart-alarm-network
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=minio
+      - MINIO_ROOT_PASSWORD=minio123
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    volumes:
+      - minio-data:/data
+
+  postgres:
+    image: postgres:16
+    networks:
+      - smart-alarm-network
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=smartalarm
+      - POSTGRES_PASSWORD=smartalarm123
+      - POSTGRES_DB=smartalarm
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smartalarm"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  test:
+    build:
+      context: .
+      dockerfile: tests/Dockerfile.tests
+    volumes:
+      - .:/app
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Testing
+      - DOTNET_ENVIRONMENT=Testing
+      - DOTNET_RUNNING_IN_CONTAINER=true
+      - RABBITMQ_HOST=rabbitmq
+      - POSTGRES_HOST=postgres
+      - MINIO_HOST=minio
+      - VAULT_HOST=vault
+    networks:
+      - smart-alarm-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  grafana-data:
+
+  minio-data:
+
+  postgres-data:
+
+networks:
+  smart-alarm-network:
+    driver: bridge

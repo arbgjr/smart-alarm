@@ -1,0 +1,116 @@
+version: '3.8'
+
+services:
+  # Smart Alarm Microservices
+  alarm-service:
+    build: 
+      context: .
+      dockerfile: services/alarm-service/Dockerfile
+    container_name: smartalarm-alarm-service
+    ports:
+      - "5001:8080"
+      - "5011:8081"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=smartalarm;Username=smartalarm;Password=Dev123!@#
+      - Hangfire__ConnectionString=Host=postgres;Port=5432;Database=smartalarm_hangfire;Username=smartalarm;Password=Dev123!@#
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Username=guest
+      - RabbitMQ__Password=guest
+      - KeyVault__Endpoint=http://vault:8200
+      - Storage__Endpoint=minio:9000
+      - Storage__AccessKey=minioadmin
+      - Storage__SecretKey=minioadmin
+      - Observability__ServiceName=SmartAlarm.AlarmService
+      - Observability__ServiceVersion=1.0.0
+      - Observability__Environment=Development
+    depends_on:
+      - postgres
+      - rabbitmq
+      - vault
+      - minio
+    networks:
+      - smartalarm-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  ai-service:
+    build: 
+      context: .
+      dockerfile: services/ai-service/Dockerfile
+    container_name: smartalarm-ai-service
+    ports:
+      - "5002:8080"
+      - "5012:8081"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=smartalarm;Username=smartalarm;Password=Dev123!@#
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Username=guest
+      - RabbitMQ__Password=guest
+      - KeyVault__Endpoint=http://vault:8200
+      - Storage__Endpoint=minio:9000
+      - Storage__AccessKey=minioadmin
+      - Storage__SecretKey=minioadmin
+      - Observability__ServiceName=SmartAlarm.AiService
+      - Observability__ServiceVersion=1.0.0
+      - Observability__Environment=Development
+      - ML__ModelPath=/app/models
+    depends_on:
+      - postgres
+      - rabbitmq
+      - vault
+      - minio
+    networks:
+      - smartalarm-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  integration-service:
+    build: 
+      context: .
+      dockerfile: services/integration-service/Dockerfile
+    container_name: smartalarm-integration-service
+    ports:
+      - "5003:8080"
+      - "5013:8081"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=smartalarm;Username=smartalarm;Password=Dev123!@#
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Username=guest
+      - RabbitMQ__Password=guest
+      - KeyVault__Endpoint=http://vault:8200
+      - Storage__Endpoint=minio:9000
+      - Storage__AccessKey=minioadmin
+      - Storage__SecretKey=minioadmin
+      - Observability__ServiceName=SmartAlarm.IntegrationService
+      - Observability__ServiceVersion=1.0.0
+      - Observability__Environment=Development
+      - ExternalApis__Google__BaseUrl=https://www.googleapis.com
+      - ExternalApis__Microsoft__BaseUrl=https://graph.microsoft.com
+    depends_on:
+      - postgres
+      - rabbitmq
+      - vault
+      - minio
+    networks:
+      - smartalarm-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  smartalarm-network:
+    external: true
