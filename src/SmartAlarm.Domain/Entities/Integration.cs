@@ -11,13 +11,19 @@ namespace SmartAlarm.Domain.Entities
     public class Integration
     {
         public Guid Id { get; private set; }
+        public Guid UserId { get; private set; }
         public Name Name { get; private set; } = null!;
         public string Provider { get; private set; } = null!;
         public string Configuration { get; private set; } = null!;
         public bool IsActive { get; private set; }
-        public Guid AlarmId { get; private set; }
+        public bool IsEnabled { get; private set; }
+        public Guid? AlarmId { get; private set; }
+        public string? AccessToken { get; private set; }
+        public string? RefreshToken { get; private set; }
+        public DateTime? TokenExpiresAt { get; private set; }
         public DateTime CreatedAt { get; private set; }
         public DateTime? LastExecutedAt { get; private set; }
+        public DateTime? LastSyncedAt { get; private set; }
 
         // Private constructor for EF Core
         private Integration() { }
@@ -52,6 +58,27 @@ namespace SmartAlarm.Domain.Entities
             Configuration = configuration;
             AlarmId = alarmId;
             IsActive = true;
+            IsEnabled = true;
+            CreatedAt = DateTime.UtcNow;
+        }
+
+        // Constructor for user-level integrations (like Google Calendar)
+        public Integration(Guid id, Guid userId, string provider, string name, Dictionary<string, string> configuration)
+        {
+            if (userId == Guid.Empty)
+                throw new ArgumentException("UserId é obrigatório.", nameof(userId));
+            if (string.IsNullOrWhiteSpace(provider))
+                throw new ArgumentException("Provider é obrigatório.", nameof(provider));
+            if (string.IsNullOrWhiteSpace(name))
+                throw new ArgumentException("Name é obrigatório.", nameof(name));
+
+            Id = id == Guid.Empty ? Guid.NewGuid() : id;
+            UserId = userId;
+            Provider = provider;
+            Name = new Name(name);
+            Configuration = JsonSerializer.Serialize(configuration ?? new Dictionary<string, string>());
+            IsActive = true;
+            IsEnabled = true;
             CreatedAt = DateTime.UtcNow;
         }
 
@@ -63,6 +90,18 @@ namespace SmartAlarm.Domain.Entities
 
         public void Activate() => IsActive = true;
         public void Deactivate() => IsActive = false;
+        public void Enable() => IsEnabled = true;
+        public void Disable() => IsEnabled = false;
+        
+        public void UpdateAccessToken(string accessToken, string? refreshToken = null, DateTime? expiresAt = null)
+        {
+            AccessToken = accessToken;
+            if (refreshToken != null)
+                RefreshToken = refreshToken;
+            if (expiresAt != null)
+                TokenExpiresAt = expiresAt;
+            LastSyncedAt = DateTime.UtcNow;
+        }
 
         public void UpdateName(Name newName)
         {
