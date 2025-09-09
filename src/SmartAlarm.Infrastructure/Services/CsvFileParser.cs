@@ -4,7 +4,7 @@ using CsvHelper.Configuration;
 using Microsoft.Extensions.Logging;
 using SmartAlarm.Domain.Entities;
 using SmartAlarm.Domain.ValueObjects;
-using SmartAlarm.Application.Services;
+using IFileParser = SmartAlarm.Application.Services.IFileParser;
 
 namespace SmartAlarm.Infrastructure.Services;
 

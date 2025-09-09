@@ -127,10 +127,15 @@ namespace SmartAlarm.Infrastructure
         /// </summary>
         private static IServiceCollection AddCommonInfrastructureServices(this IServiceCollection services)
         {
+            // Register distributed cache (in-memory for now, Redis in production)
+            services.AddDistributedMemoryCache();
+            
             // Register infrastructure services
             services.AddScoped<IEmailService, LoggingEmailService>();
             services.AddScoped<INotificationService, LoggingNotificationService>();
-            // services.AddScoped<Application.Services.IFileParser, CsvFileParser>(); // Temporariamente comentado devido a conflito de interfaces
+            // Temporary implementation of IFileParser to resolve DI
+            services.AddScoped<SmartAlarm.Application.Services.IFileParser>(provider => 
+                new TemporaryFileParser());
             
             // Register new services for Phase 1 & 2
             services.AddScoped<IAlarmEventService, AlarmEventService>();
@@ -325,5 +330,16 @@ namespace SmartAlarm.Infrastructure
 
             return services;
         }
+    }
+
+    /// <summary>
+    /// Implementação temporária de IFileParser para resolver DI
+    /// </summary>
+    internal class TemporaryFileParser : SmartAlarm.Application.Services.IFileParser
+    {
+        public bool IsFormatSupported(string fileName) => false;
+        public IEnumerable<string> GetSupportedFormats() => new string[0];
+        public Task<IEnumerable<Domain.Entities.Alarm>> ParseAsync(Stream fileStream, string fileName, CancellationToken cancellationToken = default)
+            => Task.FromResult(Enumerable.Empty<Domain.Entities.Alarm>());
     }
 }
