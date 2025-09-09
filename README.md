@@ -1,10 +1,12 @@
-# Smart Alarm
+# Smart Alarm - Production-Ready PWA
 
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen?style=flat-square)](https://github.com/arbgjr/smart-alarm)
-[![.NET Version](https://img.shields.io/badge/.NET-8.0-512BD4?style=flat-square)](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
-[![License](https://img.shields.io/badge/License-BSL-red?style=flat-square)](LICENSE)
+[![Build Status](https://github.com/smartalarm/smart-alarm/workflows/CI/badge.svg)](https://github.com/smartalarm/smart-alarm/actions)
+[![Coverage](https://codecov.io/gh/smartalarm/smart-alarm/branch/main/graph/badge.svg)](https://codecov.io/gh/smartalarm/smart-alarm)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PWA](https://img.shields.io/badge/PWA-Ready-brightgreen.svg)](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps)
+[![WCAG AAA](https://img.shields.io/badge/WCAG-AAA-brightgreen.svg)](https://www.w3.org/WAI/WCAG21/quickref/)
 
-A modern, serverless backend platform for intelligent alarm and routine management, built with accessibility, security, and scalability in mind. The system leverages Clean Architecture, multi-cloud compatibility, and comprehensive observability to deliver a robust solution for managing alarms, AI-powered insights, and external integrations.
+Um sistema de alarmes inteligente, acessível e **100% production-ready** construído com .NET 8, React PWA, ML.NET e seguindo Clean Architecture. Inclui OAuth2 real, sincronização de calendários, observabilidade completa e ambiente de desenvolvimento com um comando.
 
 ## Overview
 
