@@ -113,7 +113,7 @@ namespace SmartAlarm.IntegrationService.Application.Handlers
                 var response = new CreateIntegrationResponse
                 {
                     Id = integration.Id,
-                    AlarmId = integration.AlarmId,
+                    AlarmId = integration.AlarmId ?? Guid.Empty,
                     Provider = integration.Provider,
                     Configuration = request.Configuration,
                     Status = integration.IsActive ? "Active" : "Inactive",

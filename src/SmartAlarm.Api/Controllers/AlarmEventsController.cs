@@ -43,7 +43,7 @@ public class AlarmEventsController : ControllerBase
     [SwaggerResponse(401, "Não autorizado")]
     public async Task<IActionResult> RecordTriggered([FromBody] RecordTriggeredRequest request, CancellationToken cancellationToken)
     {
-        var userId = _currentUserService.GetUserId();
+        var userId = Guid.Parse(_currentUserService.UserId ?? throw new InvalidOperationException("User ID not available"));
         
         await _alarmEventService.RecordAlarmTriggeredAsync(
             request.AlarmId, 
@@ -67,7 +67,7 @@ public class AlarmEventsController : ControllerBase
     [SwaggerResponse(401, "Não autorizado")]
     public async Task<IActionResult> RecordSnoozed([FromBody] RecordSnoozedRequest request, CancellationToken cancellationToken)
     {
-        var userId = _currentUserService.GetUserId();
+        var userId = Guid.Parse(_currentUserService.UserId ?? throw new InvalidOperationException("User ID not available"));
         
         await _alarmEventService.RecordAlarmSnoozedAsync(
             request.AlarmId, 
@@ -91,7 +91,7 @@ public class AlarmEventsController : ControllerBase
     [SwaggerResponse(401, "Não autorizado")]
     public async Task<IActionResult> RecordDisabled([FromBody] RecordDisabledRequest request, CancellationToken cancellationToken)
     {
-        var userId = _currentUserService.GetUserId();
+        var userId = Guid.Parse(_currentUserService.UserId ?? throw new InvalidOperationException("User ID not available"));
         
         await _alarmEventService.RecordAlarmDisabledAsync(
             request.AlarmId, 
@@ -115,7 +115,7 @@ public class AlarmEventsController : ControllerBase
     [SwaggerResponse(401, "Não autorizado")]
     public async Task<IActionResult> RecordDismissed([FromBody] RecordDismissedRequest request, CancellationToken cancellationToken)
     {
-        var userId = _currentUserService.GetUserId();
+        var userId = Guid.Parse(_currentUserService.UserId ?? throw new InvalidOperationException("User ID not available"));
         
         await _alarmEventService.RecordAlarmDismissedAsync(
             request.AlarmId, 
@@ -139,7 +139,7 @@ public class AlarmEventsController : ControllerBase
         [FromQuery] int days = 30, 
         CancellationToken cancellationToken = default)
     {
-        var userId = _currentUserService.GetUserId();
+        var userId = Guid.Parse(_currentUserService.UserId ?? throw new InvalidOperationException("User ID not available"));
         
         var events = await _alarmEventService.GetUserEventHistoryAsync(userId, days, cancellationToken);
         
@@ -167,7 +167,7 @@ public class AlarmEventsController : ControllerBase
         [FromQuery] int days = 30, 
         CancellationToken cancellationToken = default)
     {
-        var userId = _currentUserService.GetUserId();
+        var userId = Guid.Parse(_currentUserService.UserId ?? throw new InvalidOperationException("User ID not available"));
         
         var stats = await _alarmEventService.GetUserEventStatsAsync(userId, days, cancellationToken);
         
@@ -193,7 +193,7 @@ public class AlarmEventsController : ControllerBase
         [FromQuery] int days = 30, 
         CancellationToken cancellationToken = default)
     {
-        var userId = _currentUserService.GetUserId();
+        var userId = Guid.Parse(_currentUserService.UserId ?? throw new InvalidOperationException("User ID not available"));
         
         var pattern = await _alarmEventService.GetUserBehaviorPatternAsync(userId, days, cancellationToken);
         
