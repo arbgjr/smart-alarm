@@ -57,14 +57,15 @@ public class AlarmEventService : IAlarmEventService
 
         try
         {
+            var timestamp = DateTime.UtcNow;
             var alarmEvent = eventType switch
             {
-                AlarmEventType.Created => AlarmEvent.AlarmCreated(alarmId, userId, metadata),
-                AlarmEventType.Triggered => AlarmEvent.AlarmTriggered(alarmId, userId, location),
-                AlarmEventType.Snoozed => AlarmEvent.AlarmSnoozed(alarmId, userId, snoozeMinutes ?? 5),
-                AlarmEventType.Disabled => AlarmEvent.AlarmDisabled(alarmId, userId, metadata),
-                AlarmEventType.Dismissed => AlarmEvent.AlarmDismissed(alarmId, userId),
-                AlarmEventType.Modified => AlarmEvent.AlarmModified(alarmId, userId, metadata),
+                AlarmEventType.Created => AlarmEvent.AlarmCreated(alarmId, userId, timestamp, metadata),
+                AlarmEventType.Triggered => AlarmEvent.AlarmTriggered(alarmId, userId, timestamp, location),
+                AlarmEventType.Snoozed => AlarmEvent.AlarmSnoozed(alarmId, userId, timestamp, snoozeMinutes ?? 5),
+                AlarmEventType.Disabled => AlarmEvent.AlarmDisabled(alarmId, userId, timestamp, metadata),
+                AlarmEventType.Dismissed => AlarmEvent.AlarmDismissed(alarmId, userId, timestamp),
+                AlarmEventType.Modified => AlarmEvent.AlarmModified(alarmId, userId, timestamp, metadata),
                 _ => throw new ArgumentException($"Unsupported event type: {eventType}")
             };
 
@@ -158,7 +159,9 @@ public class AlarmEventService : IAlarmEventService
 
         try
         {
-            var events = await _repository.GetByUserIdAsync(userId, days, cancellationToken);
+            var startDate = DateTime.UtcNow.AddDays(-days);
+            var endDate = DateTime.UtcNow;
+            var events = await _repository.GetUserEventsAsync(userId, startDate, endDate, cancellationToken);
             stopwatch.Stop();
 
             _meter.RecordDatabaseQueryDuration(stopwatch.ElapsedMilliseconds, "GetHistory", "AlarmEvent");
@@ -198,7 +201,9 @@ public class AlarmEventService : IAlarmEventService
         try
         {
             // Get events and calculate stats manually since GetEventStatsByUserAsync doesn't exist
-            var events = await _repository.GetByUserIdAsync(userId, days, cancellationToken);
+            var startDate = DateTime.UtcNow.AddDays(-days);
+            var endDate = DateTime.UtcNow;
+            var events = await _repository.GetUserEventsAsync(userId, startDate, endDate, cancellationToken);
             var stats = events.GroupBy(e => e.EventType)
                             .ToDictionary(g => g.Key, g => g.Count());
             stopwatch.Stop();
@@ -239,7 +244,9 @@ public class AlarmEventService : IAlarmEventService
 
         try
         {
-            var events = await _repository.GetByUserIdAsync(userId, days, cancellationToken);
+            var startDate = DateTime.UtcNow.AddDays(-days);
+            var endDate = DateTime.UtcNow;
+            var events = await _repository.GetUserEventsAsync(userId, startDate, endDate, cancellationToken);
             var pattern = AnalyzeBehaviorPattern(userId, events, days);
             stopwatch.Stop();
 

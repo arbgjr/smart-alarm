@@ -130,7 +130,7 @@ namespace SmartAlarm.Infrastructure
             // Register infrastructure services
             services.AddScoped<IEmailService, LoggingEmailService>();
             services.AddScoped<INotificationService, LoggingNotificationService>();
-            services.AddScoped<IFileParser, CsvFileParser>();
+            // services.AddScoped<Application.Services.IFileParser, CsvFileParser>(); // Temporariamente comentado devido a conflito de interfaces
             
             // Register new services for Phase 1 & 2
             services.AddScoped<IAlarmEventService, AlarmEventService>();

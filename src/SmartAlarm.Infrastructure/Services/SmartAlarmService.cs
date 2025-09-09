@@ -54,7 +54,7 @@ namespace SmartAlarm.Infrastructure.Services
 
             // 1. Verificar se está em período de exceção
             var hasExceptionPeriod = await _exceptionPeriodRepository.HasActivePeriodOnDateAsync(
-                alarm.UserId, now, cancellationToken);
+                alarm.UserId, now);
             
             if (hasExceptionPeriod)
             {
