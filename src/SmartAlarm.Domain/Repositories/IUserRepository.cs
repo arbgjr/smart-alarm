@@ -10,11 +10,15 @@ namespace SmartAlarm.Domain.Repositories
     /// </summary>
     public interface IUserRepository
     {
-        Task<User?> GetByIdAsync(Guid id);
-        Task<User?> GetByEmailAsync(string email);
+        Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
+        Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default);
         Task<IEnumerable<User>> GetAllAsync();
-        Task AddAsync(User user);
-        Task UpdateAsync(User user);
+        Task AddAsync(User user, CancellationToken cancellationToken = default);
+        Task UpdateAsync(User user, CancellationToken cancellationToken = default);
         Task DeleteAsync(Guid id);
+        
+        // OAuth2 specific methods
+        Task<User?> FindByEmailAsync(string email, CancellationToken cancellationToken = default);
+        Task<User?> FindByExternalProviderAsync(string provider, string providerId, CancellationToken cancellationToken = default);
     }
 }

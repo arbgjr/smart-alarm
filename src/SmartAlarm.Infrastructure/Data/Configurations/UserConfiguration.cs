@@ -48,6 +48,29 @@ namespace SmartAlarm.Infrastructure.Data.Configurations
             builder.Property(u => u.LastLoginAt)
                 .HasColumnName("LastLoginAt");
 
+            builder.Property(u => u.PasswordHash)
+                .HasColumnName("PasswordHash")
+                .HasMaxLength(500)
+                .IsRequired(false); // OAuth users might not have password
+
+            builder.Property(u => u.EmailVerified)
+                .IsRequired()
+                .HasColumnName("EmailVerified");
+
+            builder.Property(u => u.UpdatedAt)
+                .HasColumnName("UpdatedAt");
+
+            // OAuth2 properties
+            builder.Property(u => u.ExternalProvider)
+                .HasColumnName("ExternalProvider")
+                .HasMaxLength(50)
+                .IsRequired(false);
+
+            builder.Property(u => u.ExternalProviderId)
+                .HasColumnName("ExternalProviderId")
+                .HasMaxLength(255)
+                .IsRequired(false);
+
             // Relationships
             builder.HasMany(u => u.HolidayPreferences)
                 .WithOne(uhp => uhp.User)
@@ -57,6 +80,10 @@ namespace SmartAlarm.Infrastructure.Data.Configurations
             builder.HasIndex(u => u.Email)
                 .IsUnique()
                 .HasDatabaseName("IX_Users_Email");
+
+            // Index for external provider (for efficient OAuth lookups)
+            builder.HasIndex(u => new { u.ExternalProvider, u.ExternalProviderId })
+                .HasDatabaseName("IX_Users_ExternalProvider");
         }
     }
 }

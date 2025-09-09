@@ -15,7 +15,7 @@ namespace SmartAlarm.Infrastructure.Repositories
     {
         private readonly ConcurrentDictionary<Guid, User> _users = new();
 
-        public Task AddAsync(User user)
+        public Task AddAsync(User user, CancellationToken cancellationToken = default)
         {
             _users[user.Id] = user;
             return Task.CompletedTask;
@@ -27,22 +27,36 @@ namespace SmartAlarm.Infrastructure.Repositories
             return Task.CompletedTask;
         }
 
-        public Task<User?> GetByEmailAsync(string email)
+        public Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
         {
             var user = _users.Values.FirstOrDefault(u => u.Email.Address == email);
             return Task.FromResult(user);
         }
 
-        public Task<User?> GetByIdAsync(Guid id)
+        public Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         {
             _users.TryGetValue(id, out var user);
             return Task.FromResult(user);
         }
 
-        public Task UpdateAsync(User user)
+        public Task UpdateAsync(User user, CancellationToken cancellationToken = default)
         {
             _users[user.Id] = user;
             return Task.CompletedTask;
+        }
+
+        public Task<User?> FindByEmailAsync(string email, CancellationToken cancellationToken = default)
+        {
+            var user = _users.Values.FirstOrDefault(u => u.Email.Address.Equals(email, StringComparison.OrdinalIgnoreCase));
+            return Task.FromResult(user);
+        }
+
+        public Task<User?> FindByExternalProviderAsync(string provider, string providerId, CancellationToken cancellationToken = default)
+        {
+            var user = _users.Values.FirstOrDefault(u => 
+                u.ExternalProvider == provider && 
+                u.ExternalProviderId == providerId);
+            return Task.FromResult(user);
         }
 
         public Task<IEnumerable<User>> GetAllAsync()

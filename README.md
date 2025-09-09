@@ -26,7 +26,7 @@ The platform consists of three main microservices:
 - **Serverless Architecture**: Built for OCI Functions with full serverless deployment capabilities
 - **Clean Architecture**: Strict separation of concerns across Domain, Application, Infrastructure, and API layers
 - **Multi-Provider Support**: Database (PostgreSQL/Oracle), storage (MinIO/OCI), and secrets management (Vault/Azure/OCI)
-- **Comprehensive Security**: JWT authentication with FIDO2 support, token revocation via Redis blacklist
+- **Comprehensive Security**: JWT authentication with FIDO2 support, OAuth2 login (Google, GitHub, Facebook, Microsoft), token revocation via Redis blacklist
 - **Full Observability**: Structured logging (Serilog), distributed tracing (OpenTelemetry/Jaeger), and metrics (Prometheus)
 - **Background Processing**: Intelligent task scheduling and execution with Hangfire
 - **AI-Powered Insights**: ML.NET integration for behavioral pattern analysis and optimization recommendations
@@ -169,7 +169,7 @@ dotnet test --collect:"XPlat Code Coverage" --settings tests/coverlet.runsetting
 - **Frontend**: React 18, TypeScript, Vite, TailwindCSS
 - **State Management**: Zustand with React Query optimization
 - **Patterns**: CQRS with MediatR, Repository with Unit of Work, Domain Events
-- **Authentication**: JWT with FIDO2 support, Redis-backed token blacklist
+- **Authentication**: JWT with FIDO2 support, OAuth2 providers (Google, GitHub, Facebook, Microsoft), Redis-backed token blacklist
 - **Validation**: FluentValidation (backend), Zod/React Hook Form (frontend)
 
 ### Persistence & Storage
@@ -398,7 +398,7 @@ The REST API is fully documented with OpenAPI/Swagger:
 
 Smart Alarm implements security best practices:
 
-- **Authentication**: JWT tokens with FIDO2 support
+- **Authentication**: JWT tokens with FIDO2 support and OAuth2 providers (Google, GitHub, Facebook, Microsoft)
 - **Authorization**: Role-based access control (RBAC)
 - **Token Management**: Redis-backed blacklist for token revocation
 - **Input Validation**: FluentValidation for all inputs

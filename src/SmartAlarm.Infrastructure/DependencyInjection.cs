@@ -9,6 +9,7 @@ using SmartAlarm.Infrastructure.Repositories;
 using SmartAlarm.Infrastructure.Repositories.EntityFramework;
 using SmartAlarm.Infrastructure.Services;
 using SmartAlarm.Infrastructure.Security;
+using SmartAlarm.Infrastructure.Security.OAuth;
 using SmartAlarm.Domain.Abstractions;
 
 namespace SmartAlarm.Infrastructure
@@ -281,6 +282,32 @@ namespace SmartAlarm.Infrastructure
 
             // Note: Observability services (SmartAlarmActivitySource and SmartAlarmMeter) are handled by SmartAlarm.Observability package
             // They are registered via AddSmartAlarmObservability() in the API startup configuration, not here in Infrastructure layer
+
+            // Register OAuth2 services
+            services.AddOAuthServices();
+
+            return services;
+        }
+
+        /// <summary>
+        /// Adiciona serviços OAuth2 para autenticação externa
+        /// </summary>
+        public static IServiceCollection AddOAuthServices(this IServiceCollection services)
+        {
+            // Register HttpClient for OAuth providers
+            services.AddHttpClient<GoogleOAuthProvider>();
+            services.AddHttpClient<GitHubOAuthProvider>();
+            services.AddHttpClient<FacebookOAuthProvider>();
+            services.AddHttpClient<MicrosoftOAuthProvider>();
+
+            // Register OAuth providers
+            services.AddScoped<GoogleOAuthProvider>();
+            services.AddScoped<GitHubOAuthProvider>();
+            services.AddScoped<FacebookOAuthProvider>();
+            services.AddScoped<MicrosoftOAuthProvider>();
+
+            // Register OAuth provider factory
+            services.AddScoped<IOAuthProviderFactory, OAuthProviderFactory>();
 
             return services;
         }

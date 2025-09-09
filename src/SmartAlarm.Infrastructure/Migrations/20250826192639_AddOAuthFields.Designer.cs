@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SmartAlarm.Infrastructure.Data;
 
@@ -10,9 +11,11 @@ using SmartAlarm.Infrastructure.Data;
 namespace SmartAlarm.Infrastructure.Migrations
 {
     [DbContext(typeof(SmartAlarmDbContext))]
-    partial class SmartAlarmDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250826192639_AddOAuthFields")]
+    partial class AddOAuthFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.8");

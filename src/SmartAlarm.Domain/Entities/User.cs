@@ -19,6 +19,10 @@ namespace SmartAlarm.Domain.Entities
         public DateTime CreatedAt { get; private set; }
         public DateTime? UpdatedAt { get; private set; }
         public DateTime? LastLoginAt { get; private set; }
+        
+        // OAuth2 external provider support
+        public string? ExternalProviderId { get; private set; }
+        public string? ExternalProvider { get; private set; }
 
         // Navegação para credenciais FIDO2
         public virtual ICollection<UserCredential> Credentials { get; private set; } = new List<UserCredential>();
@@ -124,5 +128,40 @@ namespace SmartAlarm.Domain.Entities
                 UpdatedAt = DateTime.UtcNow;
             }
         }
+
+        /// <summary>
+        /// Define provedor externo OAuth2 para o usuário
+        /// </summary>
+        public void SetExternalProvider(string provider, string providerId)
+        {
+            if (string.IsNullOrWhiteSpace(provider))
+                throw new ArgumentException("Provider cannot be null or empty", nameof(provider));
+            if (string.IsNullOrWhiteSpace(providerId))
+                throw new ArgumentException("Provider ID cannot be null or empty", nameof(providerId));
+
+            ExternalProvider = provider;
+            ExternalProviderId = providerId;
+            UpdatedAt = DateTime.UtcNow;
+        }
+
+        /// <summary>
+        /// Remove provedor externo do usuário
+        /// </summary>
+        public void ClearExternalProvider()
+        {
+            ExternalProvider = null;
+            ExternalProviderId = null;
+            UpdatedAt = DateTime.UtcNow;
+        }
+
+        /// <summary>
+        /// Verifica se o usuário tem provedor externo configurado
+        /// </summary>
+        public bool HasExternalProvider => !string.IsNullOrWhiteSpace(ExternalProvider);
+
+        /// <summary>
+        /// Verifica se o usuário foi criado via OAuth2
+        /// </summary>
+        public bool IsExternalUser => HasExternalProvider && string.IsNullOrEmpty(PasswordHash);
     }
 }

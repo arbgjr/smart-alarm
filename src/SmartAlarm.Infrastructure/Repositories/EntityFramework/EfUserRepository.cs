@@ -40,7 +40,7 @@ namespace SmartAlarm.Infrastructure.Repositories.EntityFramework
             _activitySource = activitySource ?? throw new ArgumentNullException(nameof(activitySource));
         }
 
-        public async Task<User?> GetByIdAsync(Guid id)
+        public async Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         {
             var correlationId = _correlationContext.CorrelationId;
             var stopwatch = Stopwatch.StartNew();
@@ -56,7 +56,7 @@ namespace SmartAlarm.Infrastructure.Repositories.EntityFramework
 
             try
             {
-                var user = await _context.Users.FindAsync(id);
+                var user = await _context.Users.FindAsync(new object[] { id }, cancellationToken);
                 
                 stopwatch.Stop();
                 
@@ -86,7 +86,7 @@ namespace SmartAlarm.Infrastructure.Repositories.EntityFramework
             }
         }
 
-        public async Task<User?> GetByEmailAsync(string email)
+        public async Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
         {
             var correlationId = _correlationContext.CorrelationId;
             var stopwatch = Stopwatch.StartNew();
@@ -182,7 +182,7 @@ namespace SmartAlarm.Infrastructure.Repositories.EntityFramework
             }
         }
 
-        public async Task AddAsync(User user)
+        public async Task AddAsync(User user, CancellationToken cancellationToken = default)
         {
             var correlationId = _correlationContext.CorrelationId;
             var stopwatch = Stopwatch.StartNew();
@@ -199,7 +199,7 @@ namespace SmartAlarm.Infrastructure.Repositories.EntityFramework
 
             try
             {
-                await _context.Users.AddAsync(user);
+                await _context.Users.AddAsync(user, cancellationToken);
                 
                 stopwatch.Stop();
                 
@@ -228,7 +228,7 @@ namespace SmartAlarm.Infrastructure.Repositories.EntityFramework
             }
         }
 
-        public Task UpdateAsync(User user)
+        public Task UpdateAsync(User user, CancellationToken cancellationToken = default)
         {
             var correlationId = _correlationContext.CorrelationId;
             var stopwatch = Stopwatch.StartNew();
@@ -319,6 +319,103 @@ namespace SmartAlarm.Infrastructure.Repositories.EntityFramework
 
                 _logger.LogError(LogTemplates.DatabaseQueryFailed,
                     "DeleteUser",
+                    correlationId,
+                    stopwatch.ElapsedMilliseconds,
+                    ex.Message);
+
+                throw;
+            }
+        }
+
+        public async Task<User?> FindByEmailAsync(string email, CancellationToken cancellationToken = default)
+        {
+            var correlationId = _correlationContext.CorrelationId;
+            var stopwatch = Stopwatch.StartNew();
+            
+            using var activity = _activitySource.StartActivity("EfUserRepository.FindByEmailAsync");
+            activity?.SetTag("user.email", email);
+            activity?.SetTag("operation", "user.find.by.email");
+
+            _logger.LogInformation(LogTemplates.DatabaseQueryStarted, 
+                "FindUserByEmail", 
+                correlationId, 
+                email);
+
+            try
+            {
+                var user = await _context.Users
+                    .Where(u => EF.Functions.Like(u.Email.ToString(), email))
+                    .FirstOrDefaultAsync(cancellationToken);
+                
+                stopwatch.Stop();
+                
+                _meter.RecordDatabaseQueryDuration(stopwatch.ElapsedMilliseconds, "user", "find_by_email");
+
+                _logger.LogInformation(LogTemplates.DatabaseQueryExecuted,
+                    "FindUserByEmail",
+                    stopwatch.ElapsedMilliseconds,
+                    user != null ? "found" : "not_found");
+
+                activity?.SetStatus(ActivityStatusCode.Ok);
+                return user;
+            }
+            catch (Exception ex)
+            {
+                stopwatch.Stop();
+                activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+                _meter.IncrementErrorCount("DATABASE", "Users", "QueryError");
+
+                _logger.LogError(LogTemplates.DatabaseQueryFailed,
+                    "FindUserByEmail",
+                    correlationId,
+                    stopwatch.ElapsedMilliseconds,
+                    ex.Message);
+
+                throw;
+            }
+        }
+
+        public async Task<User?> FindByExternalProviderAsync(string provider, string providerId, CancellationToken cancellationToken = default)
+        {
+            var correlationId = _correlationContext.CorrelationId;
+            var stopwatch = Stopwatch.StartNew();
+            
+            using var activity = _activitySource.StartActivity("EfUserRepository.FindByExternalProviderAsync");
+            activity?.SetTag("user.external_provider", provider);
+            activity?.SetTag("user.external_provider_id", providerId);
+            activity?.SetTag("operation", "user.find.by.external.provider");
+
+            _logger.LogInformation(LogTemplates.DatabaseQueryStarted, 
+                "FindUserByExternalProvider", 
+                correlationId, 
+                $"{provider}:{providerId}");
+
+            try
+            {
+                var user = await _context.Users
+                    .Where(u => u.ExternalProvider == provider && u.ExternalProviderId == providerId)
+                    .FirstOrDefaultAsync(cancellationToken);
+                
+                stopwatch.Stop();
+                
+                _meter.RecordDatabaseQueryDuration(stopwatch.ElapsedMilliseconds, "user", "find_by_external_provider");
+
+                _logger.LogInformation(LogTemplates.DatabaseQueryExecuted,
+                    "FindUserByExternalProvider",
+                    stopwatch.ElapsedMilliseconds,
+                    user != null ? "found" : "not_found");
+
+                activity?.SetStatus(ActivityStatusCode.Ok);
+                return user;
+            }
+            catch (Exception ex)
+            {
+                stopwatch.Stop();
+                activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+                _meter.IncrementErrorCount("DATABASE", "Users", "QueryError");
+
+                _logger.LogError(LogTemplates.DatabaseQueryFailed,
+                    "FindUserByExternalProvider",
                     correlationId,
                     stopwatch.ElapsedMilliseconds,
                     ex.Message);

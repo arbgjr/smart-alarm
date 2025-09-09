@@ -420,6 +420,172 @@ public class AuthController : ControllerBase
 
     #endregion
 
+    #region OAuth2 Endpoints
+
+    /// <summary>
+    /// Obtém URL de autorização para provedor OAuth2
+    /// </summary>
+    /// <param name="provider">Nome do provedor (Google, GitHub, Facebook, Microsoft)</param>
+    /// <param name="redirectUri">URI de redirecionamento</param>
+    /// <param name="state">State parameter para proteção CSRF (opcional)</param>
+    /// <returns>URL de autorização</returns>
+    [HttpGet("oauth/{provider}/authorize")]
+    [AllowAnonymous]
+    [SwaggerOperation(Summary = "Obter URL OAuth2", Description = "Gera URL de autorização para provedor OAuth2")]
+    [SwaggerResponse(200, "URL de autorização gerada", typeof(OAuthAuthorizationResponseDto))]
+    [SwaggerResponse(400, "Provedor não suportado ou parâmetros inválidos")]
+    public async Task<ActionResult<OAuthAuthorizationResponseDto>> GetOAuthAuthorizationUrl(
+        string provider,
+        [FromQuery] string redirectUri,
+        [FromQuery] string? state = null)
+    {
+        try
+        {
+            var command = new GetOAuthAuthorizationUrlCommand(provider, redirectUri, state);
+            var result = await _mediator.Send(command);
+            return Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex, "Invalid OAuth2 authorization request for provider: {Provider}", provider);
+            return BadRequest(new { Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating OAuth2 authorization URL for provider: {Provider}", provider);
+            return StatusCode(500, new { Message = "Erro interno do servidor" });
+        }
+    }
+
+    /// <summary>
+    /// Processa callback OAuth2 e realiza login/registro
+    /// </summary>
+    /// <param name="provider">Nome do provedor</param>
+    /// <param name="request">Dados do callback OAuth2</param>
+    /// <returns>Token JWT se autenticação for bem-sucedida</returns>
+    [HttpPost("oauth/{provider}/callback")]
+    [AllowAnonymous]
+    [SwaggerOperation(Summary = "Callback OAuth2", Description = "Processa callback de provedor OAuth2 e realiza autenticação")]
+    [SwaggerResponse(200, "Autenticação realizada com sucesso", typeof(OAuthLoginResponseDto))]
+    [SwaggerResponse(400, "Dados inválidos ou erro de autenticação")]
+    [SwaggerResponse(401, "Falha na autenticação")]
+    public async Task<ActionResult<OAuthLoginResponseDto>> HandleOAuthCallback(
+        string provider,
+        [FromBody] OAuthCallbackRequestDto request)
+    {
+        try
+        {
+            // Verificar se há erro na resposta OAuth
+            if (!string.IsNullOrEmpty(request.Error))
+            {
+                _logger.LogWarning("OAuth2 error from provider {Provider}: {Error} - {Description}", 
+                    provider, request.Error, request.ErrorDescription);
+                
+                return BadRequest(new OAuthLoginResponseDto
+                {
+                    Success = false,
+                    Message = $"OAuth2 error: {request.Error} - {request.ErrorDescription}"
+                });
+            }
+
+            var command = new ProcessOAuthCallbackCommand(provider, request.Code, GetCallbackUri(provider), request.State);
+            var result = await _mediator.Send(command);
+
+            if (result.Success)
+            {
+                return Ok(result);
+            }
+
+            return BadRequest(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error processing OAuth2 callback for provider: {Provider}", provider);
+            return StatusCode(500, new { Message = "Erro interno do servidor" });
+        }
+    }
+
+    /// <summary>
+    /// Vincula conta externa a usuário autenticado
+    /// </summary>
+    /// <param name="provider">Nome do provedor</param>
+    /// <param name="request">Dados de autorização</param>
+    /// <returns>Resultado da vinculação</returns>
+    [HttpPost("oauth/{provider}/link")]
+    [Authorize]
+    [SwaggerOperation(Summary = "Vincular conta externa", Description = "Vincula provedor OAuth2 a usuário autenticado")]
+    [SwaggerResponse(200, "Conta vinculada com sucesso")]
+    [SwaggerResponse(400, "Dados inválidos ou falha na vinculação")]
+    [SwaggerResponse(401, "Não autorizado")]
+    public async Task<ActionResult> LinkExternalAccount(
+        string provider,
+        [FromBody] OAuthCallbackRequestDto request)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null)
+            {
+                return Unauthorized(new { Message = "Token inválido" });
+            }
+
+            var command = new LinkExternalAccountCommand(userId.Value, provider, request.Code, GetCallbackUri(provider), request.State);
+            var result = await _mediator.Send(command);
+
+            if (result)
+            {
+                return Ok(new { Message = "Conta externa vinculada com sucesso" });
+            }
+
+            return BadRequest(new { Message = "Falha ao vincular conta externa" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error linking external account for provider: {Provider}", provider);
+            return StatusCode(500, new { Message = "Erro interno do servidor" });
+        }
+    }
+
+    /// <summary>
+    /// Remove vinculação de conta externa
+    /// </summary>
+    /// <param name="provider">Nome do provedor</param>
+    /// <returns>Resultado da remoção</returns>
+    [HttpDelete("oauth/{provider}/unlink")]
+    [Authorize]
+    [SwaggerOperation(Summary = "Desvincular conta externa", Description = "Remove vinculação de provedor OAuth2")]
+    [SwaggerResponse(200, "Conta desvinculada com sucesso")]
+    [SwaggerResponse(400, "Falha na desvinculação")]
+    [SwaggerResponse(401, "Não autorizado")]
+    public async Task<ActionResult> UnlinkExternalAccount(string provider)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null)
+            {
+                return Unauthorized(new { Message = "Token inválido" });
+            }
+
+            var command = new UnlinkExternalAccountCommand(userId.Value, provider);
+            var result = await _mediator.Send(command);
+
+            if (result)
+            {
+                return Ok(new { Message = "Conta externa desvinculada com sucesso" });
+            }
+
+            return BadRequest(new { Message = "Falha ao desvincular conta externa" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error unlinking external account for provider: {Provider}", provider);
+            return StatusCode(500, new { Message = "Erro interno do servidor" });
+        }
+    }
+
+    #endregion
+
     /// <summary>
     /// Endpoint público para verificação de status da API
     /// </summary>
@@ -432,4 +598,30 @@ public class AuthController : ControllerBase
     {
         return Ok(new { Status = "OK", Timestamp = DateTime.UtcNow });
     }
+
+    #region Private Helper Methods
+
+    /// <summary>
+    /// Obtém ID do usuário atual do token JWT
+    /// </summary>
+    private Guid? GetCurrentUserId()
+    {
+        var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.NameIdentifier);
+        if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out var userId))
+        {
+            return userId;
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Constrói URI de callback baseada no provedor
+    /// </summary>
+    private string GetCallbackUri(string provider)
+    {
+        var baseUri = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}";
+        return $"{baseUri}/api/v1/auth/oauth/{provider.ToLower()}/callback";
+    }
+
+    #endregion
 }

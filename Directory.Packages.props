@@ -7,6 +7,9 @@
   <ItemGroup>
     <!-- Microsoft ASP.NET Core (Alinhado para .NET 8) -->
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.8" />
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.Google" Version="8.0.8" />
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.MicrosoftAccount" Version="8.0.8" />
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.Facebook" Version="8.0.8" />
     <PackageVersion Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.0" />
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="8.0.8" />
 
