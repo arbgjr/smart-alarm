@@ -1,6 +1,7 @@
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Sempre ao fim do desenvolvimento rode os testes automatizados com `bash scripts/test-reports.sh all` e verifique a cobertura com `bash scripts/test-reports.sh coverage`. O percentual de testes não deve diminuir.
 
 ## Quick Commands
 
