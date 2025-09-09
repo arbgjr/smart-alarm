@@ -19,6 +19,12 @@ namespace SmartAlarm.Domain.Entities
         public DateTime CreatedAt { get; private set; }
         public DateTime? UpdatedAt { get; private set; }
         public DateTime? LastLoginAt { get; private set; }
+        
+        // Location information for holiday detection
+        public string? Country { get; private set; }
+        public string? State { get; private set; }
+        public string? City { get; private set; }
+        public string? TimeZone { get; private set; }
 
         // OAuth2 external provider support
         public string? ExternalProviderId { get; private set; }
@@ -141,6 +147,18 @@ namespace SmartAlarm.Domain.Entities
 
             ExternalProvider = provider;
             ExternalProviderId = providerId;
+            UpdatedAt = DateTime.UtcNow;
+        }
+
+        /// <summary>
+        /// Define informações de localização do usuário
+        /// </summary>
+        public void SetLocation(string? country, string? state = null, string? city = null, string? timeZone = null)
+        {
+            Country = country?.ToUpper();
+            State = state?.ToUpper();
+            City = city;
+            TimeZone = timeZone ?? "America/Sao_Paulo"; // Default para Brasil
             UpdatedAt = DateTime.UtcNow;
         }
 
