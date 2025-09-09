@@ -283,9 +283,31 @@ The platform automatically detects and configures providers based on the environ
 
 ## Testing
 
-Smart Alarm maintains high test coverage with comprehensive testing strategies:
+Smart Alarm maintains high test coverage with comprehensive testing strategies and automated report generation:
 
-### Running Tests
+### 🚀 Automated Test Scripts (Recommended)
+
+```bash
+# TDD-compliant unit tests (123 tests passing 100%)
+bash scripts/test-reports.sh unit
+
+# Integration tests with PostgreSQL/Redis
+bash scripts/test-reports.sh integration
+
+# API/Controller tests with full environment
+bash scripts/test-reports.sh api
+
+# Security/OWASP validation tests
+bash scripts/test-reports.sh security
+
+# End-to-End tests with Playwright
+bash scripts/test-reports.sh e2e
+
+# All tests with comprehensive reports
+bash scripts/test-reports.sh all
+```
+
+### Manual Test Commands
 
 ```bash
 # Backend tests
@@ -295,7 +317,7 @@ dotnet test --logger "console;verbosity=detailed"
 dotnet test --filter Category!=Integration
 
 # Run integration tests (requires Docker)
-docker compose up -d
+docker compose -f docker-compose.full.yml up -d
 dotnet test --filter Category=Integration
 
 # Generate coverage report
@@ -351,6 +373,43 @@ terraform apply
 
 > [!WARNING]
 > Ensure all secrets are properly configured in your chosen key vault provider before production deployment.
+
+## 📚 Documentation
+
+### Key Documentation Files
+
+- **[📋 RELATORIO_TESTE_EVIDENCIAS.md](./RELATORIO_TESTE_EVIDENCIAS.md)** - Complete testing evidence and validation report
+- **[🧪 docs/TESTING.md](./docs/TESTING.md)** - Comprehensive testing guide with TDD compliance
+- **[🏗️ CLAUDE.md](./CLAUDE.md)** - Development commands and architectural guidance
+- **[🚀 docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md)** - Production deployment and infrastructure setup
+
+### Test Reports (Auto-Generated)
+
+When running test scripts, reports are automatically generated in:
+
+```
+TestResults/
+├── Unit/
+│   ├── TestResults.html          # Visual test results
+│   ├── TestResults.trx           # Microsoft TRX format
+│   └── coverage-report/index.html # Code coverage report
+├── Integration/
+├── API/
+└── Security/
+```
+
+### Quick Reference
+
+```bash
+# Start complete development environment
+docker compose -f docker-compose.full.yml up -d
+
+# Run TDD-compliant unit tests (123 tests - 100% pass rate)
+bash scripts/test-reports.sh unit
+
+# Check infrastructure status
+docker compose -f docker-compose.full.yml ps
+```
 
 ## Monitoring & Observability
 

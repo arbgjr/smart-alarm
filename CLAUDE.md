@@ -8,6 +8,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - **Build solution**: `dotnet build SmartAlarm.sln --no-restore`
 - **Restore dependencies**: `dotnet restore SmartAlarm.sln`
+
+#### Automated Test Scripts (Recommended)
+- **Unit tests (TDD pure)**: `bash scripts/test-reports.sh unit`
+- **Integration tests**: `bash scripts/test-reports.sh integration`
+- **API/Controller tests**: `bash scripts/test-reports.sh api`
+- **Security/OWASP tests**: `bash scripts/test-reports.sh security`
+- **All tests with reports**: `bash scripts/test-reports.sh all`
+- **Coverage focus**: `bash scripts/test-reports.sh coverage`
+
+#### Manual Test Commands
 - **Run all tests**: `dotnet test --logger "console;verbosity=detailed"`
 - **Run integration tests**: `dotnet test --filter Category=Integration --logger "console;verbosity=detailed"`
 - **Run OAuth tests**: `dotnet test --filter "FullyQualifiedName~OAuth" --logger "console;verbosity=detailed"`
@@ -25,9 +35,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Infrastructure
 
-- **Start dev environment**: `docker compose up -d`
-- **Start all services**: `docker compose -f docker-compose.dev.yml up -d`
-- **Integration test environment**: `docker compose -f docker-compose.test.yml up -d`
+- **Start complete environment**: `docker compose -f docker-compose.full.yml up -d`
+- **Check services status**: `docker compose -f docker-compose.full.yml ps`
+- **Start dev environment**: `./scripts/dev/start-full-env.sh`
 
 ## Architecture Overview
 
