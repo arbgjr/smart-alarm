@@ -1,3 +1,4 @@
+using SmartAlarm.Domain.Abstractions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -86,12 +87,12 @@ namespace SmartAlarm.Tests.Factories
                 services.AddScoped<ICurrentUserService, TestCurrentUserService>();
 
                 // Adicionar o MockJwtTokenService para evitar dependências não resolvidas
-                var jwtDescriptors = services.Where(d => d.ServiceType == typeof(SmartAlarm.Domain.Abstractions.IJwtTokenService)).ToList();
+                var jwtDescriptors = services.Where(d => d.ServiceType == typeof(IJwtTokenService)).ToList();
                 foreach (var desc in jwtDescriptors)
                 {
                     services.Remove(desc);
                 }
-                services.AddSingleton<SmartAlarm.Domain.Abstractions.IJwtTokenService, MockJwtTokenService>();
+                services.AddSingleton<IJwtTokenService, MockJwtTokenService>();
 
                 // Adicionar o MockFido2Service para evitar dependências não resolvidas
                 var fido2Descriptors = services.Where(d => d.ServiceType == typeof(SmartAlarm.Domain.Abstractions.IFido2Service)).ToList();

@@ -34,7 +34,7 @@ namespace SmartAlarm.Domain.Entities
         /// <param name="action">Ação a ser tomada no feriado</param>
         /// <param name="delayInMinutes">Atraso em minutos (opcional, usado com Delay action)</param>
         /// <exception cref="ArgumentException">Quando os parâmetros são inválidos</exception>
-        public UserHolidayPreference(Guid id, Guid userId, Guid holidayId, bool isEnabled, 
+        public UserHolidayPreference(Guid id, Guid userId, Guid holidayId, bool isEnabled,
             HolidayPreferenceAction action, int? delayInMinutes = null)
         {
             ValidateParameters(userId, holidayId, action, delayInMinutes);
@@ -90,7 +90,7 @@ namespace SmartAlarm.Domain.Entities
         {
             if (!IsEnabled) return false;
             if (holiday.Id != HolidayId) return false;
-            
+
             return holiday.IsOnDate(date);
         }
 
@@ -111,7 +111,7 @@ namespace SmartAlarm.Domain.Entities
 
         #region Private Validation Methods
 
-        private static void ValidateParameters(Guid userId, Guid holidayId, 
+        private static void ValidateParameters(Guid userId, Guid holidayId,
             HolidayPreferenceAction action, int? delayInMinutes)
         {
             if (userId == Guid.Empty)

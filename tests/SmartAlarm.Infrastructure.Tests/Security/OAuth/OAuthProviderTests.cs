@@ -1,8 +1,9 @@
+using SmartAlarm.Domain.Abstractions;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Moq.Protected;
-using SmartAlarm.Domain.Abstractions;
+using SmartAlarm.Domain.Repositories;
 using SmartAlarm.Infrastructure.Security.OAuth;
 using SmartAlarm.KeyVault.Abstractions;
 using System.Net;

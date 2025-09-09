@@ -1,3 +1,4 @@
+using SmartAlarm.Domain.Abstractions;
 using System;
 using System.Text.Json;
 using System.Threading.Tasks;

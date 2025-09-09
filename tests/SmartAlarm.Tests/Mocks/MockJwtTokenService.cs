@@ -1,6 +1,7 @@
+using SmartAlarm.Domain.Abstractions;
 using System.Threading.Tasks;
 using Moq;
-using SmartAlarm.Domain.Abstractions;
+using SmartAlarm.Domain.Repositories;
 using SmartAlarm.Domain.Entities;
 
 namespace SmartAlarm.Tests.Mocks

@@ -1,3 +1,4 @@
+using SmartAlarm.Domain.Abstractions;
 using System;
 
 namespace SmartAlarm.Infrastructure.Tests

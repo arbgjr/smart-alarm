@@ -6,7 +6,7 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 using SmartAlarm.Application.DTOs.UserHolidayPreference;
 using SmartAlarm.Application.Queries.UserHolidayPreference;
-using SmartAlarm.Domain.Abstractions;
+using SmartAlarm.Domain.Repositories;
 
 namespace SmartAlarm.Application.Handlers.UserHolidayPreference
 {

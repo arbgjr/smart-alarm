@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using SmartAlarm.Domain.ValueObjects;
+using SmartAlarm.Domain.Repositories;
 
 namespace SmartAlarm.Domain.Entities
 {
@@ -132,20 +133,32 @@ namespace SmartAlarm.Domain.Entities
             LastTriggeredAt = triggeredAt;
         }
 
-        public virtual bool ShouldTriggerNow()
+        public bool ShouldTriggerNow(
+            IExceptionPeriodRepository? exceptionPeriodRepository = null,
+            IHolidayRepository? holidayRepository = null,
+            IUserHolidayPreferenceRepository? userHolidayPreferenceRepository = null)
         {
             if (!Enabled) return false;
             var now = DateTime.Now;
 
+            // Se repositórios não foram fornecidos, apenas verifica schedules básicos
+            // Isso permite que a entidade funcione sem dependências externas quando necessário
+            if (exceptionPeriodRepository == null || holidayRepository == null || userHolidayPreferenceRepository == null)
+            {
+                return _schedules.Any(s => s.IsActive && s.ShouldTriggerToday() &&
+                                          s.Time.Hour == now.Hour && s.Time.Minute == now.Minute);
+            }
+
             // Verifica se existe ExceptionPeriod ativo para o usuário e data atual
-            if (ExceptionPeriodIsActiveForUser(UserId, now))
+            var hasActivePeriod = exceptionPeriodRepository.HasActivePeriodOnDateAsync(UserId, now).GetAwaiter().GetResult();
+            if (hasActivePeriod)
                 return false;
 
             // Verifica se hoje é feriado e se há preferência do usuário
-            var holiday = GetHolidayForDate(now.Date);
+            var holiday = holidayRepository.GetByDateAsync(now.Date).GetAwaiter().GetResult();
             if (holiday != null)
             {
-                var preference = GetUserHolidayPreference(UserId, holiday.Id);
+                var preference = userHolidayPreferenceRepository.GetByUserAndHolidayAsync(UserId, holiday.Id).GetAwaiter().GetResult();
                 if (preference != null && preference.IsEnabled)
                 {
                     switch (preference.Action)
@@ -168,25 +181,6 @@ namespace SmartAlarm.Domain.Entities
             // Lógica padrão
             return _schedules.Any(s => s.IsActive && s.ShouldTriggerToday() &&
                                       s.Time.Hour == now.Hour && s.Time.Minute == now.Minute);
-        }
-
-        // Métodos auxiliares para integração (devem ser implementados via DI ou mocks nos testes)
-        protected virtual bool ExceptionPeriodIsActiveForUser(Guid userId, DateTime date)
-        {
-            // Implementação real deve consultar o repositório de ExceptionPeriod
-            return false;
-        }
-
-        protected virtual Holiday? GetHolidayForDate(DateTime date)
-        {
-            // Implementação real deve consultar o repositório de Holiday
-            return null;
-        }
-
-        protected virtual UserHolidayPreference? GetUserHolidayPreference(Guid userId, Guid holidayId)
-        {
-            // Implementação real deve consultar o repositório de UserHolidayPreference
-            return null;
         }
     }
 }

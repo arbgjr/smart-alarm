@@ -10,18 +10,18 @@ namespace SmartAlarm.Domain.Entities;
 public class UserRole
 {
     public Guid UserId { get; set; }
-    
+
     public Guid RoleId { get; set; }
-    
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    
+
     public DateTime? ExpiresAt { get; set; }
-    
+
     public bool IsActive { get; set; } = true;
-    
+
     // Navegação
     public virtual User User { get; set; } = null!;
-    
+
     public virtual Role Role { get; set; } = null!;
 
     /// <summary>
@@ -39,10 +39,10 @@ public class UserRole
     {
         if (userId == Guid.Empty)
             throw new ArgumentException("UserId não pode ser vazio", nameof(userId));
-        
+
         if (roleId == Guid.Empty)
             throw new ArgumentException("RoleId não pode ser vazio", nameof(roleId));
-        
+
         UserId = userId;
         RoleId = roleId;
         ExpiresAt = expiresAt;
@@ -90,7 +90,7 @@ public class UserRole
     {
         if (expiresAt <= DateTime.UtcNow)
             throw new ArgumentException("Data de expiração deve ser futura", nameof(expiresAt));
-        
+
         ExpiresAt = expiresAt;
     }
 }

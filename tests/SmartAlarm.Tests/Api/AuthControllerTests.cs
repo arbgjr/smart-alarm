@@ -1,3 +1,4 @@
+using SmartAlarm.Domain.Abstractions;
 using Xunit;
 using SmartAlarm.Api.Controllers;
 using SmartAlarm.Application.DTOs.Auth;

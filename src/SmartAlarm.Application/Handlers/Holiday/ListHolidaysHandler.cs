@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 using SmartAlarm.Application.DTOs.Holiday;
 using SmartAlarm.Application.DTOs.Common;
 using SmartAlarm.Application.Queries.Holiday;
-using SmartAlarm.Domain.Abstractions;
+using SmartAlarm.Domain.Repositories;
 using System;
 using System.Diagnostics;
 using SmartAlarm.Observability.Context;

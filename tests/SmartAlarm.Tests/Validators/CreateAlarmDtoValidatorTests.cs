@@ -1,3 +1,4 @@
+using SmartAlarm.Domain.Abstractions;
 using SmartAlarm.Application.DTOs;
 using SmartAlarm.Application.Validators;
 using Xunit;

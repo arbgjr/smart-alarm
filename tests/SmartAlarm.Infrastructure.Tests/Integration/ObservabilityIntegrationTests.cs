@@ -1,3 +1,4 @@
+using SmartAlarm.Domain.Abstractions;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;

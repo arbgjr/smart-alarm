@@ -1,3 +1,4 @@
+using SmartAlarm.Domain.Abstractions;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -61,7 +62,7 @@ namespace SmartAlarm.Infrastructure.Tests.Storage
             return $"-----BEGIN PRIVATE KEY-----\n{Convert.ToBase64String(pkcs8PrivateKey)}\n-----END PRIVATE KEY-----";
         }
 
-        [Fact]
+        [Fact, Category("Integration")]
         public async Task UploadAsync_ValidPath_ShouldCompleteSuccessfully()
         {
             // Arrange
@@ -76,7 +77,7 @@ namespace SmartAlarm.Infrastructure.Tests.Storage
             VerifyLogCalled("OCIUpload");
         }
 
-        [Fact]
+        [Fact, Category("Integration")]
         public async Task DownloadAsync_ValidPath_ShouldReturnStream()
         {
             // Arrange
@@ -90,7 +91,7 @@ namespace SmartAlarm.Infrastructure.Tests.Storage
             VerifyLogCalled("OCIDownload");
         }
 
-        [Fact]
+        [Fact, Category("Integration")]
         public async Task DeleteAsync_ValidPath_ShouldCompleteSuccessfully()
         {
             // Arrange
@@ -104,7 +105,7 @@ namespace SmartAlarm.Infrastructure.Tests.Storage
             VerifyLogCalled("OCIDelete");
         }
 
-        [Fact]
+        [Fact, Category("Integration")]
         public void Constructor_MissingNamespace_ShouldThrowException()
         {
             // Arrange
@@ -139,7 +140,7 @@ namespace SmartAlarm.Infrastructure.Tests.Storage
             activitySource.Dispose();
         }
 
-        [Fact]
+        [Fact, Category("Integration")]
         public void Constructor_MissingBucketName_ShouldThrowException()
         {
             // Arrange

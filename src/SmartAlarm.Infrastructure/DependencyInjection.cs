@@ -228,7 +228,6 @@ namespace SmartAlarm.Infrastructure
                     _ => new Storage.SmartStorageService(
                         provider.GetRequiredService<ILogger<Storage.SmartStorageService>>(),
                         provider.GetRequiredService<ILogger<Storage.MinioStorageService>>(),
-                        provider.GetRequiredService<ILogger<Storage.MockStorageService>>(),
                         configResolver,
                         meter,
                         correlationContext,
@@ -253,8 +252,9 @@ namespace SmartAlarm.Infrastructure
                         provider.GetRequiredService<SmartAlarm.Observability.Tracing.SmartAlarmActivitySource>(),
                         provider.GetRequiredService<ILogger<Observability.OpenTelemetryTracingService>>()
                     ),
-                    _ => new Observability.MockTracingService(
-                        provider.GetRequiredService<ILogger<Observability.MockTracingService>>()
+                    _ => new Observability.OpenTelemetryTracingService(
+                        provider.GetRequiredService<SmartAlarm.Observability.Tracing.SmartAlarmActivitySource>(),
+                        provider.GetRequiredService<ILogger<Observability.OpenTelemetryTracingService>>()
                     )
                 };
             });
@@ -274,8 +274,9 @@ namespace SmartAlarm.Infrastructure
                         provider.GetRequiredService<SmartAlarm.Observability.Metrics.SmartAlarmMeter>(),
                         provider.GetRequiredService<ILogger<Observability.OpenTelemetryMetricsService>>()
                     ),
-                    _ => new Observability.MockMetricsService(
-                        provider.GetRequiredService<ILogger<Observability.MockMetricsService>>()
+                    _ => new Observability.OpenTelemetryMetricsService(
+                        provider.GetRequiredService<SmartAlarm.Observability.Metrics.SmartAlarmMeter>(),
+                        provider.GetRequiredService<ILogger<Observability.OpenTelemetryMetricsService>>()
                     )
                 };
             });

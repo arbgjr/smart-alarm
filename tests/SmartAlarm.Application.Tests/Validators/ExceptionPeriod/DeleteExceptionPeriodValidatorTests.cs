@@ -1,3 +1,4 @@
+using SmartAlarm.Domain.Abstractions;
 using FluentAssertions;
 using FluentValidation;
 using SmartAlarm.Application.Commands.ExceptionPeriod;

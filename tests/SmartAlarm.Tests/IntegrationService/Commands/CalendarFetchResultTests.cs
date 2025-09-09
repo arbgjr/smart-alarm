@@ -1,3 +1,4 @@
+using SmartAlarm.Domain.Abstractions;
 using SmartAlarm.IntegrationService.Application.Commands;
 using System;
 using System.Collections.Generic;

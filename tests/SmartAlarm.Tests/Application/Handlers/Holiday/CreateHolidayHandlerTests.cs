@@ -1,3 +1,4 @@
+using SmartAlarm.Domain.Abstractions;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -5,7 +6,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using SmartAlarm.Application.Commands.Holiday;
 using SmartAlarm.Application.Handlers.Holiday;
-using SmartAlarm.Domain.Abstractions;
+using SmartAlarm.Domain.Repositories;
 using Xunit;
 using FluentAssertions;
 

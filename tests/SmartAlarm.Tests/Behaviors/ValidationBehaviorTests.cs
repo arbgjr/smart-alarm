@@ -1,3 +1,4 @@
+using SmartAlarm.Domain.Abstractions;
 using FluentValidation;
 using FluentValidation.Results;
 using MediatR;

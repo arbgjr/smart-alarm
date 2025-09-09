@@ -43,9 +43,9 @@ namespace SmartAlarm.Domain.Entities
                 throw new ArgumentException("Provedor da integraÃ§Ã£o Ã© obrigatÃ³rio.", nameof(provider));
             if (alarmId == Guid.Empty)
                 throw new ArgumentException("AlarmId Ã© obrigatÃ³rio.", nameof(alarmId));
-            
+
             ValidateConfiguration(configuration);
-            
+
             Id = id == Guid.Empty ? Guid.NewGuid() : id;
             Name = name;
             Provider = provider;
@@ -79,7 +79,7 @@ namespace SmartAlarm.Domain.Entities
         {
             if (!IsActive)
                 throw new InvalidOperationException("NÃ£o Ã© possÃ­vel executar uma integraÃ§Ã£o inativa.");
-            
+
             LastExecutedAt = DateTime.UtcNow;
         }
 
@@ -87,7 +87,7 @@ namespace SmartAlarm.Domain.Entities
         {
             if (string.IsNullOrWhiteSpace(configuration))
                 return; // Configuration can be empty
-            
+
             try
             {
                 JsonDocument.Parse(configuration);

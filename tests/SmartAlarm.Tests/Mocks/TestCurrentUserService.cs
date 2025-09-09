@@ -1,3 +1,4 @@
+using SmartAlarm.Domain.Abstractions;
 using System.Security.Claims;
 using SmartAlarm.Api.Services;
 

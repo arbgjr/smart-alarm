@@ -1,3 +1,4 @@
+using SmartAlarm.Domain.Abstractions;
 using System;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -53,7 +54,7 @@ namespace SmartAlarm.Infrastructure.Tests.UnitOfWork
             _unitOfWork = new EfUnitOfWork(_context, alarmRepository, userRepository, scheduleRepository, routineRepository, integrationRepository);
         }
 
-        [Fact]
+        [Fact, Category("Integration")]
         public async Task UnitOfWork_Should_CoordinateMultipleRepositories()
         {
             // Arrange
@@ -75,7 +76,7 @@ namespace SmartAlarm.Infrastructure.Tests.UnitOfWork
             retrievedAlarm.Name.Value.Should().Be("UoW Alarm");
         }
 
-        [Fact]
+        [Fact, Category("Integration")]
         public async Task UnitOfWork_Should_HandleTransactions()
         {
             // Arrange
@@ -98,8 +99,8 @@ namespace SmartAlarm.Infrastructure.Tests.UnitOfWork
             userAfterCommit.Should().NotBeNull();
         }
 
-        [Fact]
-        // [Fact]
+        [Fact, Category("Integration")]
+        // [Fact, Category("Integration")]
         // public async Task UnitOfWork_Should_RollbackTransactions()
         // {
         //     // Arrange

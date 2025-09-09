@@ -1,3 +1,4 @@
+using SmartAlarm.Domain.Abstractions;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;

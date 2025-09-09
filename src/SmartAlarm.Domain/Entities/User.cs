@@ -19,7 +19,7 @@ namespace SmartAlarm.Domain.Entities
         public DateTime CreatedAt { get; private set; }
         public DateTime? UpdatedAt { get; private set; }
         public DateTime? LastLoginAt { get; private set; }
-        
+
         // OAuth2 external provider support
         public string? ExternalProviderId { get; private set; }
         public string? ExternalProvider { get; private set; }
@@ -34,8 +34,8 @@ namespace SmartAlarm.Domain.Entities
         public virtual ICollection<UserHolidayPreference> HolidayPreferences { get; private set; } = new List<UserHolidayPreference>();
 
         // Private constructor for EF Core
-        private User() 
-        { 
+        private User()
+        {
             Name = null!;
             Email = null!;
         }
@@ -44,7 +44,7 @@ namespace SmartAlarm.Domain.Entities
         {
             if (name == null) throw new ArgumentNullException(nameof(name));
             if (email == null) throw new ArgumentNullException(nameof(email));
-            
+
             Id = id == Guid.Empty ? Guid.NewGuid() : id;
             Name = name;
             Email = email;
@@ -81,7 +81,7 @@ namespace SmartAlarm.Domain.Entities
         {
             if (string.IsNullOrWhiteSpace(passwordHash))
                 throw new ArgumentException("Password hash cannot be null or empty", nameof(passwordHash));
-            
+
             PasswordHash = passwordHash;
             UpdatedAt = DateTime.UtcNow;
         }

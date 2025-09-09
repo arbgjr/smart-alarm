@@ -4,7 +4,7 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 using SmartAlarm.Application.Commands.Holiday;
 using SmartAlarm.Application.DTOs.Holiday;
-using SmartAlarm.Domain.Abstractions;
+using SmartAlarm.Domain.Repositories;
 
 namespace SmartAlarm.Application.Handlers.Holiday
 {

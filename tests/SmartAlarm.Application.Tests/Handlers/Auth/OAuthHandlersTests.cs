@@ -1,3 +1,4 @@
+using SmartAlarm.Domain.Abstractions;
 using FluentAssertions;
 using FluentValidation;
 using Microsoft.Extensions.Logging;
@@ -6,7 +7,7 @@ using SmartAlarm.Application.Commands.Auth;
 using SmartAlarm.Application.DTOs.Auth;
 using SmartAlarm.Application.Handlers.Auth;
 using SmartAlarm.Application.Validators.Auth;
-using SmartAlarm.Domain.Abstractions;
+using SmartAlarm.Domain.Repositories;
 using SmartAlarm.Domain.Entities;
 using SmartAlarm.Domain.Repositories;
 using SmartAlarm.Domain.ValueObjects;

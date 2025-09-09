@@ -1,3 +1,4 @@
+using SmartAlarm.Domain.Abstractions;
 using System.Text;
 using FluentAssertions;
 using SmartAlarm.Application.Commands.Import;

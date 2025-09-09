@@ -1,3 +1,4 @@
+using SmartAlarm.Domain.Abstractions;
 using SmartAlarm.Infrastructure.Messaging;
 using SmartAlarm.Observability.Context;
 using SmartAlarm.Observability.Metrics;

@@ -1,8 +1,9 @@
+using SmartAlarm.Domain.Abstractions;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
-using SmartAlarm.Domain.Abstractions;
+using SmartAlarm.Domain.Repositories;
 using SmartAlarm.Domain.Entities;
 using SmartAlarm.Infrastructure.Data;
 using SmartAlarm.Infrastructure.Repositories.EntityFramework;
@@ -16,6 +17,7 @@ namespace SmartAlarm.Tests.Infrastructure.Repositories;
 /// Testes de integração para EfHolidayRepository
 /// Seguindo padrões estabelecidos no projeto para testes de repositório.
 /// </summary>
+[Trait("Category", "Integration")]
 public class EfHolidayRepositoryTests : IDisposable
 {
     private readonly SmartAlarmDbContext _context;

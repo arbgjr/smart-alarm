@@ -1,3 +1,4 @@
+using SmartAlarm.Domain.Abstractions;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using SmartAlarm.Infrastructure.Storage;

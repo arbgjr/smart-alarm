@@ -16,8 +16,8 @@ namespace SmartAlarm.Domain.Entities
         public virtual ICollection<UserHolidayPreference> UserPreferences { get; private set; } = new List<UserHolidayPreference>();
 
         // Private constructor for EF Core
-        private Holiday() 
-        { 
+        private Holiday()
+        {
             Description = string.Empty;
         }
 

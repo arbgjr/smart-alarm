@@ -16,7 +16,7 @@ namespace SmartAlarm.Domain.Repositories
         Task AddAsync(User user, CancellationToken cancellationToken = default);
         Task UpdateAsync(User user, CancellationToken cancellationToken = default);
         Task DeleteAsync(Guid id);
-        
+
         // OAuth2 specific methods
         Task<User?> FindByEmailAsync(string email, CancellationToken cancellationToken = default);
         Task<User?> FindByExternalProviderAsync(string provider, string providerId, CancellationToken cancellationToken = default);

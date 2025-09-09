@@ -20,8 +20,8 @@ namespace SmartAlarm.Domain.Entities
         public DateTime? UpdatedAt { get; private set; }
 
         // Private constructor for EF Core
-        private ExceptionPeriod() 
-        { 
+        private ExceptionPeriod()
+        {
             Name = string.Empty;
         }
 
@@ -36,7 +36,7 @@ namespace SmartAlarm.Domain.Entities
         /// <param name="userId">ID do usuário proprietário</param>
         /// <param name="description">Descrição opcional</param>
         /// <exception cref="ArgumentException">Quando os parâmetros são inválidos</exception>
-        public ExceptionPeriod(Guid id, string name, DateTime startDate, DateTime endDate, 
+        public ExceptionPeriod(Guid id, string name, DateTime startDate, DateTime endDate,
             ExceptionPeriodType type, Guid userId, string? description = null)
         {
             ValidateParameters(name, startDate, endDate, userId);
