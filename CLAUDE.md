@@ -113,6 +113,23 @@ services/
 - **Assertions**: Use FluentAssertions for readable test assertions
 - **Docker**: Integration tests require `docker compose up -d` for infrastructure
 
+### Testing Architecture Rules (TDD Compliance)
+
+- **Unit Tests**: NEVER test against external services (databases, APIs, file system). Use mocks/stubs only.
+- **Integration Tests**: Test against real infrastructure services (PostgreSQL, Redis, MinIO, etc.)
+- **End-to-End Tests**: Test complete user journeys with full environment running
+- **Rule Violation**: Any test requiring PostgreSQL, external APIs, or file system is NOT a unit test
+
+### Test Categorization Fix Required
+
+Current issue: Many tests labeled as "unit tests" are actually integration tests because they:
+- Use real DbContext with PostgreSQL
+- Connect to MinIO storage
+- Call external OAuth providers
+- Access HashiCorp Vault
+
+These must be recategorized as `[Category("Integration")]` and run with infrastructure active.
+
 ### Frontend Specific
 
 - **PWA Features**: Service worker, offline sync, push notifications
