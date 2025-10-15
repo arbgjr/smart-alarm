@@ -23,7 +23,7 @@
   - Implementar correlation IDs em todos os logs
   - _Requirements: 1.1_
 
-- [ ]\* 1.3 Executar testes de segurança
+- [x] 1.3 Executar testes de segurança
   - Executar análise de vulnerabilidades com dotnet audit
   - Verificar configurações de segurança
   - Validar implementação de autenticação JWT + FIDO2
