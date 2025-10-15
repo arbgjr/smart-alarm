@@ -6,7 +6,7 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 using SmartAlarm.Application.DTOs.Holiday;
 using SmartAlarm.Application.Queries.Holiday;
-using SmartAlarm.Domain.Abstractions;
+using SmartAlarm.Domain.Repositories;
 
 namespace SmartAlarm.Application.Handlers.Holiday
 {
@@ -30,16 +30,20 @@ namespace SmartAlarm.Application.Handlers.Holiday
         {
             _logger.LogInformation("Getting holidays for date: {Date}", request.Date);
 
-            var holidays = await _holidayRepository.GetByDateAsync(DateOnly.FromDateTime(request.Date), cancellationToken);
-
-            var result = holidays.Select(h => new HolidayResponseDto
+            var holiday = await _holidayRepository.GetByDateAsync(request.Date, cancellationToken);
+            
+            var result = new List<HolidayResponseDto>();
+            if (holiday != null)
             {
-                Id = h.Id,
-                Date = h.Date,
-                Description = h.Description,
-                CreatedAt = h.CreatedAt,
-                IsRecurring = h.IsRecurring()
-            }).ToList();
+                result.Add(new HolidayResponseDto
+                {
+                    Id = holiday.Id,
+                    Date = holiday.Date,
+                    Description = holiday.Description,
+                    CreatedAt = holiday.CreatedAt,
+                    IsRecurring = holiday.IsRecurring()
+                });
+            }
 
             _logger.LogInformation("Found {Count} holidays for date {Date}", result.Count, request.Date);
 

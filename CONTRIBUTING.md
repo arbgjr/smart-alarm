@@ -26,17 +26,16 @@ Smart Alarm exists to serve a community that has historically been marginalized 
 
 2. **Install dependencies for all services**
    ```bash
-   # Frontend dependencies
+   # Backend dependencies (.NET 8)
+   dotnet restore SmartAlarm.sln
+   
+   # Frontend dependencies (React PWA)
    cd frontend && npm install && cd ..
    
-   # Go service dependencies
-   cd services/alarm-service && go mod download && cd ../..
-   
-   # Python service dependencies
-   cd services/ai-service && pip install -r requirements.txt && cd ../..
-   
-   # Integration service dependencies
-   cd services/integration-service && npm install && cd ../..
+   # Microservice dependencies (.NET 8)
+   cd services/alarm-service && dotnet restore && cd ../..
+   cd services/ai-service && dotnet restore && cd ../..
+   cd services/integration-service && dotnet restore && cd ../..
    ```
 
 3. **Set up your environment**
@@ -100,14 +99,32 @@ Look for issues labeled `good-first-issue`, `accessibility`, or `neurodivergent-
 - Form designs that prevent errors and guide users toward success
 - Calendar interfaces that accommodate different time-processing styles
 
+### 📱 Frontend Development (React PWA)
+
+**Technologies**: React 18, TypeScript, Vite, TailwindCSS, Zustand, PWA
+
+**What we need**:
+- Accessibility improvements for neurodivergent users
+- PWA features that work reliably offline
+- ML integration that respects user privacy
+- Real-time synchronization across devices
+- Performance optimizations for cognitive load reduction
+
+**Key focus areas**:
+- WCAG AAA compliance with neurodivergent-specific considerations
+- Service worker implementation for reliable offline functionality
+- State management that reduces cognitive overhead
+- Component design that accommodates different interaction patterns
+- Testing strategies that validate accessibility and usability
+
 ### 🔧 Backend Development
 
-**Technologies**: Go (alarm service), Python (AI service), Node.js (integration service)
+**Technologies**: C# (.NET 8), Entity Framework Core, Clean Architecture, Microservices
 
 **What we need**:
 - Performance optimizations for high-frequency alarm operations
-- AI algorithms that recognize neurodivergent behavioral patterns
-- Integration improvements with external calendar and notification systems
+- AI algorithms (ML.NET) that recognize neurodivergent behavioral patterns
+- SignalR integration for real-time multi-device synchronization
 - Security enhancements that protect sensitive health data
 
 **Key focus areas**:
@@ -115,6 +132,7 @@ Look for issues labeled `good-first-issue`, `accessibility`, or `neurodivergent-
 - Machine learning models trained on neurodivergent usage patterns  
 - API design that supports graceful degradation and error recovery
 - Privacy-preserving analytics that benefit users without compromising individual data
+- Serverless architecture optimization for OCI Functions
 
 ### 🔒 Security and Privacy
 
@@ -208,11 +226,15 @@ How does this change affect users with different neurodivergent conditions?
 - Screen reader users: [specific impact]
 
 ## Testing Performed
-- [ ] Unit tests pass
-- [ ] Integration tests pass
-- [ ] Accessibility testing with [tool/method]
-- [ ] Manual testing with [assistive technology if applicable]
-- [ ] Performance testing if relevant
+- [ ] Backend unit tests pass (`dotnet test`)
+- [ ] Frontend unit tests pass (`npm test`)
+- [ ] Integration tests pass (`dotnet test --filter Category=Integration`)
+- [ ] E2E tests pass (`npm run test:e2e`)
+- [ ] Accessibility testing with automated tools and manual validation
+- [ ] PWA functionality tested (offline mode, push notifications)
+- [ ] Cross-device synchronization tested
+- [ ] Performance testing if relevant (Core Web Vitals, API response times)
+- [ ] Manual testing with assistive technology if applicable
 
 ## Documentation Updated
 - [ ] Code comments include accessibility rationale

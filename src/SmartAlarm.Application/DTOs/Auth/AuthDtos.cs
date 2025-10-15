@@ -72,6 +72,10 @@ public class UserDto
     public bool IsActive { get; set; }
     public bool EmailVerified { get; set; }
     public IEnumerable<string> Roles { get; set; } = Enumerable.Empty<string>();
+    
+    // OAuth2 properties
+    public bool HasExternalProvider { get; set; }
+    public string? ExternalProvider { get; set; }
 }
 
 /// <summary>

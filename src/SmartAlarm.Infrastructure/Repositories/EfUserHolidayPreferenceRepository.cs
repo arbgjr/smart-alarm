@@ -6,7 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using SmartAlarm.Domain.Abstractions;
+using SmartAlarm.Domain.Repositories;
 using SmartAlarm.Domain.Entities;
 using SmartAlarm.Infrastructure.Data;
 using SmartAlarm.Observability.Context;
@@ -368,6 +368,56 @@ namespace SmartAlarm.Infrastructure.Repositories
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error counting active holiday preferences for User {UserId}", userId);
+                throw;
+            }
+        }
+
+        public async Task DeleteAllByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
+        {
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            var correlationId = _correlationContext.CorrelationId;
+            
+            using var activity = _activitySource.StartActivity("EfUserHolidayPreferenceRepository.DeleteAllByUserIdAsync");
+            activity?.SetTag("user_id", userId.ToString());
+            activity?.SetTag("correlation.id", correlationId);
+            activity?.SetTag("operation", "DeleteAllByUserIdAsync");
+            activity?.SetTag("table", "UserHolidayPreferences");
+
+            try
+            {
+                _logger.LogDebug(LogTemplates.DatabaseQueryStarted,
+                    "DeleteAllByUserIdAsync", 
+                    "UserHolidayPreferences", 
+                    new { UserId = userId });
+
+                var preferences = await _context.UserHolidayPreferences
+                    .Where(uhp => uhp.UserId == userId)
+                    .ToListAsync(cancellationToken);
+                
+                if (preferences.Any())
+                {
+                    _context.UserHolidayPreferences.RemoveRange(preferences);
+                    await _context.SaveChangesAsync(cancellationToken);
+                }
+                
+                _meter.RecordDatabaseQueryDuration(stopwatch.ElapsedMilliseconds, "DeleteAllByUserIdAsync", "UserHolidayPreferences");
+                activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Ok);
+                
+                _logger.LogDebug(LogTemplates.DatabaseQueryExecuted,
+                    "DeleteAllByUserIdAsync",
+                    stopwatch.ElapsedMilliseconds,
+                    preferences.Count);
+            }
+            catch (Exception ex)
+            {
+                activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Error, ex.Message);
+                _meter.IncrementErrorCount("DATABASE", "UserHolidayPreferences", "QueryError");
+                
+                _logger.LogError(LogTemplates.DatabaseQueryFailed,
+                    "DeleteAllByUserIdAsync",
+                    "UserHolidayPreferences",
+                    stopwatch.ElapsedMilliseconds,
+                    ex.Message);
                 throw;
             }
         }

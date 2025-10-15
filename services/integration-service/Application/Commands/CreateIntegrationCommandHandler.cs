@@ -212,7 +212,7 @@ namespace SmartAlarm.IntegrationService.Application.Commands
             return new CreateIntegrationResponse
             {
                 Id = integration.Id,
-                AlarmId = integration.AlarmId,
+                AlarmId = integration.AlarmId ?? Guid.Empty,
                 Provider = integration.Provider,
                 Configuration = configurationDict,
                 Status = isNewlyCreated ? "Created" : "AlreadyExists",

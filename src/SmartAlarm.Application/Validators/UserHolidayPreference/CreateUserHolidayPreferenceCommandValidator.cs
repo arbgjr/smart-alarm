@@ -1,7 +1,7 @@
 using FluentValidation;
 using SmartAlarm.Application.Commands.UserHolidayPreference;
 using SmartAlarm.Domain.Entities;
-using SmartAlarm.Domain.Abstractions;
+using SmartAlarm.Domain.Repositories;
 
 namespace SmartAlarm.Application.Validators.UserHolidayPreference
 {

@@ -14,6 +14,7 @@
     <!-- Application Framework -->
     <PackageReference Include="MediatR" />
     <PackageReference Include="FluentValidation" />
+    <PackageReference Include="Hangfire.Core" />
     
     <!-- Microsoft Extensions -->
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
@@ -24,7 +25,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SmartAlarm.Domain\SmartAlarm.Domain.csproj" />
-    <ProjectReference Include="..\SmartAlarm.Infrastructure\SmartAlarm.Infrastructure.csproj" />
     <ProjectReference Include="..\SmartAlarm.Observability\SmartAlarm.Observability.csproj" />
   </ItemGroup>
 

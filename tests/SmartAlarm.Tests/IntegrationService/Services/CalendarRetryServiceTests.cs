@@ -1,3 +1,4 @@
+using SmartAlarm.Domain.Abstractions;
 using Microsoft.Extensions.Logging;
 using Moq;
 using SmartAlarm.IntegrationService.Application.Exceptions;

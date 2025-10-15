@@ -23,6 +23,7 @@ namespace SmartAlarm.Infrastructure.Data
         public DbSet<Holiday> Holidays { get; set; }
         public DbSet<ExceptionPeriod> ExceptionPeriods { get; set; }
         public DbSet<UserHolidayPreference> UserHolidayPreferences { get; set; }
+        public DbSet<AlarmEvent> AlarmEvents { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

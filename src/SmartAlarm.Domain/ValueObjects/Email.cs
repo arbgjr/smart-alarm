@@ -18,10 +18,10 @@ namespace SmartAlarm.Domain.ValueObjects
         {
             if (string.IsNullOrWhiteSpace(address))
                 throw new ArgumentException("E-mail nÃ£o pode ser vazio.", nameof(address));
-            
+
             if (!EmailRegex.IsMatch(address))
                 throw new ArgumentException("E-mail invÃ¡lido.", nameof(address));
-            
+
             Address = address;
         }
 

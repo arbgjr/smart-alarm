@@ -1,3 +1,4 @@
+using SmartAlarm.Domain.Abstractions;
 using System;
 using SmartAlarm.Domain.Entities;
 using Xunit;

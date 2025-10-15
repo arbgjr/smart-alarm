@@ -387,6 +387,39 @@ namespace SmartAlarm.Observability.Metrics
 
         #endregion
 
+        #region Generic Counter Methods
+        
+        /// <summary>
+        /// Incrementa um contador genérico
+        /// </summary>
+        /// <param name="counterName">Nome do contador</param>
+        /// <param name="value">Valor a incrementar</param>
+        /// <param name="tags">Tags opcionais</param>
+        public void IncrementCounter(string counterName, long value = 1, params KeyValuePair<string, object?>[] tags)
+        {
+            // Para contadores já definidos, usar os métodos específicos
+            switch (counterName)
+            {
+                case "storage_upload_success":
+                case "storage_download_success":  
+                case "storage_delete_success":
+                case "storage_health_check_success":
+                case "storage_health_check_failed":
+                case "storage_circuit_breaker_reset":
+                    // Usa um contador genérico para storage
+                    var storageCounter = _meter.CreateCounter<long>(counterName, description: $"Storage operation: {counterName}");
+                    storageCounter.Add(value, tags);
+                    break;
+                default:
+                    // Para outros contadores, cria dinamicamente
+                    var counter = _meter.CreateCounter<long>(counterName, description: $"Generic counter: {counterName}");
+                    counter.Add(value, tags);
+                    break;
+            }
+        }
+        
+        #endregion
+
         /// <summary>
         /// Libera recursos
         /// </summary>

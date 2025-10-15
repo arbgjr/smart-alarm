@@ -1,3 +1,4 @@
+using SmartAlarm.Domain.Abstractions;
 using System.Net;
 using System.Text;
 using Microsoft.AspNetCore.Mvc.Testing;

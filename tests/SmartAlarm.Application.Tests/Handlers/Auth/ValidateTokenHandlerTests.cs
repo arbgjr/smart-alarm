@@ -1,3 +1,4 @@
+using SmartAlarm.Domain.Abstractions;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,7 +9,7 @@ using Xunit;
 using SmartAlarm.Application.Handlers.Auth;
 using SmartAlarm.Application.Queries.Auth;
 using SmartAlarm.Application.DTOs.Auth;
-using SmartAlarm.Domain.Abstractions;
+using SmartAlarm.Domain.Repositories;
 using SmartAlarm.Domain.Repositories;
 using SmartAlarm.Domain.Entities;
 using SmartAlarm.Domain.ValueObjects;

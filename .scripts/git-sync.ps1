@@ -8,6 +8,8 @@ foreach ($level in $envVars) {
 $usuario = $env:GITHUB_USERNAME
 $pat = $env:GITHUB_PAT
 
+Clear-Host
+
 #region Mensagem de Commit via Arquivo
 $commitMsgFile = $env:GIT_COMMIT_MSG_FILE
 $msg = $null

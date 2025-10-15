@@ -66,6 +66,15 @@ export GITHUB_PAT="your-personal-access-token"
 export GIT_COMMIT_MSG_FILE="path/to/commit-message.txt"
 ```
 
+```powershell
+# GitHub authentication
+$env:GITHUB_USERNAME = "your-github-username"
+$env:GITHUB_PAT = "your-personal-access-token"
+
+# Optional: Custom commit message file
+$env:GIT_COMMIT_MSG_FILE = "path/to/commit-message.txt"
+```
+
 ### System Requirements
 
 - **Git**: Must be installed and accessible in PATH or common locations

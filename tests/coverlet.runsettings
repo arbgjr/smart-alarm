@@ -4,7 +4,7 @@
     <DataCollectors>
       <DataCollector friendlyName="XPlat code coverage">
         <Configuration>
-          <Format>cobertura</Format>
+          <Format>cobertura,lcov,json,html</Format>
           <Exclude>[*.Tests]*,[*.Mocks]*,[*]*.Program,[*]*Exception</Exclude>
           <Include>[SmartAlarm.*]*</Include>
           <ExcludeByAttribute>Obsolete,GeneratedCodeAttribute,CompilerGeneratedAttribute</ExcludeByAttribute>
@@ -18,6 +18,25 @@
       </DataCollector>
     </DataCollectors>
   </DataCollectionRunSettings>
+  <LoggerRunSettings>
+    <Loggers>
+      <Logger friendlyName="html" enabled="True">
+        <Configuration>
+          <LogFileName>TestResults.html</LogFileName>
+        </Configuration>
+      </Logger>
+      <Logger friendlyName="trx" enabled="True">
+        <Configuration>
+          <LogFileName>TestResults.trx</LogFileName>
+        </Configuration>
+      </Logger>
+      <Logger friendlyName="console" enabled="True">
+        <Configuration>
+          <Verbosity>detailed</Verbosity>
+        </Configuration>
+      </Logger>
+    </Loggers>
+  </LoggerRunSettings>
   <RunConfiguration>
     <MaxCpuCount>0</MaxCpuCount>
     <ResultsDirectory>./TestResults</ResultsDirectory>

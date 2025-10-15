@@ -1,3 +1,4 @@
+using SmartAlarm.Domain.Abstractions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Logging;
 using Moq;

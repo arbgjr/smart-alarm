@@ -9,7 +9,11 @@ using SmartAlarm.Infrastructure.Repositories;
 using SmartAlarm.Infrastructure.Repositories.EntityFramework;
 using SmartAlarm.Infrastructure.Services;
 using SmartAlarm.Infrastructure.Security;
+using SmartAlarm.Infrastructure.Security.OAuth;
 using SmartAlarm.Domain.Abstractions;
+using SmartAlarm.Application.Services;
+using SmartAlarm.Application.Services.External;
+using SmartAlarm.Infrastructure.Services.External;
 
 namespace SmartAlarm.Infrastructure
 {
@@ -47,6 +51,7 @@ namespace SmartAlarm.Infrastructure
                 services.AddScoped<IHolidayRepository, EfHolidayRepository>();
                 services.AddScoped<IUserHolidayPreferenceRepository, EfUserHolidayPreferenceRepository>();
                 services.AddScoped<IExceptionPeriodRepository, EfExceptionPeriodRepository>();
+                services.AddScoped<IAlarmEventRepository, EfAlarmEventRepository>();
             }
             else
             {
@@ -68,6 +73,7 @@ namespace SmartAlarm.Infrastructure
                 services.AddScoped<IHolidayRepository, EfHolidayRepository>();
                 services.AddScoped<IUserHolidayPreferenceRepository, EfUserHolidayPreferenceRepository>();
                 services.AddScoped<IExceptionPeriodRepository, EfExceptionPeriodRepository>();
+                services.AddScoped<IAlarmEventRepository, EfAlarmEventRepository>();
             }
 
             return services.AddCommonInfrastructureServices();
@@ -121,10 +127,23 @@ namespace SmartAlarm.Infrastructure
         /// </summary>
         private static IServiceCollection AddCommonInfrastructureServices(this IServiceCollection services)
         {
+            // Register distributed cache (in-memory for now, Redis in production)
+            services.AddDistributedMemoryCache();
+            
             // Register infrastructure services
             services.AddScoped<IEmailService, LoggingEmailService>();
             services.AddScoped<INotificationService, LoggingNotificationService>();
-            services.AddScoped<IFileParser, CsvFileParser>();
+            // Temporary implementation of IFileParser to resolve DI
+            services.AddScoped<SmartAlarm.Application.Services.IFileParser>(provider => 
+                new TemporaryFileParser());
+            
+            // Register new services for Phase 1 & 2
+            services.AddScoped<IAlarmEventService, AlarmEventService>();
+            services.AddScoped<IHolidayCacheService, HolidayCacheService>();
+            services.AddScoped<ICalendarificService, CalendarificService>();
+            services.AddScoped<IGoogleCalendarService, GoogleCalendarService>();
+            services.AddScoped<ISmartAlarmService, SmartAlarmService>();
+            services.AddScoped<IPatternDetectionService, PatternDetectionService>();
 
             // Register repositories
             services.AddSingleton<Domain.Repositories.IWebhookRepository, Repositories.InMemoryWebhookRepository>();
@@ -227,7 +246,6 @@ namespace SmartAlarm.Infrastructure
                     _ => new Storage.SmartStorageService(
                         provider.GetRequiredService<ILogger<Storage.SmartStorageService>>(),
                         provider.GetRequiredService<ILogger<Storage.MinioStorageService>>(),
-                        provider.GetRequiredService<ILogger<Storage.MockStorageService>>(),
                         configResolver,
                         meter,
                         correlationContext,
@@ -252,8 +270,9 @@ namespace SmartAlarm.Infrastructure
                         provider.GetRequiredService<SmartAlarm.Observability.Tracing.SmartAlarmActivitySource>(),
                         provider.GetRequiredService<ILogger<Observability.OpenTelemetryTracingService>>()
                     ),
-                    _ => new Observability.MockTracingService(
-                        provider.GetRequiredService<ILogger<Observability.MockTracingService>>()
+                    _ => new Observability.OpenTelemetryTracingService(
+                        provider.GetRequiredService<SmartAlarm.Observability.Tracing.SmartAlarmActivitySource>(),
+                        provider.GetRequiredService<ILogger<Observability.OpenTelemetryTracingService>>()
                     )
                 };
             });
@@ -273,8 +292,9 @@ namespace SmartAlarm.Infrastructure
                         provider.GetRequiredService<SmartAlarm.Observability.Metrics.SmartAlarmMeter>(),
                         provider.GetRequiredService<ILogger<Observability.OpenTelemetryMetricsService>>()
                     ),
-                    _ => new Observability.MockMetricsService(
-                        provider.GetRequiredService<ILogger<Observability.MockMetricsService>>()
+                    _ => new Observability.OpenTelemetryMetricsService(
+                        provider.GetRequiredService<SmartAlarm.Observability.Metrics.SmartAlarmMeter>(),
+                        provider.GetRequiredService<ILogger<Observability.OpenTelemetryMetricsService>>()
                     )
                 };
             });
@@ -282,7 +302,44 @@ namespace SmartAlarm.Infrastructure
             // Note: Observability services (SmartAlarmActivitySource and SmartAlarmMeter) are handled by SmartAlarm.Observability package
             // They are registered via AddSmartAlarmObservability() in the API startup configuration, not here in Infrastructure layer
 
+            // Register OAuth2 services
+            services.AddOAuthServices();
+
             return services;
         }
+
+        /// <summary>
+        /// Adiciona serviços OAuth2 para autenticação externa
+        /// </summary>
+        public static IServiceCollection AddOAuthServices(this IServiceCollection services)
+        {
+            // Register HttpClient for OAuth providers
+            services.AddHttpClient<GoogleOAuthProvider>();
+            services.AddHttpClient<GitHubOAuthProvider>();
+            services.AddHttpClient<FacebookOAuthProvider>();
+            services.AddHttpClient<MicrosoftOAuthProvider>();
+
+            // Register OAuth providers
+            services.AddScoped<GoogleOAuthProvider>();
+            services.AddScoped<GitHubOAuthProvider>();
+            services.AddScoped<FacebookOAuthProvider>();
+            services.AddScoped<MicrosoftOAuthProvider>();
+
+            // Register OAuth provider factory
+            services.AddScoped<IOAuthProviderFactory, OAuthProviderFactory>();
+
+            return services;
+        }
+    }
+
+    /// <summary>
+    /// Implementação temporária de IFileParser para resolver DI
+    /// </summary>
+    internal class TemporaryFileParser : SmartAlarm.Application.Services.IFileParser
+    {
+        public bool IsFormatSupported(string fileName) => false;
+        public IEnumerable<string> GetSupportedFormats() => new string[0];
+        public Task<IEnumerable<Domain.Entities.Alarm>> ParseAsync(Stream fileStream, string fileName, CancellationToken cancellationToken = default)
+            => Task.FromResult(Enumerable.Empty<Domain.Entities.Alarm>());
     }
 }

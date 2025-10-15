@@ -275,3 +275,7 @@ uploads/temp/
 temp-files/
 
 coverage-report/
+
+# ===== DEPRECATED & ARCHIVED =====
+# Trash directory for obsolete documentation
+trash/

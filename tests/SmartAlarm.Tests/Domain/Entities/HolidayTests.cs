@@ -1,3 +1,4 @@
+using SmartAlarm.Domain.Abstractions;
 using System;
 using FluentAssertions;
 using SmartAlarm.Domain.Entities;

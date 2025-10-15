@@ -1,3 +1,4 @@
+using SmartAlarm.Domain.Abstractions;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -6,7 +7,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using SmartAlarm.Application.Commands.UserHolidayPreference;
 using SmartAlarm.Application.Handlers.UserHolidayPreference;
-using SmartAlarm.Domain.Abstractions;
+using SmartAlarm.Domain.Repositories;
 using SmartAlarm.Domain.Repositories;
 using SmartAlarm.Domain.Entities;
 using SmartAlarm.Domain.ValueObjects;

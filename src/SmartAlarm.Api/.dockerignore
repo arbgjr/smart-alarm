@@ -1,0 +1,67 @@
+# Build artifacts
+**/bin/
+**/obj/
+**/out/
+**/TestResults/
+
+# IDE files
+**/.vs/
+**/.vscode/
+**/.idea/
+
+# OS files
+**/.DS_Store
+**/Thumbs.db
+
+# Node.js
+**/node_modules/
+**/npm-debug.log
+
+# Logs
+**/logs/
+**/*.log
+
+# Git
+**/.git/
+**/.gitignore
+**/.gitattributes
+
+# Docker
+**/docker-compose*
+**/Dockerfile*
+
+# Documentation
+**/README*.md
+**/CONTRIBUTING.md
+**/LICENSE
+
+# Development scripts
+**/scripts/
+**/*.sh
+**/*.ps1
+
+# Test files
+**/tests/
+**/*test*.json
+
+# CI/CD
+**/.github/
+**/azure-pipelines.yml
+
+# Cache
+**/.nuget/
+**/.dotnet/
+**/packages/
+
+# Environment files
+**/.env*
+**/appsettings.Development.json
+**/appsettings.Local.json
+
+# Memory bank and docs
+**/memory-bank/
+**/docs/
+**/frontend/
+**/infrastructure/
+**/monitoring/
+**/spec/

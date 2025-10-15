@@ -1,3 +1,4 @@
+using SmartAlarm.Domain.Abstractions;
 using System;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -54,7 +55,7 @@ namespace SmartAlarm.Infrastructure.Tests.Repositories
             _alarmRepository = new EfAlarmRepository(_context, logger.Object, meter.Object, correlationContext.Object, activitySource.Object);
         }
 
-        [Fact]
+        [Fact, Category("Integration")]
         public async Task EfUserRepository_Should_AddAndRetrieveUser()
         {
             // Arrange
@@ -73,7 +74,7 @@ namespace SmartAlarm.Infrastructure.Tests.Repositories
             retrievedUser.Email.Address.Should().Be("test@example.com");
         }
 
-        [Fact]
+        [Fact, Category("Integration")]
         public async Task EfUserRepository_Should_FindUserByEmail()
         {
             // Arrange
@@ -89,7 +90,7 @@ namespace SmartAlarm.Infrastructure.Tests.Repositories
             retrievedUser.Email.Address.Should().Be("email@example.com");
         }
 
-        [Fact]
+        [Fact, Category("Integration")]
         public async Task EfAlarmRepository_Should_AddAndRetrieveAlarm()
         {
             // Arrange
@@ -112,7 +113,7 @@ namespace SmartAlarm.Infrastructure.Tests.Repositories
             retrievedAlarm.UserId.Should().Be(userId);
         }
 
-        [Fact]
+        [Fact, Category("Integration")]
         public async Task EfAlarmRepository_Should_GetAlarmsByUserId()
         {
             // Arrange

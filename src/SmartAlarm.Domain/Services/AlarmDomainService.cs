@@ -50,7 +50,7 @@ namespace SmartAlarm.Domain.Services
 
                 // Primeira tentativa: usar método otimizado do repository
                 var alarmsFromRepository = await _alarmRepository.GetDueForTriggeringAsync(now);
-                
+
                 // Se o método otimizado retornar resultados, usar diretamente
                 if (alarmsFromRepository.Any())
                 {
@@ -62,8 +62,8 @@ namespace SmartAlarm.Domain.Services
                 // (Para compatibilidade com implementações que não suportam o método otimizado)
                 _logger.LogDebug("Fallback: checking all enabled alarms for triggering conditions");
                 var allEnabledAlarms = await _alarmRepository.GetAllEnabledAsync();
-                
-                var dueAlarms = allEnabledAlarms.Where(alarm => 
+
+                var dueAlarms = allEnabledAlarms.Where(alarm =>
                 {
                     try
                     {
@@ -76,9 +76,9 @@ namespace SmartAlarm.Domain.Services
                     }
                 }).ToList();
 
-                _logger.LogInformation("Found {Count} alarms due for triggering via fallback method from {Total} enabled alarms", 
+                _logger.LogInformation("Found {Count} alarms due for triggering via fallback method from {Total} enabled alarms",
                     dueAlarms.Count, allEnabledAlarms.Count());
-                
+
                 return dueAlarms;
             }
             catch (Exception ex)

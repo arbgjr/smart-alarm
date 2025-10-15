@@ -1,9 +1,10 @@
+using SmartAlarm.Domain.Abstractions;
 using System.Linq;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using SmartAlarm.Domain.Abstractions;
+using SmartAlarm.Domain.Repositories;
 using SmartAlarm.KeyVault.Tests.Mocks;
 
 namespace SmartAlarm.KeyVault.Tests.Integration

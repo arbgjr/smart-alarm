@@ -1,3 +1,4 @@
+using SmartAlarm.Domain.Abstractions;
 using System.Net;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
@@ -69,7 +70,7 @@ public class AppleCalendarAndCalDAVProvidersTests : IDisposable
 
         // Configurar mock do usuário - retorna sempre um usuário válido
         _mockUserRepository
-            .Setup(r => r.GetByIdAsync(It.IsAny<Guid>()))
+            .Setup(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new SmartAlarm.Domain.Entities.User(
                 Guid.NewGuid(),
                 new SmartAlarm.Domain.ValueObjects.Name("Test User"),
@@ -160,7 +161,7 @@ public class AppleCalendarAndCalDAVProvidersTests : IDisposable
 
         // Act & Assert
         await Assert.ThrowsAsync<FluentValidation.ValidationException>(
-            () => _handler.Handle(command, CancellationToken.None));
+            async () => await _handler.Handle(command, CancellationToken.None));
     }
 
     [Fact]
@@ -271,7 +272,7 @@ public class AppleCalendarAndCalDAVProvidersTests : IDisposable
 
         // Act & Assert
         await Assert.ThrowsAsync<FluentValidation.ValidationException>(
-            () => _handler.Handle(command, CancellationToken.None));
+            async () => await _handler.Handle(command, CancellationToken.None));
     }
 
     [Fact]

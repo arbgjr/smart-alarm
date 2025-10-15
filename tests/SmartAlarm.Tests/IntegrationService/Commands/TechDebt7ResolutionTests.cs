@@ -1,3 +1,4 @@
+using SmartAlarm.Domain.Abstractions;
 using Xunit;
 using FluentAssertions;
 using SmartAlarm.IntegrationService.Application.Commands;

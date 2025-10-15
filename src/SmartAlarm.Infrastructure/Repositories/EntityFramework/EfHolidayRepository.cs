@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using SmartAlarm.Domain.Abstractions;
+using SmartAlarm.Domain.Repositories;
 using SmartAlarm.Domain.Entities;
 using SmartAlarm.Infrastructure.Data;
 using SmartAlarm.Observability.Context;
@@ -406,6 +406,197 @@ public class EfHolidayRepository : IHolidayRepository
 
             _logger.LogError(LogTemplates.DatabaseQueryFailed,
                 "CheckHolidayExists",
+                "Holidays",
+                stopwatch.ElapsedMilliseconds,
+                ex.Message);
+
+            throw;
+        }
+    }
+
+    // Methods to support legacy interface compatibility
+    public async Task<Holiday?> GetByDateAsync(DateTime date, CancellationToken cancellationToken = default)
+    {
+        var holidays = await GetByDateAsync(DateOnly.FromDateTime(date), cancellationToken);
+        return holidays.FirstOrDefault();
+    }
+
+    public async Task<IEnumerable<Holiday>> GetByYearAsync(int year, CancellationToken cancellationToken = default)
+    {
+        using var activity = _activitySource.StartActivity("GetHolidaysByYear");
+        activity?.SetTag("year", year.ToString());
+
+        var stopwatch = Stopwatch.StartNew();
+
+        try
+        {
+            var holidays = await _context.Holidays
+                .Where(h => h.Date.Year == year)
+                .OrderBy(h => h.Date)
+                .ToListAsync(cancellationToken);
+            stopwatch.Stop();
+
+            _meter.RecordDatabaseQueryDuration(stopwatch.ElapsedMilliseconds, "GetByYear", "Holidays");
+            activity?.SetStatus(ActivityStatusCode.Ok);
+            return holidays;
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+            _meter.IncrementErrorCount("DATABASE", "Holidays", "QueryError");
+            throw;
+        }
+    }
+
+    public async Task<IEnumerable<Holiday>> GetByDateRangeAsync(DateTime startDate, DateTime endDate, CancellationToken cancellationToken = default)
+    {
+        using var activity = _activitySource.StartActivity("GetHolidaysByDateRange");
+        activity?.SetTag("start_date", startDate.ToString("yyyy-MM-dd"));
+        activity?.SetTag("end_date", endDate.ToString("yyyy-MM-dd"));
+
+        var stopwatch = Stopwatch.StartNew();
+
+        try
+        {
+            var holidays = await _context.Holidays
+                .Where(h => h.Date.Date >= startDate.Date && h.Date.Date <= endDate.Date)
+                .OrderBy(h => h.Date)
+                .ToListAsync(cancellationToken);
+            stopwatch.Stop();
+
+            _meter.RecordDatabaseQueryDuration(stopwatch.ElapsedMilliseconds, "GetByDateRange", "Holidays");
+            activity?.SetStatus(ActivityStatusCode.Ok);
+            return holidays;
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+            _meter.IncrementErrorCount("DATABASE", "Holidays", "QueryError");
+            throw;
+        }
+    }
+
+    public async Task<IEnumerable<Holiday>> GetByCountryAsync(string country, string? region = null, CancellationToken cancellationToken = default)
+    {
+        using var activity = _activitySource.StartActivity("GetHolidaysByCountry");
+        activity?.SetTag("country", country);
+        activity?.SetTag("region", region);
+
+        var stopwatch = Stopwatch.StartNew();
+
+        try
+        {
+            var query = _context.Holidays.AsQueryable();
+            
+            // Assumindo que Holiday tem propriedades Country e Region
+            // Se não existirem, retorna todos os holidays para compatibilidade
+            var holidays = await query
+                .OrderBy(h => h.Date)
+                .ToListAsync(cancellationToken);
+            stopwatch.Stop();
+
+            _meter.RecordDatabaseQueryDuration(stopwatch.ElapsedMilliseconds, "GetByCountry", "Holidays");
+            activity?.SetStatus(ActivityStatusCode.Ok);
+            return holidays;
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+            _meter.IncrementErrorCount("DATABASE", "Holidays", "QueryError");
+            throw;
+        }
+    }
+
+    public async Task<bool> IsHolidayAsync(DateTime date, string? country = null, CancellationToken cancellationToken = default)
+    {
+        return await ExistsOnDateAsync(DateOnly.FromDateTime(date), cancellationToken);
+    }
+
+    public async Task<Holiday?> GetByDateAndCountryAsync(DateTime date, string country, string? state = null, CancellationToken cancellationToken = default)
+    {
+        using var activity = _activitySource.StartActivity("GetHolidayByDateAndCountry");
+        activity?.SetTag("date", date.ToString("yyyy-MM-dd"));
+        activity?.SetTag("country", country);
+        activity?.SetTag("state", state);
+
+        var stopwatch = Stopwatch.StartNew();
+
+        _logger.LogInformation(LogTemplates.QueryStarted,
+            "GetHolidayByDateAndCountry",
+            new { Date = date, Country = country, State = state });
+
+        try
+        {
+            var dateTime = date.Date;
+            
+            var holiday = await _context.Holidays
+                .Where(h => (h.Date.Date == dateTime.Date || 
+                           (h.Date.Year == 1 && h.Date.Month == dateTime.Month && h.Date.Day == dateTime.Day)))
+                .OrderBy(h => h.Date.Year == 1 ? 0 : 1)
+                .FirstOrDefaultAsync(cancellationToken);
+            stopwatch.Stop();
+
+            _meter.RecordDatabaseQueryDuration(stopwatch.ElapsedMilliseconds, "GetByDateAndCountry", "Holidays");
+
+            _logger.LogInformation(LogTemplates.QueryCompleted,
+                "GetHolidayByDateAndCountry",
+                stopwatch.ElapsedMilliseconds,
+                holiday != null ? 1 : 0);
+
+            activity?.SetStatus(ActivityStatusCode.Ok);
+            return holiday;
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+            _meter.IncrementErrorCount("DATABASE", "Holidays", "QueryError");
+
+            _logger.LogError(LogTemplates.DatabaseQueryFailed,
+                "GetHolidayByDateAndCountry",
+                "Holidays",
+                stopwatch.ElapsedMilliseconds,
+                ex.Message);
+
+            throw;
+        }
+    }
+
+    public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        using var activity = _activitySource.StartActivity("SaveHolidayChanges");
+
+        var stopwatch = Stopwatch.StartNew();
+
+        _logger.LogInformation(LogTemplates.QueryStarted,
+            "SaveHolidayChanges",
+            new { });
+
+        try
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+            stopwatch.Stop();
+
+            _meter.RecordDatabaseQueryDuration(stopwatch.ElapsedMilliseconds, "SaveChanges", "Holidays");
+
+            _logger.LogInformation(LogTemplates.QueryCompleted,
+                "SaveHolidayChanges",
+                stopwatch.ElapsedMilliseconds,
+                "changes saved successfully");
+
+            activity?.SetStatus(ActivityStatusCode.Ok);
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+            _meter.IncrementErrorCount("DATABASE", "Holidays", "SaveError");
+
+            _logger.LogError(LogTemplates.DatabaseQueryFailed,
+                "SaveHolidayChanges",
                 "Holidays",
                 stopwatch.ElapsedMilliseconds,
                 ex.Message);

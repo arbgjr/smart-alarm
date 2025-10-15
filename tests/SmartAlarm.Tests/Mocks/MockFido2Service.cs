@@ -1,4 +1,5 @@
 using SmartAlarm.Domain.Abstractions;
+using SmartAlarm.Domain.Repositories;
 using SmartAlarm.Domain.Entities;
 using SmartAlarm.Domain.ValueObjects;
 

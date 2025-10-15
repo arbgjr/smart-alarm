@@ -15,7 +15,7 @@ namespace SmartAlarm.Infrastructure.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "9.0.7");
+            modelBuilder.HasAnnotation("ProductVersion", "8.0.8");
 
             modelBuilder.Entity("SmartAlarm.Domain.Entities.Alarm", b =>
                 {
@@ -58,107 +58,143 @@ namespace SmartAlarm.Infrastructure.Migrations
                     b.ToTable("Alarms", (string)null);
                 });
 
+            modelBuilder.Entity("SmartAlarm.Domain.Entities.AlarmEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("AlarmId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("DayOfWeek")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("DeviceInfo")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Location")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Metadata")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("SnoozeMinutes")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<TimeOnly>("Time")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AlarmId")
+                        .HasDatabaseName("IX_AlarmEvents_AlarmId");
+
+                    b.HasIndex("EventType")
+                        .HasDatabaseName("IX_AlarmEvents_EventType");
+
+                    b.HasIndex("Timestamp")
+                        .HasDatabaseName("IX_AlarmEvents_Timestamp");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("IX_AlarmEvents_UserId");
+
+                    b.HasIndex("UserId", "Timestamp")
+                        .HasDatabaseName("IX_AlarmEvents_UserId_Timestamp");
+
+                    b.HasIndex("AlarmId", "EventType", "Timestamp")
+                        .HasDatabaseName("IX_AlarmEvents_AlarmId_EventType_Timestamp");
+
+                    b.ToTable("AlarmEvents", (string)null);
+                });
+
             modelBuilder.Entity("SmartAlarm.Domain.Entities.ExceptionPeriod", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasColumnName("Id");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasColumnName("CreatedAt")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Description")
-                        .HasMaxLength(500)
-                        .HasColumnType("TEXT")
-                        .HasColumnName("Description");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("EndDate")
-                        .HasColumnType("date")
-                        .HasColumnName("EndDate");
+                        .HasColumnType("TEXT");
 
                     b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
-                        .HasDefaultValue(true)
-                        .HasColumnName("IsActive");
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT")
-                        .HasColumnName("Name");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("StartDate")
-                        .HasColumnType("date")
-                        .HasColumnName("StartDate");
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("Type")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("Type");
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("UpdatedAt");
+                        .HasColumnType("TEXT");
 
                     b.Property<Guid>("UserId")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("UserId");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId")
-                        .HasDatabaseName("IX_ExceptionPeriods_UserId");
-
-                    b.HasIndex("UserId", "IsActive")
-                        .HasDatabaseName("IX_ExceptionPeriods_UserActive");
-
-                    b.HasIndex("UserId", "Type")
-                        .HasDatabaseName("IX_ExceptionPeriods_UserType");
-
-                    b.HasIndex("UserId", "StartDate", "EndDate")
-                        .HasDatabaseName("IX_ExceptionPeriods_UserDate");
-
-                    b.ToTable("ExceptionPeriods", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_ExceptionPeriods_DateRange", "\"StartDate\" < \"EndDate\"");
-
-                            t.HasCheckConstraint("CK_ExceptionPeriods_DescriptionLength", "\"Description\" IS NULL OR LENGTH(\"Description\") <= 500");
-
-                            t.HasCheckConstraint("CK_ExceptionPeriods_NameLength", "LENGTH(\"Name\") > 0");
-                        });
+                    b.ToTable("ExceptionPeriods");
                 });
 
             modelBuilder.Entity("SmartAlarm.Domain.Entities.Holiday", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasColumnName("Id");
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Country")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("Date")
-                        .HasColumnType("date")
-                        .HasColumnName("Date");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("TEXT")
-                        .HasColumnName("Description");
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("LastSyncedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("State")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Date")
-                        .HasDatabaseName("IX_Holidays_Recurring")
-                        .HasFilter("date(Date) LIKE '0001-%'");
-
-                    b.ToTable("Holidays", (string)null);
+                    b.ToTable("Holidays");
                 });
 
             modelBuilder.Entity("SmartAlarm.Domain.Entities.Integration", b =>
@@ -168,7 +204,11 @@ namespace SmartAlarm.Infrastructure.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("Id");
 
-                    b.Property<Guid>("AlarmId")
+                    b.Property<string>("AccessToken")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("AlarmId")
+                        .IsRequired()
                         .HasColumnType("TEXT")
                         .HasColumnName("AlarmId");
 
@@ -185,9 +225,15 @@ namespace SmartAlarm.Infrastructure.Migrations
                         .HasColumnType("INTEGER")
                         .HasColumnName("IsActive");
 
+                    b.Property<bool>("IsEnabled")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime?>("LastExecutedAt")
                         .HasColumnType("TEXT")
                         .HasColumnName("LastExecutedAt");
+
+                    b.Property<DateTime?>("LastSyncedAt")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -200,6 +246,15 @@ namespace SmartAlarm.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("TEXT")
                         .HasColumnName("Provider");
+
+                    b.Property<string>("RefreshToken")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("TokenExpiresAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
@@ -216,38 +271,26 @@ namespace SmartAlarm.Infrastructure.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasColumnName("Id");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("CreatedAt");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Description")
                         .HasMaxLength(200)
-                        .HasColumnType("TEXT")
-                        .HasColumnName("Description");
+                        .HasColumnType("TEXT");
 
                     b.Property<bool>("IsActive")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("IsActive");
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("TEXT")
-                        .HasColumnName("Name");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("IsActive")
-                        .HasDatabaseName("IX_Roles_IsActive");
-
-                    b.HasIndex("Name")
-                        .IsUnique()
-                        .HasDatabaseName("IX_Roles_Name");
-
-                    b.ToTable("Roles", (string)null);
+                    b.ToTable("Roles");
                 });
 
             modelBuilder.Entity("SmartAlarm.Domain.Entities.Routine", b =>
@@ -333,6 +376,12 @@ namespace SmartAlarm.Infrastructure.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("Id");
 
+                    b.Property<string>("City")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Country")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT")
                         .HasColumnName("CreatedAt");
@@ -344,7 +393,18 @@ namespace SmartAlarm.Infrastructure.Migrations
                         .HasColumnName("Email");
 
                     b.Property<bool>("EmailVerified")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("EmailVerified");
+
+                    b.Property<string>("ExternalProvider")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("ExternalProvider");
+
+                    b.Property<string>("ExternalProviderId")
+                        .HasMaxLength(255)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("ExternalProviderId");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("INTEGER")
@@ -361,17 +421,28 @@ namespace SmartAlarm.Infrastructure.Migrations
                         .HasColumnName("Name");
 
                     b.Property<string>("PasswordHash")
-                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("PasswordHash");
+
+                    b.Property<string>("State")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TimeZone")
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("UpdatedAt");
 
                     b.HasKey("Id");
 
                     b.HasIndex("Email")
                         .IsUnique()
                         .HasDatabaseName("IX_Users_Email");
+
+                    b.HasIndex("ExternalProvider", "ExternalProviderId")
+                        .HasDatabaseName("IX_Users_ExternalProvider");
 
                     b.ToTable("Users", (string)null);
                 });
@@ -433,81 +504,61 @@ namespace SmartAlarm.Infrastructure.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasColumnName("Id");
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("Action")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("Action");
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("CreatedAt");
+                        .HasColumnType("TEXT");
 
                     b.Property<int?>("DelayInMinutes")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("DelayInMinutes");
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("DisableAlarms")
+                        .HasColumnType("INTEGER");
 
                     b.Property<Guid>("HolidayId")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("HolidayId");
+                        .HasColumnType("TEXT");
 
                     b.Property<bool>("IsEnabled")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
-                        .HasDefaultValue(true)
-                        .HasColumnName("IsEnabled");
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("UpdatedAt");
+                        .HasColumnType("TEXT");
 
                     b.Property<Guid>("UserId")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("UserId");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("HolidayId")
-                        .HasDatabaseName("IX_UserHolidayPreferences_HolidayId");
+                    b.HasIndex("HolidayId");
 
-                    b.HasIndex("UserId")
-                        .HasDatabaseName("IX_UserHolidayPreferences_UserId");
+                    b.HasIndex("UserId");
 
-                    b.HasIndex("UserId", "HolidayId")
-                        .IsUnique()
-                        .HasDatabaseName("IX_UserHolidayPreferences_UserId_HolidayId");
-
-                    b.HasIndex("UserId", "IsEnabled")
-                        .HasDatabaseName("IX_UserHolidayPreferences_UserId_IsEnabled");
-
-                    b.ToTable("UserHolidayPreferences", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_UserHolidayPreferences_DelayInMinutes", "(Action != 2) OR (Action = 2 AND DelayInMinutes IS NOT NULL AND DelayInMinutes > 0 AND DelayInMinutes <= 1440)");
-                        });
+                    b.ToTable("UserHolidayPreferences");
                 });
 
             modelBuilder.Entity("SmartAlarm.Domain.Entities.UserRole", b =>
                 {
                     b.Property<Guid>("UserId")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("UserId");
+                        .HasColumnType("TEXT");
 
                     b.Property<Guid>("RoleId")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("RoleId");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT")
-                        .HasColumnName("CreatedAt");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<DateTime?>("ExpiresAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("ExpiresAt");
+                        .HasColumnType("TEXT");
 
                     b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER")
-                        .HasColumnName("IsActive");
+                        .HasDefaultValue(true);
 
                     b.HasKey("UserId", "RoleId");
 
@@ -520,7 +571,21 @@ namespace SmartAlarm.Infrastructure.Migrations
                     b.HasIndex("UserId")
                         .HasDatabaseName("IX_UserRoles_UserId");
 
+                    b.HasIndex("UserId", "IsActive")
+                        .HasDatabaseName("IX_UserRoles_UserId_IsActive");
+
                     b.ToTable("UserRoles", (string)null);
+                });
+
+            modelBuilder.Entity("SmartAlarm.Domain.Entities.AlarmEvent", b =>
+                {
+                    b.HasOne("SmartAlarm.Domain.Entities.Alarm", "Alarm")
+                        .WithMany()
+                        .HasForeignKey("AlarmId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Alarm");
                 });
 
             modelBuilder.Entity("SmartAlarm.Domain.Entities.Integration", b =>
@@ -567,15 +632,13 @@ namespace SmartAlarm.Infrastructure.Migrations
                         .WithMany("UserPreferences")
                         .HasForeignKey("HolidayId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("FK_UserHolidayPreferences_Holidays");
+                        .IsRequired();
 
                     b.HasOne("SmartAlarm.Domain.Entities.User", "User")
                         .WithMany("HolidayPreferences")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("FK_UserHolidayPreferences_Users");
+                        .IsRequired();
 
                     b.Navigation("Holiday");
 

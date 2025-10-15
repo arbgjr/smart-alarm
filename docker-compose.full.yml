@@ -1,0 +1,487 @@
+version: '3.8'
+
+networks:
+  smartalarm-network:
+    driver: bridge
+  smartalarm-monitoring:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  postgres_backup:
+  redis_data:
+  rabbitmq_data:
+  minio_data:
+  vault_data:
+  prometheus_data:
+  grafana_data:
+  alertmanager_data:
+  loki_data:
+  tempo_data:
+  jaeger_data:
+
+services:
+  # =================================
+  # CORE DATABASE
+  # =================================
+  postgres-primary:
+    image: postgres:15-alpine
+    container_name: smartalarm-postgres-primary
+    environment:
+      POSTGRES_DB: smartalarm
+      POSTGRES_USER: smartalarm
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-smartalarm123}
+      POSTGRES_REPLICATION_MODE: master
+      POSTGRES_REPLICATION_USER: replicator
+      POSTGRES_REPLICATION_PASSWORD: ${REPLICATION_PASSWORD:-replicator123}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/db/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    ports:
+      - "5432:5432"
+    networks:
+      - smartalarm-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smartalarm -d smartalarm"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  postgres-replica:
+    image: postgres:15-alpine
+    container_name: smartalarm-postgres-replica
+    environment:
+      POSTGRES_REPLICATION_MODE: slave
+      POSTGRES_MASTER_HOST: postgres-primary
+      POSTGRES_MASTER_PORT: 5432
+      POSTGRES_USER: smartalarm
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-smartalarm123}
+    volumes:
+      - postgres_backup:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    networks:
+      - smartalarm-network
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # =================================
+  # CACHE & SESSION
+  # =================================
+  redis-master:
+    image: redis:7-alpine
+    container_name: smartalarm-redis-master
+    command: redis-server --requirepass ${REDIS_PASSWORD:-redis123} --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - smartalarm-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis-sentinel:
+    image: redis:7-alpine
+    container_name: smartalarm-redis-sentinel
+    command: redis-sentinel /etc/redis/sentinel.conf
+    volumes:
+      - ./config/redis/sentinel.conf:/etc/redis/sentinel.conf:ro
+    ports:
+      - "26379:26379"
+    networks:
+      - smartalarm-network
+    depends_on:
+      redis-master:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # =================================
+  # MESSAGE QUEUE
+  # =================================
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: smartalarm-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-smartalarm}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-rabbitmq123}
+      RABBITMQ_DEFAULT_VHOST: smartalarm
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - smartalarm-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # =================================
+  # OBJECT STORAGE
+  # =================================
+  minio:
+    image: minio/minio:latest
+    container_name: smartalarm-minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin123}
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    command: server /data --console-address ":9001"
+    networks:
+      - smartalarm-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # =================================
+  # SECRETS MANAGEMENT
+  # =================================
+  vault:
+    image: vault:latest
+    container_name: smartalarm-vault
+    cap_add:
+      - IPC_LOCK
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_TOKEN:-vault-dev-token}
+      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+    volumes:
+      - vault_data:/vault/data
+    ports:
+      - "8200:8200"
+    networks:
+      - smartalarm-network
+    restart: unless-stopped
+
+  # =================================
+  # APPLICATION SERVICES
+  # =================================
+  smartalarm-api:
+    build:
+      context: .
+      dockerfile: src/SmartAlarm.Api/Dockerfile
+    container_name: smartalarm-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "Host=postgres-primary;Database=smartalarm;Username=smartalarm;Password=${DB_PASSWORD:-smartalarm123}"
+      Redis__ConnectionString: "redis-master:6379,password=${REDIS_PASSWORD:-redis123}"
+      RabbitMQ__Host: rabbitmq
+      RabbitMQ__Username: ${RABBITMQ_USER:-smartalarm}
+      RabbitMQ__Password: ${RABBITMQ_PASSWORD:-rabbitmq123}
+      Storage__MinIO__Endpoint: minio:9000
+      Storage__MinIO__AccessKey: ${MINIO_ACCESS_KEY:-minioadmin}
+      Storage__MinIO__SecretKey: ${MINIO_SECRET_KEY:-minioadmin123}
+      Vault__Address: http://vault:8200
+      Vault__Token: ${VAULT_TOKEN:-vault-dev-token}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
+    ports:
+      - "5000:80"
+    networks:
+      - smartalarm-network
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+      redis-master:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    restart: unless-stopped
+
+  smartalarm-ai-service:
+    build:
+      context: .
+      dockerfile: services/ai-service/Dockerfile
+    container_name: smartalarm-ai-service
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "Host=postgres-primary;Database=smartalarm;Username=smartalarm;Password=${DB_PASSWORD:-smartalarm123}"
+      Redis__ConnectionString: "redis-master:6379,password=${REDIS_PASSWORD:-redis123}"
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
+    ports:
+      - "5001:80"
+    networks:
+      - smartalarm-network
+    depends_on:
+      - smartalarm-api
+    restart: unless-stopped
+
+  smartalarm-integration-service:
+    build:
+      context: .
+      dockerfile: services/integration-service/Dockerfile
+    container_name: smartalarm-integration-service
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "Host=postgres-primary;Database=smartalarm;Username=smartalarm;Password=${DB_PASSWORD:-smartalarm123}"
+      RabbitMQ__Host: rabbitmq
+      RabbitMQ__Username: ${RABBITMQ_USER:-smartalarm}
+      RabbitMQ__Password: ${RABBITMQ_PASSWORD:-rabbitmq123}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
+    ports:
+      - "5002:80"
+    networks:
+      - smartalarm-network
+    depends_on:
+      - smartalarm-api
+    restart: unless-stopped
+
+  smartalarm-alarm-service:
+    build:
+      context: .
+      dockerfile: services/alarm-service/Dockerfile
+    container_name: smartalarm-alarm-service
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "Host=postgres-primary;Database=smartalarm;Username=smartalarm;Password=${DB_PASSWORD:-smartalarm123}"
+      Redis__ConnectionString: "redis-master:6379,password=${REDIS_PASSWORD:-redis123}"
+      RabbitMQ__Host: rabbitmq
+      RabbitMQ__Username: ${RABBITMQ_USER:-smartalarm}
+      RabbitMQ__Password: ${RABBITMQ_PASSWORD:-rabbitmq123}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
+    ports:
+      - "5003:80"
+    networks:
+      - smartalarm-network
+    depends_on:
+      - smartalarm-api
+    restart: unless-stopped
+
+  # =================================
+  # FRONTEND
+  # =================================
+  smartalarm-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: smartalarm-frontend
+    environment:
+      VITE_API_BASE_URL: http://smartalarm-api
+      VITE_WS_URL: ws://smartalarm-api/hubs
+    ports:
+      - "3001:80"
+    networks:
+      - smartalarm-network
+    depends_on:
+      - smartalarm-api
+    restart: unless-stopped
+
+  # =================================
+  # OBSERVABILITY - METRICS
+  # =================================
+  prometheus:
+    image: prom/prometheus:v2.45.0
+    container_name: smartalarm-prometheus
+    volumes:
+      - ./infrastructure/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./infrastructure/monitoring/prometheus/alerts:/etc/prometheus/alerts:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+    ports:
+      - "9090:9090"
+    networks:
+      - smartalarm-monitoring
+      - smartalarm-network
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:10.0.3
+    container_name: smartalarm-grafana
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-grafana123}
+      GF_USERS_ALLOW_SIGN_UP: false
+      GF_INSTALL_PLUGINS: grafana-piechart-panel,grafana-worldmap-panel,redis-datasource
+      GF_FEATURE_TOGGLES_ENABLE: ngalert
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infrastructure/monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./infrastructure/monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    ports:
+      - "3000:3000"
+    networks:
+      - smartalarm-monitoring
+      - smartalarm-network
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+  alertmanager:
+    image: prom/alertmanager:v0.25.0
+    container_name: smartalarm-alertmanager
+    volumes:
+      - ./infrastructure/monitoring/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    ports:
+      - "9093:9093"
+    networks:
+      - smartalarm-monitoring
+      - smartalarm-network
+    restart: unless-stopped
+
+  # =================================
+  # OBSERVABILITY - TRACING
+  # =================================
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: smartalarm-jaeger
+    environment:
+      COLLECTOR_OTLP_ENABLED: true
+      SPAN_STORAGE_TYPE: badger
+      BADGER_EPHEMERAL: false
+      BADGER_DIRECTORY_VALUE: /badger/data
+      BADGER_DIRECTORY_KEY: /badger/key
+    volumes:
+      - jaeger_data:/badger
+    ports:
+      - "16686:16686"  # Jaeger UI
+      - "4317:4317"    # OTLP gRPC
+      - "4318:4318"    # OTLP HTTP
+      - "14250:14250"  # Jaeger gRPC
+    networks:
+      - smartalarm-monitoring
+      - smartalarm-network
+    restart: unless-stopped
+
+  # =================================
+  # OBSERVABILITY - LOGGING
+  # =================================
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: smartalarm-loki
+    volumes:
+      - ./infrastructure/monitoring/loki/loki.yml:/etc/loki/loki.yml:ro
+      - loki_data:/loki
+    command: -config.file=/etc/loki/loki.yml
+    ports:
+      - "3100:3100"
+    networks:
+      - smartalarm-monitoring
+      - smartalarm-network
+    restart: unless-stopped
+
+  promtail:
+    image: grafana/promtail:2.9.0
+    container_name: smartalarm-promtail
+    volumes:
+      - ./infrastructure/monitoring/promtail/promtail.yml:/etc/promtail/promtail.yml:ro
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    command: -config.file=/etc/promtail/promtail.yml
+    networks:
+      - smartalarm-monitoring
+      - smartalarm-network
+    depends_on:
+      - loki
+    restart: unless-stopped
+
+  # =================================
+  # OBSERVABILITY - APM
+  # =================================
+  tempo:
+    image: grafana/tempo:latest
+    container_name: smartalarm-tempo
+    volumes:
+      - ./infrastructure/monitoring/tempo/tempo.yml:/etc/tempo/tempo.yml:ro
+      - tempo_data:/tmp/tempo
+    command: ["-config.file=/etc/tempo/tempo.yml"]
+    ports:
+      - "3200:3200"   # Tempo UI
+      - "9095:9095"   # Tempo gRPC
+    networks:
+      - smartalarm-monitoring
+      - smartalarm-network
+    restart: unless-stopped
+
+  # =================================
+  # MANAGEMENT TOOLS
+  # =================================
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: smartalarm-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@smartalarm.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-pgadmin123}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    networks:
+      - smartalarm-network
+    depends_on:
+      - postgres-primary
+    restart: unless-stopped
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: smartalarm-redis-commander
+    environment:
+      REDIS_HOSTS: "local:redis-master:6379:0:${REDIS_PASSWORD:-redis123}"
+    ports:
+      - "8081:8081"
+    networks:
+      - smartalarm-network
+    depends_on:
+      - redis-master
+    restart: unless-stopped
+
+  # =================================
+  # API DOCUMENTATION
+  # =================================
+  swagger-ui:
+    image: swaggerapi/swagger-ui:latest
+    container_name: smartalarm-swagger
+    environment:
+      SWAGGER_JSON_URL: http://smartalarm-api/swagger/v1/swagger.json
+      BASE_URL: /swagger
+    ports:
+      - "8080:8080"
+    networks:
+      - smartalarm-network
+    depends_on:
+      - smartalarm-api
+    restart: unless-stopped
+
+  # =================================
+  # HEALTH DASHBOARD
+  # =================================
+  health-dashboard:
+    image: grafana/grafana:10.0.3
+    container_name: smartalarm-health-dashboard
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${HEALTH_PASSWORD:-health123}
+      GF_USERS_ALLOW_SIGN_UP: false
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /etc/grafana/dashboards/health.json
+      GF_AUTH_ANONYMOUS_ENABLED: true
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+    volumes:
+      - ./infrastructure/monitoring/health-dashboard:/etc/grafana/dashboards:ro
+    ports:
+      - "3003:3000"
+    networks:
+      - smartalarm-monitoring
+      - smartalarm-network
+    restart: unless-stopped
