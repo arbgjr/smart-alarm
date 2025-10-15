@@ -24,7 +24,7 @@ namespace SmartAlarm.Infrastructure.Repositories
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task<Alarm?> GetByIdAsync(Guid id)
+        public async Task<Alarm?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         {
             const string sql = @"SELECT * FROM Alarms WHERE Id = :Id";
             try
@@ -80,15 +80,15 @@ namespace SmartAlarm.Infrastructure.Repositories
             const string sql = @"
                 SELECT a.* FROM Alarms a
                 INNER JOIN Schedules s ON a.Id = s.AlarmId
-                WHERE a.Enabled = 1 
+                WHERE a.Enabled = 1
                 AND s.IsActive = 1
                 AND EXTRACT(HOUR FROM s.Time) = :Hour
                 AND EXTRACT(MINUTE FROM s.Time) = :Minute
                 AND (
-                    (s.DaysOfWeek IS NULL) OR 
+                    (s.DaysOfWeek IS NULL) OR
                     (s.DaysOfWeek LIKE '%' || :DayOfWeek || '%')
                 )";
-            
+
             try
             {
                 using var connection = new OracleConnection(_connectionString);
@@ -98,7 +98,7 @@ namespace SmartAlarm.Infrastructure.Repositories
                     Minute = now.Minute,
                     DayOfWeek = ((int)now.DayOfWeek).ToString()
                 };
-                
+
                 var alarms = await connection.QueryAsync<Alarm>(sql, parameters);
                 _logger.LogDebug("Found {Count} alarms due for triggering at {Time}", alarms.Count(), now);
                 return alarms;
@@ -110,7 +110,35 @@ namespace SmartAlarm.Infrastructure.Repositories
             }
         }
 
-        public async Task AddAsync(Alarm alarm)
+        public async Task<IEnumerable<Alarm>> GetMissedAlarmsAsync(DateTime cutoffTime, CancellationToken cancellationToken = default)
+        {
+            const string sql = @"
+                SELECT a.* FROM Alarms a
+                INNER JOIN Schedules s ON a.Id = s.AlarmId
+                WHERE a.Enabled = 1
+                AND s.IsActive = 1
+                AND s.Time < :CutoffTime
+                AND NOT EXISTS (
+                    SELECT 1 FROM AlarmEvents ae
+                    WHERE ae.AlarmId = a.Id
+                    AND ae.TriggeredAt >= :CutoffTime - INTERVAL '1' DAY
+                )";
+
+            try
+            {
+                using var connection = new OracleConnection(_connectionString);
+                var alarms = await connection.QueryAsync<Alarm>(sql, new { CutoffTime = cutoffTime });
+                _logger.LogDebug("Found {Count} missed alarms before {CutoffTime}", alarms.Count(), cutoffTime);
+                return alarms;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching missed alarms before {CutoffTime}", cutoffTime);
+                throw;
+            }
+        }
+
+        public async Task AddAsync(Alarm alarm, CancellationToken cancellationToken = default)
         {
             const string sql = @"INSERT INTO Alarms (Id, Name, Time, Enabled, UserId) VALUES (:Id, :Name, :Time, :Enabled, :UserId)";
             try
@@ -132,7 +160,7 @@ namespace SmartAlarm.Infrastructure.Repositories
             }
         }
 
-        public async Task UpdateAsync(Alarm alarm)
+        public async Task UpdateAsync(Alarm alarm, CancellationToken cancellationToken = default)
         {
             const string sql = @"UPDATE Alarms SET Name = :Name, Time = :Time, Enabled = :Enabled WHERE Id = :Id";
             try

@@ -39,22 +39,22 @@ namespace SmartAlarm.Infrastructure.Repositories.EntityFramework
             _activitySource = activitySource ?? throw new ArgumentNullException(nameof(activitySource));
         }
 
-        public async Task<Alarm?> GetByIdAsync(Guid id)
+        public async Task<Alarm?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         {
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             var correlationId = _correlationContext.CorrelationId;
-            
+
             using var activity = _activitySource.StartActivity("EfAlarmRepository.GetByIdAsync");
             activity?.SetTag("alarm.id", id.ToString());
             activity?.SetTag("correlation.id", correlationId);
             activity?.SetTag("operation", "GetByIdAsync");
             activity?.SetTag("table", "Alarms");
-            
+
             try
             {
                 _logger.LogDebug(LogTemplates.DatabaseQueryStarted,
-                    "GetByIdAsync", 
-                    "Alarms", 
+                    "GetByIdAsync",
+                    "Alarms",
                     new { AlarmId = id });
 
                 var result = await _context.Alarms
@@ -65,7 +65,7 @@ namespace SmartAlarm.Infrastructure.Repositories.EntityFramework
 
                 _meter.RecordDatabaseQueryDuration(stopwatch.ElapsedMilliseconds, "GetByIdAsync", "Alarms");
                 activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Ok);
-                
+
                 _logger.LogDebug(LogTemplates.DatabaseQueryExecuted,
                     "GetByIdAsync",
                     stopwatch.ElapsedMilliseconds,
@@ -77,13 +77,13 @@ namespace SmartAlarm.Infrastructure.Repositories.EntityFramework
             {
                 activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Error, ex.Message);
                 _meter.IncrementErrorCount("DATABASE", "Alarms", "QueryError");
-                
+
                 _logger.LogError(LogTemplates.DatabaseQueryFailed,
                     "GetByIdAsync",
-                    "Alarms", 
+                    "Alarms",
                     stopwatch.ElapsedMilliseconds,
                     ex.Message);
-                
+
                 throw;
             }
         }
@@ -92,18 +92,18 @@ namespace SmartAlarm.Infrastructure.Repositories.EntityFramework
         {
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             var correlationId = _correlationContext.CorrelationId;
-            
+
             using var activity = _activitySource.StartActivity("EfAlarmRepository.GetByUserIdAsync");
             activity?.SetTag("user.id", userId.ToString());
             activity?.SetTag("correlation.id", correlationId);
             activity?.SetTag("operation", "GetByUserIdAsync");
             activity?.SetTag("table", "Alarms");
-            
+
             try
             {
                 _logger.LogDebug(LogTemplates.DatabaseQueryStarted,
-                    "GetByUserIdAsync", 
-                    "Alarms", 
+                    "GetByUserIdAsync",
+                    "Alarms",
                     new { UserId = userId });
 
                 var result = await _context.Alarms
@@ -116,7 +116,7 @@ namespace SmartAlarm.Infrastructure.Repositories.EntityFramework
                 _meter.RecordDatabaseQueryDuration(stopwatch.ElapsedMilliseconds, "GetByUserIdAsync", "Alarms");
                 activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Ok);
                 activity?.SetTag("result.count", result.Count());
-                
+
                 _logger.LogDebug(LogTemplates.DatabaseQueryExecuted,
                     "GetByUserIdAsync",
                     stopwatch.ElapsedMilliseconds,
@@ -128,41 +128,41 @@ namespace SmartAlarm.Infrastructure.Repositories.EntityFramework
             {
                 activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Error, ex.Message);
                 _meter.IncrementErrorCount("DATABASE", "Alarms", "QueryError");
-                
+
                 _logger.LogError(LogTemplates.DatabaseQueryFailed,
                     "GetByUserIdAsync",
-                    "Alarms", 
+                    "Alarms",
                     stopwatch.ElapsedMilliseconds,
                     ex.Message);
-                
+
                 throw;
             }
         }
 
-        public async Task AddAsync(Alarm alarm)
+        public async Task AddAsync(Alarm alarm, CancellationToken cancellationToken = default)
         {
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             var correlationId = _correlationContext.CorrelationId;
-            
+
             using var activity = _activitySource.StartActivity("EfAlarmRepository.AddAsync");
             activity?.SetTag("alarm.id", alarm.Id.ToString());
             activity?.SetTag("user.id", alarm.UserId.ToString());
             activity?.SetTag("correlation.id", correlationId);
             activity?.SetTag("operation", "AddAsync");
             activity?.SetTag("table", "Alarms");
-            
+
             try
             {
                 _logger.LogDebug(LogTemplates.DatabaseQueryStarted,
-                    "AddAsync", 
-                    "Alarms", 
+                    "AddAsync",
+                    "Alarms",
                     new { AlarmId = alarm.Id, UserId = alarm.UserId });
 
                 await _context.Alarms.AddAsync(alarm);
 
                 _meter.RecordDatabaseQueryDuration(stopwatch.ElapsedMilliseconds, "AddAsync", "Alarms");
                 activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Ok);
-                
+
                 _logger.LogDebug(LogTemplates.DatabaseQueryExecuted,
                     "AddAsync",
                     stopwatch.ElapsedMilliseconds,
@@ -172,41 +172,41 @@ namespace SmartAlarm.Infrastructure.Repositories.EntityFramework
             {
                 activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Error, ex.Message);
                 _meter.IncrementErrorCount("DATABASE", "Alarms", "InsertError");
-                
+
                 _logger.LogError(LogTemplates.DatabaseQueryFailed,
                     "AddAsync",
-                    "Alarms", 
+                    "Alarms",
                     stopwatch.ElapsedMilliseconds,
                     ex.Message);
-                
+
                 throw;
             }
         }
 
-        public Task UpdateAsync(Alarm alarm)
+        public Task UpdateAsync(Alarm alarm, CancellationToken cancellationToken = default)
         {
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             var correlationId = _correlationContext.CorrelationId;
-            
+
             using var activity = _activitySource.StartActivity("EfAlarmRepository.UpdateAsync");
             activity?.SetTag("alarm.id", alarm.Id.ToString());
             activity?.SetTag("user.id", alarm.UserId.ToString());
             activity?.SetTag("correlation.id", correlationId);
             activity?.SetTag("operation", "UpdateAsync");
             activity?.SetTag("table", "Alarms");
-            
+
             try
             {
                 _logger.LogDebug(LogTemplates.DatabaseQueryStarted,
-                    "UpdateAsync", 
-                    "Alarms", 
+                    "UpdateAsync",
+                    "Alarms",
                     new { AlarmId = alarm.Id, UserId = alarm.UserId });
 
                 _context.Alarms.Update(alarm);
 
                 _meter.RecordDatabaseQueryDuration(stopwatch.ElapsedMilliseconds, "UpdateAsync", "Alarms");
                 activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Ok);
-                
+
                 _logger.LogDebug(LogTemplates.DatabaseQueryExecuted,
                     "UpdateAsync",
                     stopwatch.ElapsedMilliseconds,
@@ -218,13 +218,13 @@ namespace SmartAlarm.Infrastructure.Repositories.EntityFramework
             {
                 activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Error, ex.Message);
                 _meter.IncrementErrorCount("DATABASE", "Alarms", "UpdateError");
-                
+
                 _logger.LogError(LogTemplates.DatabaseQueryFailed,
                     "UpdateAsync",
-                    "Alarms", 
+                    "Alarms",
                     stopwatch.ElapsedMilliseconds,
                     ex.Message);
-                
+
                 throw;
             }
         }
@@ -233,17 +233,17 @@ namespace SmartAlarm.Infrastructure.Repositories.EntityFramework
         {
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             var correlationId = _correlationContext.CorrelationId;
-            
+
             using var activity = _activitySource.StartActivity("EfAlarmRepository.GetAllEnabledAsync");
             activity?.SetTag("correlation.id", correlationId);
             activity?.SetTag("operation", "GetAllEnabledAsync");
             activity?.SetTag("table", "Alarms");
-            
+
             try
             {
                 _logger.LogDebug(LogTemplates.DatabaseQueryStarted,
-                    "GetAllEnabledAsync", 
-                    "Alarms", 
+                    "GetAllEnabledAsync",
+                    "Alarms",
                     new { });
 
                 var result = await _context.Alarms
@@ -256,7 +256,7 @@ namespace SmartAlarm.Infrastructure.Repositories.EntityFramework
                 _meter.RecordDatabaseQueryDuration(stopwatch.ElapsedMilliseconds, "GetAllEnabledAsync", "Alarms");
                 activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Ok);
                 activity?.SetTag("result.count", result.Count);
-                
+
                 _logger.LogDebug(LogTemplates.DatabaseQueryExecuted,
                     "GetAllEnabledAsync",
                     stopwatch.ElapsedMilliseconds,
@@ -268,13 +268,13 @@ namespace SmartAlarm.Infrastructure.Repositories.EntityFramework
             {
                 activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Error, ex.Message);
                 _meter.IncrementErrorCount("DATABASE", "Alarms", "QueryError");
-                
+
                 _logger.LogError(LogTemplates.DatabaseQueryFailed,
                     "GetAllEnabledAsync",
-                    "Alarms", 
+                    "Alarms",
                     stopwatch.ElapsedMilliseconds,
                     ex.Message);
-                
+
                 throw;
             }
         }
@@ -283,18 +283,18 @@ namespace SmartAlarm.Infrastructure.Repositories.EntityFramework
         {
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             var correlationId = _correlationContext.CorrelationId;
-            
+
             using var activity = _activitySource.StartActivity("EfAlarmRepository.GetDueForTriggeringAsync");
             activity?.SetTag("correlation.id", correlationId);
             activity?.SetTag("operation", "GetDueForTriggeringAsync");
             activity?.SetTag("table", "Alarms");
             activity?.SetTag("query.time", now.ToString("HH:mm"));
-            
+
             try
             {
                 _logger.LogDebug(LogTemplates.DatabaseQueryStarted,
-                    "GetDueForTriggeringAsync", 
-                    "Alarms", 
+                    "GetDueForTriggeringAsync",
+                    "Alarms",
                     new { Time = now });
 
                 // Query otimizada para buscar alarmes que devem ser disparados agora
@@ -302,14 +302,14 @@ namespace SmartAlarm.Infrastructure.Repositories.EntityFramework
                     .Include(a => a.Schedules)
                     .Include(a => a.Routines)
                     .Include(a => a.Integrations)
-                    .Where(a => a.Enabled && 
+                    .Where(a => a.Enabled &&
                                a.Schedules.Any(s => s.IsActive &&
                                                    s.Time.Hour == now.Hour &&
                                                    s.Time.Minute == now.Minute))
                     .ToListAsync();
 
                 // Filtro adicional em memória para validar regras de negócio complexas
-                var dueAlarms = result.Where(alarm => 
+                var dueAlarms = result.Where(alarm =>
                 {
                     try
                     {
@@ -326,7 +326,7 @@ namespace SmartAlarm.Infrastructure.Repositories.EntityFramework
                 activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Ok);
                 activity?.SetTag("result.count", dueAlarms.Count);
                 activity?.SetTag("candidates.count", result.Count);
-                
+
                 _logger.LogDebug(LogTemplates.DatabaseQueryExecuted,
                     "GetDueForTriggeringAsync",
                     stopwatch.ElapsedMilliseconds,
@@ -338,13 +338,65 @@ namespace SmartAlarm.Infrastructure.Repositories.EntityFramework
             {
                 activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Error, ex.Message);
                 _meter.IncrementErrorCount("DATABASE", "Alarms", "QueryError");
-                
+
                 _logger.LogError(LogTemplates.DatabaseQueryFailed,
                     "GetDueForTriggeringAsync",
-                    "Alarms", 
+                    "Alarms",
                     stopwatch.ElapsedMilliseconds,
                     ex.Message);
-                
+
+                throw;
+            }
+        }
+
+        public async Task<IEnumerable<Alarm>> GetMissedAlarmsAsync(DateTime cutoffTime, CancellationToken cancellationToken = default)
+        {
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            var correlationId = _correlationContext.CorrelationId;
+
+            using var activity = _activitySource.StartActivity("EfAlarmRepository.GetMissedAlarmsAsync");
+            activity?.SetTag("correlation.id", correlationId);
+            activity?.SetTag("operation", "GetMissedAlarmsAsync");
+            activity?.SetTag("table", "Alarms");
+            activity?.SetTag("cutoff.time", cutoffTime.ToString("yyyy-MM-dd HH:mm:ss"));
+
+            try
+            {
+                _logger.LogDebug(LogTemplates.DatabaseQueryStarted,
+                    "GetMissedAlarmsAsync",
+                    "Alarms",
+                    new { CutoffTime = cutoffTime });
+
+                var result = await _context.Alarms
+                    .Include(a => a.Schedules)
+                    .Include(a => a.Routines)
+                    .Include(a => a.Integrations)
+                    .Where(a => a.Enabled &&
+                               a.Schedules.Any(s => s.IsActive && s.Time < cutoffTime.TimeOfDay))
+                    .ToListAsync(cancellationToken);
+
+                _meter.RecordDatabaseQueryDuration(stopwatch.ElapsedMilliseconds, "GetMissedAlarmsAsync", "Alarms");
+                activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Ok);
+                activity?.SetTag("result.count", result.Count);
+
+                _logger.LogDebug(LogTemplates.DatabaseQueryExecuted,
+                    "GetMissedAlarmsAsync",
+                    stopwatch.ElapsedMilliseconds,
+                    result.Count);
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Error, ex.Message);
+                _meter.IncrementErrorCount("DATABASE", "Alarms", "QueryError");
+
+                _logger.LogError(LogTemplates.DatabaseQueryFailed,
+                    "GetMissedAlarmsAsync",
+                    "Alarms",
+                    stopwatch.ElapsedMilliseconds,
+                    ex.Message);
+
                 throw;
             }
         }
@@ -353,18 +405,18 @@ namespace SmartAlarm.Infrastructure.Repositories.EntityFramework
         {
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             var correlationId = _correlationContext.CorrelationId;
-            
+
             using var activity = _activitySource.StartActivity("EfAlarmRepository.DeleteAsync");
             activity?.SetTag("alarm.id", id.ToString());
             activity?.SetTag("correlation.id", correlationId);
             activity?.SetTag("operation", "DeleteAsync");
             activity?.SetTag("table", "Alarms");
-            
+
             try
             {
                 _logger.LogDebug(LogTemplates.DatabaseQueryStarted,
-                    "DeleteAsync", 
-                    "Alarms", 
+                    "DeleteAsync",
+                    "Alarms",
                     new { AlarmId = id });
 
                 var alarm = _context.Alarms.Find(id);
@@ -376,7 +428,7 @@ namespace SmartAlarm.Infrastructure.Repositories.EntityFramework
                 _meter.RecordDatabaseQueryDuration(stopwatch.ElapsedMilliseconds, "DeleteAsync", "Alarms");
                 activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Ok);
                 activity?.SetTag("entity.found", alarm != null);
-                
+
                 _logger.LogDebug(LogTemplates.DatabaseQueryExecuted,
                     "DeleteAsync",
                     stopwatch.ElapsedMilliseconds,
@@ -388,13 +440,13 @@ namespace SmartAlarm.Infrastructure.Repositories.EntityFramework
             {
                 activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Error, ex.Message);
                 _meter.IncrementErrorCount("DATABASE", "Alarms", "DeleteError");
-                
+
                 _logger.LogError(LogTemplates.DatabaseQueryFailed,
                     "DeleteAsync",
-                    "Alarms", 
+                    "Alarms",
                     stopwatch.ElapsedMilliseconds,
                     ex.Message);
-                
+
                 throw;
             }
         }

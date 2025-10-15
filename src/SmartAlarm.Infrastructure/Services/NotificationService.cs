@@ -2,16 +2,15 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using SmartAlarm.Application.Abstractions;
 using SmartAlarm.Application.DTOs.Notifications;
-using SmartAlarm.Api.Hubs;
 
 namespace SmartAlarm.Infrastructure.Services;
 
 public class NotificationService : INotificationService
 {
-    private readonly IHubContext<NotificationHub> _hubContext;
+    private readonly IHubContext<Hub> _hubContext;
     private readonly ILogger<NotificationService> _logger;
 
-    public NotificationService(IHubContext<NotificationHub> hubContext, ILogger<NotificationService> logger)
+    public NotificationService(IHubContext<Hub> hubContext, ILogger<NotificationService> logger)
     {
         _hubContext = hubContext;
         _logger = logger;
@@ -99,5 +98,62 @@ public class NotificationService : INotificationService
             _logger.LogError(ex, "Failed to remove user {UserId} from group {GroupName}", userId, groupName);
             throw;
         }
+    }
+
+    // Additional methods that seem to be expected by the interface
+    public async Task SendPushNotificationAsync(string userId, string title, string message)
+    {
+        var notification = new NotificationDto
+        {
+            Id = Guid.NewGuid().ToString(),
+            Title = title,
+            Message = message,
+            Type = NotificationType.Info,
+            Timestamp = DateTime.UtcNow
+        };
+
+        await SendNotificationAsync(userId, notification);
+    }
+
+    public async Task SendAlarmNotificationAsync(Guid alarmId, string title, string message)
+    {
+        var notification = new NotificationDto
+        {
+            Id = Guid.NewGuid().ToString(),
+            Title = title,
+            Message = message,
+            Type = NotificationType.AlarmTriggered,
+            Timestamp = DateTime.UtcNow
+        };
+
+        await SendBroadcastNotificationAsync(notification);
+    }
+
+    public async Task SendSystemNotificationAsync(Guid userId, string title, string message)
+    {
+        var notification = new NotificationDto
+        {
+            Id = Guid.NewGuid().ToString(),
+            Title = title,
+            Message = message,
+            Type = NotificationType.SystemMaintenance,
+            Timestamp = DateTime.UtcNow
+        };
+
+        await SendNotificationAsync(userId.ToString(), notification);
+    }
+
+    public async Task SendReminderNotificationAsync(Guid userId, string message)
+    {
+        var notification = new NotificationDto
+        {
+            Id = Guid.NewGuid().ToString(),
+            Title = "Reminder",
+            Message = message,
+            Type = NotificationType.Info,
+            Timestamp = DateTime.UtcNow
+        };
+
+        await SendNotificationAsync(userId.ToString(), notification);
     }
 }
