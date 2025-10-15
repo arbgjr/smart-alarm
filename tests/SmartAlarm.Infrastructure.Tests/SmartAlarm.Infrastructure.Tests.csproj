@@ -13,7 +13,7 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="Microsoft.Extensions.Configuration" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" />
-    
+
     <!-- Testing Framework -->
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit" />
@@ -23,18 +23,23 @@
     </PackageReference>
     <PackageReference Include="FluentAssertions" />
     <PackageReference Include="Moq" />
-    
+
     <!-- Infrastructure Testing -->
     <PackageReference Include="Minio" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
-    
+
     <!-- System Dependencies -->
     <PackageReference Include="System.Diagnostics.DiagnosticSource" />
+
+    <!-- SignalR for testing -->
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Core" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\SmartAlarm.Infrastructure\SmartAlarm.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\SmartAlarm.Domain\SmartAlarm.Domain.csproj" />
+    <ProjectReference Include="..\..\src\SmartAlarm.Api\SmartAlarm.Api.csproj" />
+    <ProjectReference Include="..\..\src\SmartAlarm.Application\SmartAlarm.Application.csproj" />
   </ItemGroup>
 
 </Project>

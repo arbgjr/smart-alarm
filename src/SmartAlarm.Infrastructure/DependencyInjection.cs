@@ -129,14 +129,32 @@ namespace SmartAlarm.Infrastructure
         {
             // Register distributed cache (in-memory for now, Redis in production)
             services.AddDistributedMemoryCache();
-            
+
             // Register infrastructure services
             services.AddScoped<IEmailService, LoggingEmailService>();
             services.AddScoped<INotificationService, LoggingNotificationService>();
             // Temporary implementation of IFileParser to resolve DI
-            services.AddScoped<SmartAlarm.Application.Services.IFileParser>(provider => 
+            services.AddScoped<SmartAlarm.Application.Services.IFileParser>(provider =>
                 new TemporaryFileParser());
-            
+
+            // Register new notification services
+            services.AddScoped<SmartAlarm.Application.Abstractions.INotificationService, SmartAlarm.Infrastructure.Services.NotificationService>();
+            services.AddScoped<SmartAlarm.Application.Abstractions.IPushNotificationService, SmartAlarm.Infrastructure.Services.PushNotificationService>();
+            services.AddHttpClient<SmartAlarm.Infrastructure.Services.PushNotificationService>();
+
+            // Register background job and alarm trigger services
+            services.AddScoped<SmartAlarm.Application.Abstractions.IBackgroundJobService, SmartAlarm.Infrastructure.Services.HangfireBackgroundJobService>();
+            services.AddScoped<SmartAlarm.Application.Abstractions.IAlarmTriggerService, SmartAlarm.Infrastructure.Services.AlarmTriggerService>();
+
+            // Register audit services
+            services.AddScoped<SmartAlarm.Application.Abstractions.IAuditService, SmartAlarm.Infrastructure.Services.AuditService>();
+            services.AddScoped<SmartAlarm.Domain.Repositories.IAuditLogRepository, SmartAlarm.Infrastructure.Repositories.InMemoryAuditLogRepository>();
+
+            // Register calendar integration services
+            services.AddScoped<SmartAlarm.Application.Services.External.IOutlookCalendarService, SmartAlarm.Infrastructure.Services.External.OutlookCalendarService>();
+            services.AddScoped<SmartAlarm.Application.Abstractions.ICalendarIntegrationService, SmartAlarm.Infrastructure.Services.CalendarIntegrationService>();
+            services.AddHttpClient<SmartAlarm.Infrastructure.Services.External.OutlookCalendarService>();
+
             // Register new services for Phase 1 & 2
             services.AddScoped<IAlarmEventService, AlarmEventService>();
             services.AddScoped<IHolidayCacheService, HolidayCacheService>();

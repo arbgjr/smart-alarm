@@ -14,6 +14,7 @@ using MediatR;
 using FluentValidation;
 using System.Reflection;
 using SmartAlarm.Observability.Extensions;
+using Hangfire;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -54,6 +55,38 @@ if (!builder.Environment.IsEnvironment("Testing"))
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddControllers();
+
+// Add SignalR for real-time notifications
+builder.Services.AddSignalR();
+
+// Add Hangfire for background jobs
+if (!builder.Environment.IsEnvironment("Testing"))
+{
+    var dbProvider = builder.Configuration.GetValue<string>("Database:Provider");
+    if (string.Equals(dbProvider, "PostgreSQL", StringComparison.OrdinalIgnoreCase))
+    {
+        var connectionString = builder.Configuration.GetConnectionString("PostgresDb");
+        builder.Services.AddHangfire(config => config
+            .SetDataCompatibilityLevel(CompatibilityLevel.Version_170)
+            .UseSimpleAssemblyNameTypeSerializer()
+            .UseRecommendedSerializerSettings()
+            .UsePostgreSqlStorage(connectionString));
+    }
+    else
+    {
+        var connectionString = builder.Configuration.GetConnectionString("OracleDb");
+        builder.Services.AddHangfire(config => config
+            .SetDataCompatibilityLevel(CompatibilityLevel.Version_170)
+            .UseSimpleAssemblyNameTypeSerializer()
+            .UseRecommendedSerializerSettings()
+            .UseSqlServerStorage(connectionString)); // Using SQL Server storage as fallback
+    }
+
+    builder.Services.AddHangfireServer();
+}
+
+// Add background services
+builder.Services.AddHostedService<SmartAlarm.Api.Services.MissedAlarmBackgroundService>();
 
 // Sobrescreve a resposta padrão de erro de modelo inválido
 builder.Services.Configure<Microsoft.AspNetCore.Mvc.ApiBehaviorOptions>(options =>
@@ -134,7 +167,7 @@ if (!builder.Environment.IsEnvironment("Testing"))
                     PermitLimit = 10, // Limite mais baixo para detectar nos testes
                     Window = TimeSpan.FromMinutes(1)
                 }));
-        
+
         options.OnRejected = async (context, token) =>
         {
             context.HttpContext.Response.StatusCode = 429;
@@ -178,7 +211,7 @@ app.Use(async (context, next) =>
     context.Response.Headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains";
     context.Response.Headers["Content-Security-Policy"] = "default-src 'self'";
     context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
-    
+
     await next();
 });
 
@@ -191,13 +224,16 @@ app.Use(async (context, next) =>
         context.Response.Headers.Remove("X-Powered-By");
         return Task.CompletedTask;
     });
-    
+
     await next();
 });
 
 // Observabilidade: logging estruturado e tracing
 app.UseSerilogRequestLogging();
 app.UseObservability();
+
+// Audit middleware for logging user actions
+app.UseMiddleware<SmartAlarm.Api.Middleware.AuditMiddleware>();
 
 // Rate limiting before authentication (disabled in testing environments)
 if (!app.Environment.IsEnvironment("Testing"))
@@ -224,11 +260,23 @@ app.UseSwaggerUI(options =>
     options.RoutePrefix = string.Empty;
 });
 
+// Hangfire Dashboard (only in non-production environments for security)
+if (!app.Environment.IsProduction() && !app.Environment.IsEnvironment("Testing"))
+{
+    app.UseHangfireDashboard("/hangfire", new DashboardOptions
+    {
+        Authorization = new[] { new HangfireAuthorizationFilter() }
+    });
+}
+
 // Endpoint Prometheus /metrics
 app.MapPrometheusScrapingEndpoint("/metrics");
 
 // Controllers
 app.MapControllers();
+
+// SignalR Hubs
+app.MapHub<SmartAlarm.Api.Hubs.NotificationHub>("/hubs/notifications");
 
 app.Run();
 

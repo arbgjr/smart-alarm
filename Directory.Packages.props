@@ -12,6 +12,8 @@
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.Facebook" Version="8.0.8" />
     <PackageVersion Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.0" />
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="8.0.8" />
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR" Version="1.1.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Core" Version="1.1.0" />
 
     <!-- Microsoft Extensions (Alinhado para .NET 8) -->
     <PackageVersion Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
@@ -100,6 +102,7 @@
     <PackageVersion Include="Hangfire.Core" Version="1.8.17" />
     <PackageVersion Include="Hangfire.AspNetCore" Version="1.8.17" />
     <PackageVersion Include="Hangfire.PostgreSql" Version="1.20.9" />
+    <PackageVersion Include="Hangfire.SqlServer" Version="1.8.17" />
 
     <!-- Redis -->
     <PackageVersion Include="StackExchange.Redis" Version="2.8.16" />

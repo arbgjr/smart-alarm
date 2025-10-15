@@ -1,5 +1,7 @@
 using System.Diagnostics;
 using Microsoft.Extensions.Logging;
+using SmartAlarm.Application.Abstractions;
+using SmartAlarm.Application.DTOs.Notifications;
 using SmartAlarm.Application.Services;
 using SmartAlarm.Domain.Entities;
 using SmartAlarm.Domain.Repositories;
@@ -21,19 +23,25 @@ public class AlarmEventService : IAlarmEventService
     private readonly SmartAlarmMeter _meter;
     private readonly ICorrelationContext _correlationContext;
     private readonly SmartAlarmActivitySource _activitySource;
+    private readonly INotificationService _notificationService;
+    private readonly IPushNotificationService _pushNotificationService;
 
     public AlarmEventService(
         IAlarmEventRepository repository,
         ILogger<AlarmEventService> logger,
         SmartAlarmMeter meter,
         ICorrelationContext correlationContext,
-        SmartAlarmActivitySource activitySource)
+        SmartAlarmActivitySource activitySource,
+        INotificationService notificationService,
+        IPushNotificationService pushNotificationService)
     {
         _repository = repository ?? throw new ArgumentNullException(nameof(repository));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _meter = meter ?? throw new ArgumentNullException(nameof(meter));
         _correlationContext = correlationContext ?? throw new ArgumentNullException(nameof(correlationContext));
         _activitySource = activitySource ?? throw new ArgumentNullException(nameof(activitySource));
+        _notificationService = notificationService ?? throw new ArgumentNullException(nameof(notificationService));
+        _pushNotificationService = pushNotificationService ?? throw new ArgumentNullException(nameof(pushNotificationService));
     }
 
     public async Task RecordEventAsync(
@@ -52,7 +60,7 @@ public class AlarmEventService : IAlarmEventService
 
         var stopwatch = Stopwatch.StartNew();
 
-        _logger.LogInformation("Recording alarm event: AlarmId={AlarmId}, UserId={UserId}, EventType={EventType}", 
+        _logger.LogInformation("Recording alarm event: AlarmId={AlarmId}, UserId={UserId}, EventType={EventType}",
             alarmId, userId, eventType);
 
         try
@@ -70,6 +78,10 @@ public class AlarmEventService : IAlarmEventService
             };
 
             await _repository.AddAsync(alarmEvent, cancellationToken);
+
+            // Send notifications for relevant events
+            await SendEventNotificationAsync(alarmEvent, cancellationToken);
+
             stopwatch.Stop();
 
             _meter.RecordDatabaseQueryDuration(stopwatch.ElapsedMilliseconds, "RecordEvent", "AlarmEvent");
@@ -84,7 +96,7 @@ public class AlarmEventService : IAlarmEventService
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
             _meter.IncrementErrorCount("SERVICE", "AlarmEvent", "RecordError");
 
-            _logger.LogError(ex, "Failed to record alarm event in {ElapsedMs}ms: {Error}", 
+            _logger.LogError(ex, "Failed to record alarm event in {ElapsedMs}ms: {Error}",
                 stopwatch.ElapsedMilliseconds, ex.Message);
 
             throw;
@@ -166,7 +178,7 @@ public class AlarmEventService : IAlarmEventService
 
             _meter.RecordDatabaseQueryDuration(stopwatch.ElapsedMilliseconds, "GetHistory", "AlarmEvent");
 
-            _logger.LogInformation("Completed GetUserEventHistory in {ElapsedMs}ms, found {Count} events", 
+            _logger.LogInformation("Completed GetUserEventHistory in {ElapsedMs}ms, found {Count} events",
                 stopwatch.ElapsedMilliseconds, events.Count());
 
             activity?.SetStatus(ActivityStatusCode.Ok);
@@ -178,7 +190,7 @@ public class AlarmEventService : IAlarmEventService
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
             _meter.IncrementErrorCount("SERVICE", "AlarmEvent", "QueryError");
 
-            _logger.LogError(ex, "Failed GetUserEventHistory for AlarmEvent in {ElapsedMs}ms: {Error}", 
+            _logger.LogError(ex, "Failed GetUserEventHistory for AlarmEvent in {ElapsedMs}ms: {Error}",
                 stopwatch.ElapsedMilliseconds, ex.Message);
 
             throw;
@@ -210,7 +222,7 @@ public class AlarmEventService : IAlarmEventService
 
             _meter.RecordDatabaseQueryDuration(stopwatch.ElapsedMilliseconds, "GetStats", "AlarmEvent");
 
-            _logger.LogInformation("Completed GetUserEventStats in {ElapsedMs}ms, found {Count} event types", 
+            _logger.LogInformation("Completed GetUserEventStats in {ElapsedMs}ms, found {Count} event types",
                 stopwatch.ElapsedMilliseconds, stats.Count);
 
             activity?.SetStatus(ActivityStatusCode.Ok);
@@ -222,7 +234,7 @@ public class AlarmEventService : IAlarmEventService
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
             _meter.IncrementErrorCount("SERVICE", "AlarmEvent", "QueryError");
 
-            _logger.LogError(ex, "Failed GetUserEventStats for AlarmEvent in {ElapsedMs}ms: {Error}", 
+            _logger.LogError(ex, "Failed GetUserEventStats for AlarmEvent in {ElapsedMs}ms: {Error}",
                 stopwatch.ElapsedMilliseconds, ex.Message);
 
             throw;
@@ -252,7 +264,7 @@ public class AlarmEventService : IAlarmEventService
 
             _meter.RecordDatabaseQueryDuration(stopwatch.ElapsedMilliseconds, "GetPattern", "AlarmEvent");
 
-            _logger.LogInformation("Completed GetUserBehaviorPattern in {ElapsedMs}ms, found {TotalEvents} events", 
+            _logger.LogInformation("Completed GetUserBehaviorPattern in {ElapsedMs}ms, found {TotalEvents} events",
                 stopwatch.ElapsedMilliseconds, pattern.TotalEvents);
 
             activity?.SetStatus(ActivityStatusCode.Ok);
@@ -264,7 +276,7 @@ public class AlarmEventService : IAlarmEventService
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
             _meter.IncrementErrorCount("SERVICE", "AlarmEvent", "AnalysisError");
 
-            _logger.LogError(ex, "Failed GetUserBehaviorPattern for AlarmEvent in {ElapsedMs}ms: {Error}", 
+            _logger.LogError(ex, "Failed GetUserBehaviorPattern for AlarmEvent in {ElapsedMs}ms: {Error}",
                 stopwatch.ElapsedMilliseconds, ex.Message);
 
             throw;
@@ -432,5 +444,112 @@ public class AlarmEventService : IAlarmEventService
         }
 
         return insights;
+    }
+
+    private async Task SendEventNotificationAsync(AlarmEvent alarmEvent, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var notification = CreateNotificationForEvent(alarmEvent);
+            if (notification != null)
+            {
+                // Send real-time notification via SignalR
+                await _notificationService.SendNotificationAsync(
+                    alarmEvent.UserId.ToString(),
+                    notification,
+                    cancellationToken);
+
+                // Send push notification for critical events
+                if (ShouldSendPushNotification(alarmEvent.EventType))
+                {
+                    var pushNotification = CreatePushNotificationForEvent(alarmEvent);
+                    if (pushNotification != null)
+                    {
+                        await _pushNotificationService.SendPushNotificationAsync(
+                            alarmEvent.UserId.ToString(),
+                            pushNotification,
+                            cancellationToken);
+                    }
+                }
+
+                _logger.LogInformation("Notification sent for alarm event {EventType} for user {UserId}",
+                    alarmEvent.EventType, alarmEvent.UserId);
+            }
+        }
+        catch (Exception ex)
+        {
+            // Don't fail the main operation if notification fails
+            _logger.LogWarning(ex, "Failed to send notification for alarm event {EventType} for user {UserId}",
+                alarmEvent.EventType, alarmEvent.UserId);
+        }
+    }
+
+    private NotificationDto? CreateNotificationForEvent(AlarmEvent alarmEvent)
+    {
+        return alarmEvent.EventType switch
+        {
+            AlarmEventType.Triggered => new NotificationDto
+            {
+                Title = "Alarm Triggered",
+                Message = "Your alarm is now active!",
+                Type = NotificationType.AlarmTriggered,
+                Priority = 4, // Critical
+                Data = new Dictionary<string, object>
+                {
+                    { "alarmId", alarmEvent.AlarmId.ToString() },
+                    { "eventId", alarmEvent.Id.ToString() }
+                }
+            },
+            AlarmEventType.Snoozed => new NotificationDto
+            {
+                Title = "Alarm Snoozed",
+                Message = $"Alarm snoozed for {alarmEvent.Metadata ?? "5"} minutes",
+                Type = NotificationType.AlarmSnoozed,
+                Priority = 2, // Normal
+                Data = new Dictionary<string, object>
+                {
+                    { "alarmId", alarmEvent.AlarmId.ToString() },
+                    { "snoozeMinutes", alarmEvent.Metadata ?? "5" }
+                }
+            },
+            AlarmEventType.Dismissed => new NotificationDto
+            {
+                Title = "Alarm Dismissed",
+                Message = "Alarm has been dismissed",
+                Type = NotificationType.AlarmDismissed,
+                Priority = 1, // Low
+                Data = new Dictionary<string, object>
+                {
+                    { "alarmId", alarmEvent.AlarmId.ToString() }
+                }
+            },
+            _ => null // Don't send notifications for other event types
+        };
+    }
+
+    private PushNotificationDto? CreatePushNotificationForEvent(AlarmEvent alarmEvent)
+    {
+        return alarmEvent.EventType switch
+        {
+            AlarmEventType.Triggered => new PushNotificationDto
+            {
+                Title = "Smart Alarm",
+                Body = "Your alarm is now active!",
+                Sound = "alarm_sound",
+                Priority = 3, // High
+                Data = new Dictionary<string, string>
+                {
+                    { "alarmId", alarmEvent.AlarmId.ToString() },
+                    { "eventType", "triggered" }
+                },
+                ClickAction = "/alarms"
+            },
+            _ => null // Only send push notifications for triggered alarms
+        };
+    }
+
+    private static bool ShouldSendPushNotification(AlarmEventType eventType)
+    {
+        return eventType == AlarmEventType.Triggered;
     }
 }

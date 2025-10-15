@@ -31,7 +31,7 @@
 
 ## Phase 2: Completar Backend Core
 
-- [ ] 2. Implementar funcionalidades faltantes no backend
+- [x] 2. Implementar funcionalidades faltantes no backend
 
   - Completar sistema de notificações em tempo real
   - Implementar background services para alarmes
@@ -39,35 +39,35 @@
   - Finalizar integração com calendários externos
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7_
 
-- [ ] 2.1 Sistema de notificações em tempo real
+- [x] 2.1 Sistema de notificações em tempo real
 
   - Implementar SignalR Hub para notificações
   - Criar serviço de push notifications
   - Integrar com sistema de alarmes
   - _Requirements: 2.2, 2.6_
 
-- [ ] 2.2 Background services para alarmes
+- [x] 2.2 Background services para alarmes
 
   - Implementar AlarmTriggerService usando Hangfire
   - Criar sistema de escalação para alarmes perdidos
   - Implementar retry logic para falhas de notificação
   - _Requirements: 2.3_
 
-- [ ] 2.3 Sistema de auditoria
+- [x] 2.3 Sistema de auditoria
 
   - Criar entidade AuditLog
   - Implementar middleware de auditoria
   - Adicionar logs para todas as operações críticas
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7_
 
-- [ ] 2.4 Integração com calendários
+- [x] 2.4 Integração com calendários
 
   - Finalizar Google Calendar API integration
   - Implementar Outlook Calendar integration
   - Adicionar sincronização bidirecional
   - _Requirements: 2.2, 2.3_
 
-- [ ]\* 2.5 Testes de integração para backend
+- [x] 2.5 Testes de integração para backend
   - Criar testes para AlarmTriggerService
   - Testar integração com calendários externos
   - Validar sistema de notificações
@@ -115,7 +115,7 @@
   - Adicionar suporte a push notifications
   - _Requirements: 3.1, 3.5_
 
-- [ ]\* 3.5 Testes E2E para frontend
+- [ ] 3.5 Testes E2E para frontend
   - Criar testes Playwright para fluxos principais
   - Testar responsividade em diferentes dispositivos
   - Validar funcionalidade offline
@@ -152,7 +152,7 @@
   - Adicionar rate limiting e circuit breakers
   - _Requirements: 2.2, 4.2, 4.3_
 
-- [ ]\* 4.4 Testes de integração entre serviços
+- [ ] 4.4 Testes de integração entre serviços
   - Testar comunicação entre microserviços
   - Validar resiliência e fallbacks
   - Testar performance sob carga
@@ -189,7 +189,7 @@
   - Adicionar testes de acessibilidade
   - _Requirements: 4.1, 4.2, 4.3, 4.4_
 
-- [ ]\* 5.4 Testes de performance
+- [ ] 5.4 Testes de performance
   - Executar load testing com k6
   - Medir tempos de resposta das APIs
   - Testar escalabilidade horizontal
@@ -219,7 +219,7 @@
   - Adicionar anonimização de dados pessoais
   - _Requirements: 7.4, 7.5_
 
-- [ ]\* 6.3 Testes de segurança
+- [ ] 6.3 Testes de segurança
   - Executar penetration testing
   - Validar proteção contra OWASP Top 10
   - Testar autenticação e autorização
@@ -287,7 +287,7 @@
   - Criar troubleshooting guides
   - _Requirements: 5.1, 5.4, 5.5_
 
-- [ ]\* 8.4 Testes de produção
+- [ ] 8.4 Testes de produção
   - Executar smoke tests em staging
   - Validar performance em ambiente real
   - Testar procedimentos de disaster recovery

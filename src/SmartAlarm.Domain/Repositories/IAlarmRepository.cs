@@ -10,12 +10,13 @@ namespace SmartAlarm.Domain.Repositories
     /// </summary>
     public interface IAlarmRepository
     {
-        Task<Alarm?> GetByIdAsync(Guid id);
+        Task<Alarm?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
         Task<IEnumerable<Alarm>> GetByUserIdAsync(Guid userId);
         Task<IEnumerable<Alarm>> GetAllEnabledAsync();
         Task<IEnumerable<Alarm>> GetDueForTriggeringAsync(DateTime now);
-        Task AddAsync(Alarm alarm);
-        Task UpdateAsync(Alarm alarm);
+        Task<IEnumerable<Alarm>> GetMissedAlarmsAsync(DateTime cutoffTime, CancellationToken cancellationToken = default);
+        Task AddAsync(Alarm alarm, CancellationToken cancellationToken = default);
+        Task UpdateAsync(Alarm alarm, CancellationToken cancellationToken = default);
         Task DeleteAsync(Guid id);
     }
 }
