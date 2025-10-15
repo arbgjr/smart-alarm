@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
@@ -9,9 +9,12 @@ import { ComponentShowcase } from './components/organisms/ComponentShowcase';
 import { Dashboard } from './pages/Dashboard';
 import { AlarmsPage } from './pages/Alarms';
 import { RoutinesPage } from './pages/Routines';
+import { SettingsPage } from './pages/Settings';
+import { PWAInstallPrompt } from './components/PWA/PWAInstallPrompt';
 import { useAuth } from './hooks/useAuth';
 import { LoadingSpinner } from './components/molecules/Loading';
 import { ErrorBoundary } from './components/molecules/ErrorBoundary/ErrorBoundary';
+import { useViewport } from './utils/responsive';
 
 // Create React Query client
 const queryClient = new QueryClient({
@@ -27,6 +30,25 @@ const queryClient = new QueryClient({
 // App Routes Component
 const AppRoutes: React.FC = () => {
   const { user, isLoading } = useAuth();
+  const viewport = useViewport();
+
+  useEffect(() => {
+    // Set CSS custom properties for viewport dimensions
+    document.documentElement.style.setProperty('--viewport-width', `${viewport.width}px`);
+    document.documentElement.style.setProperty('--viewport-height', `${viewport.height}px`);
+    document.documentElement.style.setProperty('--is-mobile', viewport.isMobile ? '1' : '0');
+    document.documentElement.style.setProperty('--is-touch', viewport.isTouch ? '1' : '0');
+
+    // Add responsive classes to body
+    document.body.classList.remove('mobile', 'tablet', 'desktop', 'touch', 'no-touch');
+
+    if (viewport.isMobile) document.body.classList.add('mobile');
+    else if (viewport.isTablet) document.body.classList.add('tablet');
+    else document.body.classList.add('desktop');
+
+    if (viewport.isTouch) document.body.classList.add('touch');
+    else document.body.classList.add('no-touch');
+  }, [viewport]);
 
   if (isLoading) {
     return (
@@ -87,6 +109,14 @@ const AppRoutes: React.FC = () => {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <SettingsPage />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Root redirect based on authentication */}
       <Route
@@ -114,6 +144,7 @@ function App() {
       <ErrorBoundary>
         <div className="min-h-screen bg-neutral-50">
           <AppRoutes />
+          <PWAInstallPrompt />
         </div>
       </ErrorBoundary>
       <ReactQueryDevtools initialIsOpen={false} />

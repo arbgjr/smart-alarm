@@ -1,318 +1,417 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, devices } from '@playwright/test';
+import { LoginPage } from './pages/LoginPage';
 
-/**
- * Smart Alarm Responsive Testing Suite
- *
- * This test suite validates the responsive design implementation
- * of the Smart Alarm application across different device types and screen sizes.
- *
- * Test Objectives:
- * 1. Verify responsive layout works on mobile, tablet, and desktop
- * 2. Test loading states display correctly across different viewports
- * 3. Validate navigation adapts to screen size
- * 4. Check touch interactions work on mobile devices
- * 5. Ensure components maintain usability across orientations
- * 6. Verify dark mode works consistently across viewports
- */
-
-test.describe('Smart Alarm Responsive Design Tests', () => {
-
-  const BASE_URL = 'http://localhost:5173';
-
-  // Define test viewports
-  const VIEWPORTS = {
-    mobile: { width: 390, height: 844 },      // iPhone 12
-    tablet: { width: 1024, height: 768 },     // iPad
-    desktop: { width: 1920, height: 1080 },   // Desktop Full HD
-    smallDesktop: { width: 1366, height: 768 }, // Laptop
-  };
+test.describe('Comprehensive Responsive Design', () => {
+  let loginPage: LoginPage;
 
   test.beforeEach(async ({ page }) => {
-    // Wait for application to be ready
-    // Navigate to the application
-  await page.goto('http://localhost:3000');
-    await page.waitForLoadState('domcontentloaded');
-
-    // Wait for React to hydrate
-    await page.waitForSelector('[data-testid="app-container"], body', { timeout: 10000 });
+    loginPage = new LoginPage(page);
+    await loginPage.goto();
+    await loginPage.login('test@example.com', 'password123');
   });
 
-  test('should load application successfully on all viewport sizes', async ({ page }) => {
-    for (const [deviceName, viewport] of Object.entries(VIEWPORTS)) {
-      await page.setViewportSize(viewport);
-
-      // Verify page loads
-      await expect(page).toHaveTitle(/Smart Alarm/);
-
-      // Take screenshot for visual regression testing
-      await page.screenshot({
-        path: `test-results/screenshots/app-load-${deviceName}-${viewport.width}x${viewport.height}.png`,
-        fullPage: true
+  // Mobile Device Tests
+  test.describe('Mobile Devices', () => {
+    test('iPhone 12 - Portrait', async ({ browser }) => {
+      const context = await browser.newContext({
+        ...devices['iPhone 12'],
       });
+      const page = await context.newPage();
 
-      // Verify main content is visible
-      const mainContent = page.locator('main, #root, [data-testid="app-container"]');
-      await expect(mainContent).toBeVisible();
-    }
+      await page.goto('/dashboard');
+
+      // Check mobile-specific layout
+      await expect(page.locator('[data-testid="mobile-menu-button"]')).toBeVisible();
+
+      // Check that content is properly stacked
+      const metricsGrid = page.locator('[data-testid="metrics-grid"]');
+      await expect(metricsGrid).toHaveClass(/grid-cols-1/);
+
+      // Test mobile navigation
+      await page.locator('[data-testid="mobile-menu-button"]').click();
+      await expect(page.locator('[data-testid="mobile-menu"]')).toBeVisible();
+
+      // Test touch interactions
+      const alarmCard = page.locator('[data-testid="alarm-card"]').first();
+      if (await alarmCard.isVisible()) {
+        await alarmCard.tap();
+      }
+
+      await context.close();
+    });
+
+    test('iPhone 12 - Landscape', async ({ browser }) => {
+      const context = await browser.newContext({
+        ...devices['iPhone 12 landscape'],
+      });
+      const page = await context.newPage();
+
+      await page.goto('/dashboard');
+
+      // Check landscape layout adaptations
+      await expect(page.locator('[data-testid="landscape-layout"]')).toBeVisible();
+
+      // Check that horizontal space is utilized better
+      const contentGrid = page.locator('[data-testid="main-content-grid"]');
+      await expect(contentGrid).toHaveClass(/lg:grid-cols-3/);
+
+      await context.close();
+    });
+
+    test('Pixel 5', async ({ browser }) => {
+      const context = await browser.newContext({
+        ...devices['Pixel 5'],
+      });
+      const page = await context.newPage();
+
+      await page.goto('/alarms');
+
+      // Check Android-specific behaviors
+      await expect(page.locator('[data-testid="alarms-grid"]')).toHaveClass(/grid-cols-1/);
+
+      // Test filter interactions on mobile
+      await page.locator('[data-testid="search-input"]').fill('test');
+      await expect(page.locator('text=Search: "test"')).toBeVisible();
+
+      await context.close();
+    });
   });
 
-  test('should display navigation responsively', async ({ page }) => {
-    for (const [deviceName, viewport] of Object.entries(VIEWPORTS)) {
-      await page.setViewportSize(viewport);
+  // Tablet Device Tests
+  test.describe('Tablet Devices', () => {
+    test('iPad Pro', async ({ browser }) => {
+      const context = await browser.newContext({
+        ...devices['iPad Pro'],
+      });
+      const page = await context.newPage();
 
-      // Check navigation existence
-      const navigation = page.locator('nav, [data-testid="navigation"]');
+      await page.goto('/dashboard');
 
-      if (await navigation.isVisible()) {
-        // Take screenshot of navigation
-        await page.screenshot({
-          path: `test-results/screenshots/navigation-${deviceName}.png`,
-          clip: await navigation.boundingBox() || undefined
-        });
+      // Check tablet layout
+      const metricsGrid = page.locator('[data-testid="metrics-grid"]');
+      await expect(metricsGrid).toHaveClass(/md:grid-cols-2/);
 
-        // Verify navigation items are accessible
-        const navItems = navigation.locator('a, button[role="menuitem"]');
-        const count = await navItems.count();
+      // Check that mobile menu is not visible
+      await expect(page.locator('[data-testid="mobile-menu-button"]')).toBeHidden();
 
-        if (count > 0) {
-          // Check first nav item is clickable
-          const firstNavItem = navItems.first();
-          await expect(firstNavItem).toBeVisible();
+      // Test tablet-specific interactions
+      await page.goto('/settings');
 
-          // Verify adequate touch target size on mobile
-          if (deviceName === 'mobile') {
-            const box = await firstNavItem.boundingBox();
-            if (box) {
-              expect(box.height).toBeGreaterThanOrEqual(44); // iOS HIG minimum
+      // Settings should show sidebar navigation
+      await expect(page.locator('[data-testid="settings-sidebar"]')).toBeVisible();
+
+      await context.close();
+    });
+
+    test('iPad Pro - Landscape', async ({ browser }) => {
+      const context = await browser.newContext({
+        ...devices['iPad Pro landscape'],
+      });
+      const page = await context.newPage();
+
+      await page.goto('/alarms');
+
+      // Check landscape tablet layout
+      const alarmsGrid = page.locator('[data-testid="alarms-grid"]');
+      await expect(alarmsGrid).toHaveClass(/md:grid-cols-2/);
+
+      // Check that more content is visible horizontally
+      const actionButtons = page.locator('[data-testid="action-buttons"]');
+      await expect(actionButtons).toBeVisible();
+
+      await context.close();
+    });
+  });
+
+  // Desktop Tests
+  test.describe('Desktop Devices', () => {
+    test('Desktop 1920x1080', async ({ browser }) => {
+      const context = await browser.newContext({
+        viewport: { width: 1920, height: 1080 }
+      });
+      const page = await context.newPage();
+
+      await page.goto('/dashboard');
+
+      // Check full desktop layout
+      const metricsGrid = page.locator('[data-testid="metrics-grid"]');
+      await expect(metricsGrid).toHaveClass(/lg:grid-cols-4/);
+
+      // Check that all navigation is visible
+      await expect(page.locator('[data-testid="desktop-navigation"]')).toBeVisible();
+
+      // Test multi-column layouts
+      const mainGrid = page.locator('[data-testid="main-content-grid"]');
+      await expect(mainGrid).toHaveClass(/lg:grid-cols-3/);
+
+      await context.close();
+    });
+
+    test('Desktop 1366x768', async ({ browser }) => {
+      const context = await browser.newContext({
+        viewport: { width: 1366, height: 768 }
+      });
+      const page = await context.newPage();
+
+      await page.goto('/settings');
+
+      // Check medium desktop layout
+      await expect(page.locator('[data-testid="settings-sidebar"]')).toBeVisible();
+
+      // Check that content fits properly
+      const settingsContent = page.locator('[data-testid="settings-content"]');
+      await expect(settingsContent).toBeVisible();
+
+      await context.close();
+    });
+
+    test('Ultrawide 2560x1080', async ({ browser }) => {
+      const context = await browser.newContext({
+        viewport: { width: 2560, height: 1080 }
+      });
+      const page = await context.newPage();
+
+      await page.goto('/dashboard');
+
+      // Check ultrawide layout adaptations
+      const container = page.locator('[data-testid="main-container"]');
+      await expect(container).toHaveClass(/max-w-7xl/);
+
+      // Content should be centered and not stretched too wide
+      const contentWidth = await container.boundingBox();
+      expect(contentWidth?.width).toBeLessThan(1400); // Max container width
+
+      await context.close();
+    });
+  });
+
+  // Cross-Device Navigation Tests
+  test.describe('Cross-Device Navigation', () => {
+    test('Navigation consistency across devices', async ({ browser }) => {
+      const devices = [
+        { name: 'Mobile', device: 'iPhone 12' },
+        { name: 'Tablet', device: 'iPad Pro' },
+        { name: 'Desktop', viewport: { width: 1920, height: 1080 } }
+      ];
+
+      for (const deviceConfig of devices) {
+        const context = deviceConfig.device
+          ? await browser.newContext({ ...devices[deviceConfig.device as keyof typeof devices] })
+          : await browser.newContext({ viewport: deviceConfig.viewport });
+
+        const page = await context.newPage();
+
+        // Test navigation to all main pages
+        await page.goto('/dashboard');
+        await expect(page.locator('text=Smart Alarm')).toBeVisible();
+
+        await page.goto('/alarms');
+        await expect(page.locator('text=Alarm Management')).toBeVisible();
+
+        await page.goto('/settings');
+        await expect(page.locator('text=Settings')).toBeVisible();
+
+        await context.close();
+      }
+    });
+  });
+
+  // Accessibility Tests
+  test.describe('Responsive Accessibility', () => {
+    test('Touch targets on mobile', async ({ browser }) => {
+      const context = await browser.newContext({
+        ...devices['iPhone 12'],
+      });
+      const page = await context.newPage();
+
+      await page.goto('/dashboard');
+
+      // Check that touch targets are at least 44px
+      const buttons = page.locator('button');
+      const buttonCount = await buttons.count();
+
+      for (let i = 0; i < Math.min(buttonCount, 10); i++) {
+        const button = buttons.nth(i);
+        if (await button.isVisible()) {
+          const box = await button.boundingBox();
+          if (box) {
+            expect(box.height).toBeGreaterThanOrEqual(44);
+            expect(box.width).toBeGreaterThanOrEqual(44);
+          }
+        }
+      }
+
+      await context.close();
+    });
+
+    test('Keyboard navigation on desktop', async ({ browser }) => {
+      const context = await browser.newContext({
+        viewport: { width: 1920, height: 1080 }
+      });
+      const page = await context.newPage();
+
+      await page.goto('/dashboard');
+
+      // Test tab navigation
+      await page.keyboard.press('Tab');
+      let focusedElement = page.locator(':focus');
+      await expect(focusedElement).toBeVisible();
+
+      // Continue tabbing through interactive elements
+      for (let i = 0; i < 5; i++) {
+        await page.keyboard.press('Tab');
+        focusedElement = page.locator(':focus');
+        await expect(focusedElement).toBeVisible();
+      }
+
+      await context.close();
+    });
+  });
+
+  // Performance Tests
+  test.describe('Responsive Performance', () => {
+    test('Layout shift on resize', async ({ page }) => {
+      await page.goto('/dashboard');
+
+      // Start with desktop size
+      await page.setViewportSize({ width: 1920, height: 1080 });
+      await page.waitForTimeout(500);
+
+      // Resize to tablet
+      await page.setViewportSize({ width: 768, height: 1024 });
+      await page.waitForTimeout(500);
+
+      // Resize to mobile
+      await page.setViewportSize({ width: 375, height: 667 });
+      await page.waitForTimeout(500);
+
+      // Check that content is still visible and properly laid out
+      await expect(page.locator('text=Smart Alarm')).toBeVisible();
+      await expect(page.locator('[data-testid="metrics-grid"]')).toBeVisible();
+    });
+
+    test('Image loading on different densities', async ({ browser }) => {
+      const context = await browser.newContext({
+        ...devices['iPhone 12'],
+        deviceScaleFactor: 3 // High DPI
+      });
+      const page = await context.newPage();
+
+      await page.goto('/dashboard');
+
+      // Check that images load properly on high DPI
+      const images = page.locator('img');
+      const imageCount = await images.count();
+
+      for (let i = 0; i < imageCount; i++) {
+        const image = images.nth(i);
+        if (await image.isVisible()) {
+          await expect(image).toHaveAttribute('src');
+        }
+      }
+
+      await context.close();
+    });
+  });
+
+  // Orientation Change Tests
+  test.describe('Orientation Changes', () => {
+    test('Smooth orientation transitions', async ({ browser }) => {
+      const context = await browser.newContext({
+        ...devices['iPhone 12'],
+      });
+      const page = await context.newPage();
+
+      await page.goto('/dashboard');
+
+      // Start in portrait
+      await expect(page.locator('[data-testid="portrait-layout"]')).toBeVisible();
+
+      // Rotate to landscape
+      await page.setViewportSize({ width: 844, height: 390 });
+      await page.waitForTimeout(500);
+
+      // Check landscape layout
+      await expect(page.locator('[data-testid="landscape-layout"]')).toBeVisible();
+
+      // Rotate back to portrait
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.waitForTimeout(500);
+
+      // Check portrait layout
+      await expect(page.locator('[data-testid="portrait-layout"]')).toBeVisible();
+
+      await context.close();
+    });
+  });
+
+  // Content Adaptation Tests
+  test.describe('Content Adaptation', () => {
+    test('Text scaling and readability', async ({ browser }) => {
+      const viewports = [
+        { width: 375, height: 667, name: 'Mobile' },
+        { width: 768, height: 1024, name: 'Tablet' },
+        { width: 1920, height: 1080, name: 'Desktop' }
+      ];
+
+      for (const viewport of viewports) {
+        const context = await browser.newContext({ viewport });
+        const page = await context.newPage();
+
+        await page.goto('/dashboard');
+
+        // Check that text is readable at different sizes
+        const headings = page.locator('h1, h2, h3');
+        const headingCount = await headings.count();
+
+        for (let i = 0; i < headingCount; i++) {
+          const heading = headings.nth(i);
+          if (await heading.isVisible()) {
+            const fontSize = await heading.evaluate(el =>
+              window.getComputedStyle(el).fontSize
+            );
+            const fontSizeNum = parseInt(fontSize);
+
+            // Ensure minimum readable font size
+            expect(fontSizeNum).toBeGreaterThanOrEqual(14);
+          }
+        }
+
+        await context.close();
+      }
+    });
+
+    test('Interactive element spacing', async ({ browser }) => {
+      const context = await browser.newContext({
+        ...devices['iPhone 12'],
+      });
+      const page = await context.newPage();
+
+      await page.goto('/alarms');
+
+      // Check spacing between interactive elements
+      const buttons = page.locator('button:visible');
+      const buttonCount = await buttons.count();
+
+      if (buttonCount > 1) {
+        for (let i = 0; i < buttonCount - 1; i++) {
+          const button1 = buttons.nth(i);
+          const button2 = buttons.nth(i + 1);
+
+          const box1 = await button1.boundingBox();
+          const box2 = await button2.boundingBox();
+
+          if (box1 && box2) {
+            // Check minimum spacing between buttons
+            const distance = Math.abs(box2.y - (box1.y + box1.height));
+            if (distance < 100) { // Only check if buttons are close vertically
+              expect(distance).toBeGreaterThanOrEqual(8); // Minimum 8px spacing
             }
           }
         }
       }
-    }
-  });
 
-  test('should display loading states correctly across viewports', async ({ page }) => {
-    for (const [deviceName, viewport] of Object.entries(VIEWPORTS)) {
-      await page.setViewportSize(viewport);
-
-      // Look for loading components we implemented
-      const loadingElements = [
-        '[data-testid="skeleton"]',
-        '.animate-pulse',
-        '.animate-spin',
-        '[data-testid="loading-spinner"]',
-        '[data-testid="loading-overlay"]'
-      ];
-
-      for (const selector of loadingElements) {
-        const element = page.locator(selector);
-
-        if (await element.isVisible()) {
-          // Verify loading element is properly sized
-          const box = await element.boundingBox();
-          if (box) {
-            expect(box.width).toBeGreaterThan(0);
-            expect(box.height).toBeGreaterThan(0);
-          }
-
-          // Take screenshot
-          await page.screenshot({
-            path: `test-results/screenshots/loading-${selector.replace(/\[|\]|"|'/g, '')}-${deviceName}.png`,
-            clip: box || undefined
-          });
-        }
-      }
-    }
-  });
-
-  test('should handle AlarmList component responsively', async ({ page }) => {
-    for (const [deviceName, viewport] of Object.entries(VIEWPORTS)) {
-      await page.setViewportSize(viewport);
-
-      // Look for AlarmList component
-      const alarmList = page.locator('[data-testid="alarm-list"], .alarm-list');
-
-      if (await alarmList.isVisible()) {
-        // Verify list items are properly laid out
-        const alarmItems = alarmList.locator('[data-testid="alarm-item"], .alarm-item');
-        const itemCount = await alarmItems.count();
-
-        if (itemCount > 0) {
-          // Check first alarm item layout
-          const firstItem = alarmItems.first();
-          const box = await firstItem.boundingBox();
-
-          if (box) {
-            // Verify item takes reasonable width based on viewport
-            if (deviceName === 'mobile') {
-              expect(box.width).toBeLessThanOrEqual(viewport.width - 32); // Account for padding
-            } else {
-              expect(box.width).toBeGreaterThan(200); // Minimum readable width
-            }
-          }
-
-          // Screenshot alarm list
-          await page.screenshot({
-            path: `test-results/screenshots/alarm-list-${deviceName}.png`,
-            clip: await alarmList.boundingBox() || undefined
-          });
-        }
-      }
-    }
-  });
-
-  test('should handle RoutineList component responsively', async ({ page }) => {
-    for (const [deviceName, viewport] of Object.entries(VIEWPORTS)) {
-      await page.setViewportSize(viewport);
-
-      // Look for RoutineList component
-      const routineList = page.locator('[data-testid="routine-list"], .routine-list');
-
-      if (await routineList.isVisible()) {
-        // Similar checks as AlarmList
-        const routineItems = routineList.locator('[data-testid="routine-item"], .routine-item');
-        const itemCount = await routineItems.count();
-
-        if (itemCount > 0) {
-          // Screenshot routine list
-          await page.screenshot({
-            path: `test-results/screenshots/routine-list-${deviceName}.png`,
-            clip: await routineList.boundingBox() || undefined
-          });
-        }
-      }
-    }
-  });
-
-  test('should test empty states responsively', async ({ page }) => {
-    for (const [deviceName, viewport] of Object.entries(VIEWPORTS)) {
-      await page.setViewportSize(viewport);
-
-      // Look for empty state components we implemented
-      const emptyStates = [
-        '[data-testid="empty-alarm-state"]',
-        '[data-testid="empty-routine-state"]',
-        '[data-testid="empty-search-state"]',
-        '[data-testid="loading-failed-state"]'
-      ];
-
-      for (const selector of emptyStates) {
-        const element = page.locator(selector);
-
-        if (await element.isVisible()) {
-          // Verify empty state layout
-          const box = await element.boundingBox();
-          if (box) {
-            // Empty states should be centered and readable
-            expect(box.width).toBeGreaterThan(200);
-            expect(box.height).toBeGreaterThan(100);
-          }
-
-          // Screenshot empty state
-          await page.screenshot({
-            path: `test-results/screenshots/empty-state-${selector.replace(/\[|\]|"|'/g, '')}-${deviceName}.png`,
-            clip: box || undefined
-          });
-        }
-      }
-    }
-  });
-
-  test('should verify dark mode works across viewports', async ({ page }) => {
-    for (const [deviceName, viewport] of Object.entries(VIEWPORTS)) {
-      await page.setViewportSize(viewport);
-
-      // Look for theme toggle
-      const themeToggle = page.locator('[data-testid="theme-toggle"], button:has-text("Dark"), button:has-text("Light")');
-
-      if (await themeToggle.isVisible()) {
-        // Click theme toggle
-        await themeToggle.click();
-
-        // Wait for theme change
-        await page.waitForTimeout(500);
-
-        // Check if dark mode was applied
-        const html = page.locator('html');
-        const classList = await html.getAttribute('class');
-
-        // Screenshot dark mode
-        await page.screenshot({
-          path: `test-results/screenshots/dark-mode-${deviceName}.png`,
-          fullPage: true
-        });
-
-        // Toggle back to light mode for next test
-        await themeToggle.click();
-        await page.waitForTimeout(500);
-      }
-    }
-  });
-
-  test('should test orientation changes on mobile', async ({ page }) => {
-    // Portrait mode (mobile default)
-    await page.setViewportSize({ width: 390, height: 844 });
-
-    await page.screenshot({
-      path: 'test-results/screenshots/mobile-portrait.png',
-      fullPage: true
-    });
-
-    // Landscape mode
-    await page.setViewportSize({ width: 844, height: 390 });
-
-    // Verify content is still accessible
-    const mainContent = page.locator('main, #root, [data-testid="app-container"]');
-    await expect(mainContent).toBeVisible();
-
-    await page.screenshot({
-      path: 'test-results/screenshots/mobile-landscape.png',
-      fullPage: true
+      await context.close();
     });
   });
-
-  test('should verify touch targets meet accessibility guidelines', async ({ page, isMobile }) => {
-    if (!isMobile) {
-      test.skip();
-      return;
-    }
-
-    await page.setViewportSize(VIEWPORTS.mobile);
-
-    // Find all interactive elements
-    const interactiveElements = page.locator('button, a, [role="button"], [tabindex="0"]');
-    const count = await interactiveElements.count();
-
-    for (let i = 0; i < Math.min(count, 10); i++) { // Test first 10 elements
-      const element = interactiveElements.nth(i);
-
-      if (await element.isVisible()) {
-        const box = await element.boundingBox();
-
-        if (box) {
-          // WCAG AA requires minimum 44x44px touch targets
-          expect(box.width).toBeGreaterThanOrEqual(44);
-          expect(box.height).toBeGreaterThanOrEqual(44);
-        }
-      }
-    }
-  });
-
-  test('should test component showcase responsively', async ({ page }) => {
-    // Look for component showcase (if exists)
-    const showcase = page.locator('[data-testid="component-showcase"]');
-
-    if (await showcase.isVisible()) {
-      for (const [deviceName, viewport] of Object.entries(VIEWPORTS)) {
-        await page.setViewportSize(viewport);
-
-        // Screenshot component showcase
-        await page.screenshot({
-          path: `test-results/screenshots/component-showcase-${deviceName}.png`,
-          clip: await showcase.boundingBox() || undefined
-        });
-      }
-    }
-  });
-
 });
