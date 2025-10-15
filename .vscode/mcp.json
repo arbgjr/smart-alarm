@@ -1,5 +1,17 @@
 {
     "inputs": [
+		{
+			"type": "promptString",
+			"id": "codacy_account_token",
+            "description": "Codacity Account Token",
+            "password": true
+		},
+		{
+			"type": "promptString",
+			"id": "credentials_path",
+			"description": "Path to .gdrive-server-credentials.json file",
+			"default": "/mnt/c/Users/arman/OneDrive/Documents/gcp-oauth.keys.json"
+		},
         {
             "id": "github_token",
             "type": "promptString",
@@ -13,55 +25,114 @@
 			"password": false
 		}
     ],
-    "servers": {
-        "github": {
-            "command": "npx",
-            "args": [
-                "-y",
-                "@modelcontextprotocol/server-github"
-            ],
-            "env": {
-                "GITHUB_PERSONAL_ACCESS_TOKEN": "${input:github_token}"
-            }
-        },
-        "filesystem": {
-            "command": "npx",
-            "args": ["-y", "@modelcontextprotocol/server-filesystem", "${workspaceFolder}"]
-        },
-        "memory": {
-			"type": "stdio",
-            "command": "npx",
-            "args": ["-y", "@modelcontextprotocol/server-memory"],
+	"servers": {
+		"filesystem": {
+			"command": "npx",
+			"args": ["-y","@modelcontextprotocol/server-filesystem","/workspaces/smart-alarm/"],
+			"type": "stdio"
+		},
+		"git": {
+			"command": "uvx",
+			"args": ["mcp-server-git"],
+			"type": "stdio"
+		},
+		"github": {
+			"type": "http",
+			"url": "https://api.githubcopilot.com/mcp/"
+		},
+		"memory": {
+			"command": "npx",
+			"args": ["-y","@modelcontextprotocol/server-memory"],
+			"type": "stdio"
+		},
+		"sequentialthinking": {
+			"command": "npx",
+			"args": ["-y","@modelcontextprotocol/server-sequential-thinking"],
+			"type": "stdio"
+		},
+		"time": {
+			"command": "uvx",
+			"args": ["mcp-server-time","--local-timezone","America/Sao_Paulo"],
+			"type": "stdio"
+		},
+		"everything": {
+			"command": "npx",
+			"args": ["-y","@modelcontextprotocol/server-everything"],
+			"type": "stdio"
+		},
+		"gdrive": {
+			"command": "npx",
+			"args": ["-y","@modelcontextprotocol/server-gdrive"],
 			"env": {
-				"MEMORY_FILE_PATH": "${input:memory_file_path}"
-			}
-        },
-        "sequentialthinking": {
-			"type": "stdio",
-            "command": "npx",
-            "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
-        },        
-        "everything": {
-            "command": "npx",
-            "args": ["-y", "@modelcontextprotocol/server-everything"]
-        },
+				"GDRIVE_CREDENTIALS_PATH": "${input:credentials_path}"
+			},
+			"type": "stdio"
+		},
+		"fetch": {
+			"command": "uvx",
+			"args": ["mcp-server-fetch"],
+			"type": "stdio"
+		},
+		"Azure MCP Server": {
+			"command": "npx",
+			"args": ["-y","@azure/mcp@latest","server","start"],
+			"type": "stdio"
+		},
+		"calculator": {
+			"command": "uvx",
+			"args": ["mcp-server-calculator"],
+			"type": "stdio"
+		},
+		"mcp-compass": {
+			"command": "npx",
+			"args": ["-y","@liuyoshio/mcp-compass"],
+			"type": "stdio"
+		},
+		"windows-cli": {
+			"command": "npx",
+			"args": ["-y","@simonb97/server-win-cli","--config","/mnt/c/Users/arman/win-cli-mcp-config.json"],
+			"type": "stdio"
+		},
+		"mcp-server-code-runner": {
+			"command": "npx",
+			"args": ["-y","mcp-server-code-runner@latest"],
+			"type": "stdio"
+		},
+		"context7": {
+			"command": "npx",
+			"args": ["-y","@upstash/context7-mcp@latest"],
+			"type": "stdio"
+		},
 		"microsoft-docs": {
 			"type": "http",
 			"url": "https://learn.microsoft.com/api/mcp"
 		},
-
-        "git": {
-            "command": "uvx",
-            "args": ["mcp-server-git"]
-        },
-        "time": {
-            "command": "uvx",
-            "args": ["mcp-server-time", "--local-timezone", "America/Sao_Paulo"]
-        },
 		"markitdown": {
 			"type": "stdio",
 			"command": "uvx",
 			"args": ["markitdown-mcp"]
+		},
+		"figma": {
+			"url": "http://127.0.0.1:3845/sse",
+			"type": "http"
+		},
+		"playwright": {
+			"command": "npx",
+			"args": [
+				"@playwright/mcp@latest"
+			],
+			"type": "stdio"
+		},
+		"codacy": {
+			"command": "npx",
+			"args": [
+				"-y",
+				"@codacy/codacy-mcp"
+			],
+			"env": {
+				"CODACY_ACCOUNT_TOKEN": "${input:codacy_account_token}"
+			}
 		}
-    }
+
+	}
 }

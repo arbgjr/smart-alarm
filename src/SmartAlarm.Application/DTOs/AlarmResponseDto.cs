@@ -9,7 +9,7 @@ namespace SmartAlarm.Application.DTOs
     public class AlarmResponseDto
     {
         public Guid Id { get; set; }
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
         public DateTime Time { get; set; }
         public bool Enabled { get; set; }
         public Guid UserId { get; set; }

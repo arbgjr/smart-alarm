@@ -46,14 +46,14 @@ namespace SmartAlarm.Application.Webhooks.Queries.GetWebhookById
                 activity?.SetTag("user.id", request.UserId.ToString());
                 activity?.SetTag("correlation.id", _correlationContext.CorrelationId);
 
-                _logger.LogInformation(LogTemplates.QueryStarted, "GetWebhookByIdQuery", 
-                    _correlationContext.CorrelationId, request.UserId);
+                _logger.LogInformation(LogTemplates.QueryStarted, "GetWebhookByIdQuery",
+                    new { CorrelationId = _correlationContext.CorrelationId, UserId = request.UserId, WebhookId = request.Id });
 
                 var webhook = await _webhookRepository.GetByIdAsync(request.Id);
 
                 if (webhook == null || webhook.UserId != request.UserId)
                 {
-                    _logger.LogWarning("Webhook {WebhookId} not found or does not belong to user {UserId}", 
+                    _logger.LogWarning("Webhook {WebhookId} not found or does not belong to user {UserId}",
                         request.Id, request.UserId);
 
                     stopwatch.Stop();
@@ -73,7 +73,7 @@ namespace SmartAlarm.Application.Webhooks.Queries.GetWebhookById
 
                 activity?.SetStatus(ActivityStatusCode.Ok);
 
-                _logger.LogInformation(LogTemplates.QueryCompleted, "GetWebhookByIdQuery", 
+                _logger.LogInformation(LogTemplates.QueryCompleted, "GetWebhookByIdQuery",
                     _correlationContext.CorrelationId, stopwatch.ElapsedMilliseconds);
 
                 return response;
@@ -83,7 +83,7 @@ namespace SmartAlarm.Application.Webhooks.Queries.GetWebhookById
                 stopwatch.Stop();
                 activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
 
-                _logger.LogError(ex, "Error executing GetWebhookByIdQuery for webhook {WebhookId}: {Message}", 
+                _logger.LogError(ex, "Error executing GetWebhookByIdQuery for webhook {WebhookId}: {Message}",
                     request.Id, ex.Message);
 
                 throw;

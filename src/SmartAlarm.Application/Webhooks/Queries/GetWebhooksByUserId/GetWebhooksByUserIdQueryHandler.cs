@@ -48,14 +48,14 @@ namespace SmartAlarm.Application.Webhooks.Queries.GetWebhooksByUserId
                 activity?.SetTag("pagination.pageSize", request.PageSize.ToString());
                 activity?.SetTag("correlation.id", _correlationContext.CorrelationId);
 
-                _logger.LogInformation(LogTemplates.QueryStarted, "GetWebhooksByUserIdQuery", 
-                    _correlationContext.CorrelationId, request.UserId);
+                _logger.LogInformation(LogTemplates.QueryStarted, "GetWebhooksByUserIdQuery",
+                    new { CorrelationId = _correlationContext.CorrelationId, UserId = request.UserId, IncludeInactive = request.IncludeInactive, Page = request.Page, PageSize = request.PageSize });
 
                 var allWebhooks = await _webhookRepository.GetByUserIdAsync(request.UserId);
 
                 // Filtrar por ativo/inativo se necessário
-                var filteredWebhooks = request.IncludeInactive 
-                    ? allWebhooks 
+                var filteredWebhooks = request.IncludeInactive
+                    ? allWebhooks
                     : allWebhooks.Where(w => w.IsActive);
 
                 var webhooksList = filteredWebhooks.ToList();
@@ -89,7 +89,7 @@ namespace SmartAlarm.Application.Webhooks.Queries.GetWebhooksByUserId
                 activity?.SetStatus(ActivityStatusCode.Ok);
                 activity?.SetTag("result.total_count", totalCount.ToString());
 
-                _logger.LogInformation(LogTemplates.QueryCompleted, "GetWebhooksByUserIdQuery", 
+                _logger.LogInformation(LogTemplates.QueryCompleted, "GetWebhooksByUserIdQuery",
                     _correlationContext.CorrelationId, stopwatch.ElapsedMilliseconds);
 
                 return response;
@@ -99,7 +99,7 @@ namespace SmartAlarm.Application.Webhooks.Queries.GetWebhooksByUserId
                 stopwatch.Stop();
                 activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
 
-                _logger.LogError(ex, "Error executing GetWebhooksByUserIdQuery for user {UserId}: {Message}", 
+                _logger.LogError(ex, "Error executing GetWebhooksByUserIdQuery for user {UserId}: {Message}",
                     request.UserId, ex.Message);
 
                 throw;

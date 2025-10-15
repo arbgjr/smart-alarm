@@ -34,20 +34,20 @@ namespace SmartAlarm.Infrastructure.Messaging
             _meter = meter;
             _correlationContext = correlationContext;
             _activitySource = activitySource;
-            
+
             // Log das variáveis de ambiente para depuração
-            _logger.LogInformation("ASPNETCORE_ENVIRONMENT: {Env}", 
+            _logger.LogInformation("ASPNETCORE_ENVIRONMENT: {Env}",
                 Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "não definido");
-            _logger.LogInformation("DOTNET_ENVIRONMENT: {Env}", 
+            _logger.LogInformation("DOTNET_ENVIRONMENT: {Env}",
                 Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? "não definido");
-            _logger.LogInformation("DOTNET_RUNNING_IN_CONTAINER: {InContainer}", 
+            _logger.LogInformation("DOTNET_RUNNING_IN_CONTAINER: {InContainer}",
                 Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") ?? "não definido");
-            _logger.LogInformation("RABBITMQ_HOST: {Host}", 
+            _logger.LogInformation("RABBITMQ_HOST: {Host}",
                 Environment.GetEnvironmentVariable("RABBITMQ_HOST") ?? "não definido");
-                
+
             // Determinar o host do RabbitMQ
             string host = "localhost"; // valor padrão
-            
+
             // Se RABBITMQ_HOST estiver definido, usar esse valor
             var envHost = Environment.GetEnvironmentVariable("RABBITMQ_HOST");
             if (!string.IsNullOrWhiteSpace(envHost))
@@ -76,28 +76,28 @@ namespace SmartAlarm.Infrastructure.Messaging
         {
             var stopwatch = Stopwatch.StartNew();
             var correlationId = _correlationContext.CorrelationId;
-            
+
             using var activity = _activitySource.StartActivity("RabbitMqMessagingService.PublishEventAsync");
             activity?.SetTag("messaging.system", "rabbitmq");
             activity?.SetTag("messaging.destination", topic);
             activity?.SetTag("messaging.operation", "publish");
             activity?.SetTag("correlation.id", correlationId);
-            
+
             try
             {
-                _logger.LogDebug(LogTemplates.MessagingOperationStarted, 
+                _logger.LogDebug(LogTemplates.MessagingOperationStarted,
                     "RabbitMQ", "PublishEvent", topic, correlationId);
-                
+
                 _channel.QueueDeclare(queue: topic, durable: false, exclusive: false, autoDelete: false, arguments: null);
                 var body = Encoding.UTF8.GetBytes(message);
                 _channel.BasicPublish(exchange: "", routingKey: topic, basicProperties: null, body: body);
-                
+
                 stopwatch.Stop();
                 _meter.RecordExternalServiceCallDuration(stopwatch.ElapsedMilliseconds, "messaging", "rabbitmq", true);
-                
-                _logger.LogInformation(LogTemplates.MessagingOperationCompleted, 
+
+                _logger.LogInformation(LogTemplates.MessagingOperationCompleted,
                     "RabbitMQ", "PublishEvent", topic, stopwatch.ElapsedMilliseconds, correlationId);
-                    
+
                 activity?.SetStatus(ActivityStatusCode.Ok);
                 return Task.CompletedTask;
             }
@@ -105,10 +105,10 @@ namespace SmartAlarm.Infrastructure.Messaging
             {
                 stopwatch.Stop();
                 _meter.IncrementErrorCount("MESSAGING", "RabbitMQ", "PublishError");
-                
-                _logger.LogError(LogTemplates.MessagingOperationFailed, ex,
+
+                _logger.LogError(ex, LogTemplates.MessagingOperationFailed,
                     "RabbitMQ", "PublishEvent", topic, ex.Message, correlationId);
-                    
+
                 activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
                 throw;
             }
@@ -118,18 +118,18 @@ namespace SmartAlarm.Infrastructure.Messaging
         {
             var stopwatch = Stopwatch.StartNew();
             var correlationId = _correlationContext.CorrelationId;
-            
+
             using var activity = _activitySource.StartActivity("RabbitMqMessagingService.SubscribeAsync");
             activity?.SetTag("messaging.system", "rabbitmq");
             activity?.SetTag("messaging.destination", topic);
             activity?.SetTag("messaging.operation", "subscribe");
             activity?.SetTag("correlation.id", correlationId);
-            
+
             try
             {
-                _logger.LogDebug(LogTemplates.MessagingOperationStarted, 
+                _logger.LogDebug(LogTemplates.MessagingOperationStarted,
                     "RabbitMQ", "Subscribe", topic, correlationId);
-                
+
                 _channel.QueueDeclare(queue: topic, durable: false, exclusive: false, autoDelete: false, arguments: null);
                 var consumer = new EventingBasicConsumer(_channel);
                 consumer.Received += async (model, ea) =>
@@ -140,30 +140,30 @@ namespace SmartAlarm.Infrastructure.Messaging
                         var body = ea.Body.ToArray();
                         var message = Encoding.UTF8.GetString(body);
                         await handler(message);
-                        
+
                         handlerStopwatch.Stop();
                         _meter.RecordExternalServiceCallDuration(handlerStopwatch.ElapsedMilliseconds, "messaging", "rabbitmq_handler", true);
-                        
-                        _logger.LogDebug(LogTemplates.MessagingOperationCompleted, 
+
+                        _logger.LogDebug(LogTemplates.MessagingOperationCompleted,
                             "RabbitMQ", "MessageReceived", topic, handlerStopwatch.ElapsedMilliseconds, correlationId);
                     }
                     catch (Exception ex)
                     {
                         handlerStopwatch.Stop();
                         _meter.IncrementErrorCount("MESSAGING", "RabbitMQ", "HandlerError");
-                        
-                        _logger.LogError(LogTemplates.MessagingOperationFailed, ex,
+
+                        _logger.LogError(ex, LogTemplates.MessagingOperationFailed,
                             "RabbitMQ", "MessageHandler", topic, ex.Message, correlationId);
                     }
                 };
                 _channel.BasicConsume(queue: topic, autoAck: true, consumer: consumer);
-                
+
                 stopwatch.Stop();
                 _meter.RecordExternalServiceCallDuration(stopwatch.ElapsedMilliseconds, "messaging", "rabbitmq", true);
-                
-                _logger.LogInformation(LogTemplates.MessagingOperationCompleted, 
+
+                _logger.LogInformation(LogTemplates.MessagingOperationCompleted,
                     "RabbitMQ", "Subscribe", topic, stopwatch.ElapsedMilliseconds, correlationId);
-                    
+
                 activity?.SetStatus(ActivityStatusCode.Ok);
                 return Task.CompletedTask;
             }
@@ -171,10 +171,10 @@ namespace SmartAlarm.Infrastructure.Messaging
             {
                 stopwatch.Stop();
                 _meter.IncrementErrorCount("MESSAGING", "RabbitMQ", "SubscribeError");
-                
-                _logger.LogError(LogTemplates.MessagingOperationFailed, ex,
+
+                _logger.LogError(ex, LogTemplates.MessagingOperationFailed,
                     "RabbitMQ", "Subscribe", topic, ex.Message, correlationId);
-                    
+
                 activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
                 throw;
             }

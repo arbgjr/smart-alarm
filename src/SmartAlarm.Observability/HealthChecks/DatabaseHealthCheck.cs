@@ -30,14 +30,14 @@ namespace SmartAlarm.Observability.HealthChecks
                 _logger.LogDebug("Iniciando health check do banco de dados");
 
                 using var connection = new NpgsqlConnection(_connectionString);
-                
+
                 var stopwatch = System.Diagnostics.Stopwatch.StartNew();
                 await connection.OpenAsync(cancellationToken);
-                
+
                 using var command = connection.CreateCommand();
                 command.CommandText = "SELECT 1";
                 var result = await command.ExecuteScalarAsync(cancellationToken);
-                
+
                 stopwatch.Stop();
 
                 var healthData = new Dictionary<string, object>
@@ -46,7 +46,7 @@ namespace SmartAlarm.Observability.HealthChecks
                     ["ResponseTime"] = $"{stopwatch.ElapsedMilliseconds}ms",
                     ["ServerVersion"] = connection.ServerVersion,
                     ["Database"] = connection.Database,
-                    ["Host"] = connection.Host,
+                    ["Host"] = connection.Host ?? "Unknown",
                     ["Port"] = connection.Port,
                     ["Timestamp"] = DateTime.UtcNow
                 };
