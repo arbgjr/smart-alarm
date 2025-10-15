@@ -1,0 +1,468 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Smart Alarm - Business Metrics",
+    "description": "Business KPIs and user engagement metrics",
+    "tags": ["smart-alarm", "business", "kpi", "users"],
+    "timezone": "browser",
+    "editable": true,
+    "graphTooltip": 1,
+    "panels": [
+      {
+        "id": 1,
+        "title": "User Engagement Overview",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "smartalarm_users_total",
+            "legendFormat": "Total Users",
+            "refId": "A"
+          },
+          {
+            "expr": "smartalarm_users_active_today",
+            "legendFormat": "Active Today",
+            "refId": "B"
+          },
+          {
+            "expr": "smartalarm_users_active_week",
+            "legendFormat": "Active This Week",
+            "refId": "C"
+          },
+          {
+            "expr": "increase(smartalarm_users_registered_total[24h])",
+            "legendFormat": "New Users Today",
+            "refId": "D"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "unit": "short"
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "orientation": "horizontal",
+          "textMode": "auto",
+          "colorMode": "value"
+        }
+      },
+      {
+        "id": 2,
+        "title": "Alarm Statistics",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "smartalarm_alarms_total",
+            "legendFormat": "Total Alarms",
+            "refId": "A"
+          },
+          {
+            "expr": "smartalarm_alarms_active",
+            "legendFormat": "Active Alarms",
+            "refId": "B"
+          },
+          {
+            "expr": "increase(smartalarm_alarms_created_total[24h])",
+            "legendFormat": "Created Today",
+            "refId": "C"
+          },
+          {
+            "expr": "increase(smartalarm_alarms_triggered_total[24h])",
+            "legendFormat": "Triggered Today",
+            "refId": "D"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "unit": "short"
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "orientation": "horizontal",
+          "textMode": "auto",
+          "colorMode": "value"
+        }
+      },
+      {
+        "id": 3,
+        "title": "User Growth Trend (30 days)",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "increase(smartalarm_users_registered_total[1d])",
+            "legendFormat": "Daily New Users",
+            "refId": "A"
+          },
+          {
+            "expr": "smartalarm_users_active_today",
+            "legendFormat": "Daily Active Users",
+            "refId": "B"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "Users",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "vis": false
+              },
+              "lineInterpolation": "linear",
+              "lineWidth": 2,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "unit": "short"
+          }
+        },
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8},
+        "options": {
+          "legend": {
+            "calcs": ["mean", "max"],
+            "displayMode": "table",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "Alarm Success Rate",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "smartalarm_alarm_success_rate * 100",
+            "legendFormat": "Success Rate %",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "yellow", "value": 85},
+                {"color": "green", "value": 95}
+              ]
+            },
+            "unit": "percent",
+            "min": 0,
+            "max": 100
+          }
+        },
+        "gridPos": {"h": 8, "w": 6, "x": 0, "y": 16},
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "orientation": "auto",
+          "showThresholdLabels": false,
+          "showThresholdMarkers": true
+        }
+      },
+      {
+        "id": 5,
+        "title": "Average Response Time to Alarms",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "smartalarm_alarm_response_time_avg_seconds",
+            "legendFormat": "Avg Response Time",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": 0},
+                {"color": "yellow", "value": 30},
+                {"color": "red", "value": 60}
+              ]
+            },
+            "unit": "s",
+            "min": 0,
+            "max": 120
+          }
+        },
+        "gridPos": {"h": 8, "w": 6, "x": 6, "y": 16},
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "orientation": "auto",
+          "showThresholdLabels": false,
+          "showThresholdMarkers": true
+        }
+      },
+      {
+        "id": 6,
+        "title": "Feature Usage",
+        "type": "piechart",
+        "targets": [
+          {
+            "expr": "smartalarm_feature_usage_total",
+            "legendFormat": "{{feature}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "unit": "short"
+          }
+        },
+        "gridPos": {"h": 8, "w": 6, "x": 12, "y": 16},
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "pieType": "pie",
+          "tooltip": {
+            "mode": "single"
+          },
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          }
+        }
+      },
+      {
+        "id": 7,
+        "title": "Integration Usage",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "smartalarm_integrations_active{type=\"google_calendar\"}",
+            "legendFormat": "Google Calendar",
+            "refId": "A"
+          },
+          {
+            "expr": "smartalarm_integrations_active{type=\"outlook_calendar\"}",
+            "legendFormat": "Outlook Calendar",
+            "refId": "B"
+          },
+          {
+            "expr": "smartalarm_integrations_active{type=\"apple_calendar\"}",
+            "legendFormat": "Apple Calendar",
+            "refId": "C"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "unit": "short"
+          }
+        },
+        "gridPos": {"h": 8, "w": 6, "x": 18, "y": 16},
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "orientation": "vertical",
+          "textMode": "auto",
+          "colorMode": "value"
+        }
+      },
+      {
+        "id": 8,
+        "title": "Alarm Creation Patterns",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "increase(smartalarm_alarms_created_total[1h])",
+            "legendFormat": "Hourly Alarm Creation",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "Alarms Created",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "bars",
+              "fillOpacity": 80,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "vis": false
+              },
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "unit": "short"
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24},
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "single"
+          }
+        }
+      },
+      {
+        "id": 9,
+        "title": "User Retention Rate",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "smartalarm_user_retention_rate_7d * 100",
+            "legendFormat": "7-day Retention %",
+            "refId": "A"
+          },
+          {
+            "expr": "smartalarm_user_retention_rate_30d * 100",
+            "legendFormat": "30-day Retention %",
+            "refId": "B"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "Retention %",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "vis": false
+              },
+              "lineInterpolation": "linear",
+              "lineWidth": 2,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "unit": "percent",
+            "min": 0,
+            "max": 100
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24},
+        "options": {
+          "legend": {
+            "calcs": ["mean", "lastNotNull"],
+            "displayMode": "table",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        }
+      }
+    ],
+    "time": {
+      "from": "now-7d",
+      "to": "now"
+    },
+    "timepicker": {
+      "refresh_intervals": ["5m", "15m", "30m", "1h", "2h", "1d"]
+    },
+    "refresh": "5m",
+    "schemaVersion": 30,
+    "version": 1,
+    "links": [
+      {
+        "title": "System Overview",
+        "type": "link",
+        "url": "/d/system-overview/smart-alarm-system-overview"
+      }
+    ]
+  }
+}

@@ -148,7 +148,6 @@ namespace SmartAlarm.Infrastructure
 
             // Register audit services
             services.AddScoped<SmartAlarm.Application.Abstractions.IAuditService, SmartAlarm.Infrastructure.Services.AuditService>();
-            services.AddScoped<SmartAlarm.Domain.Repositories.IAuditLogRepository, SmartAlarm.Infrastructure.Repositories.InMemoryAuditLogRepository>();
 
             // Register calendar integration services
             services.AddScoped<SmartAlarm.Application.Services.External.IOutlookCalendarService, SmartAlarm.Infrastructure.Services.External.OutlookCalendarService>();

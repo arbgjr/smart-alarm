@@ -1,0 +1,191 @@
+# Escalation Configuration for Smart Alarm Alerts
+
+escalation_policies:
+  critical_alerts:
+    name: "Critical System Alerts"
+    description: "Immediate response required for system-critical issues"
+    escalation_rules:
+      - level: 1
+        delay: 0m
+        targets:
+          - type: "oncall"
+            contact: "primary-oncall@smartalarm.com"
+            phone: "+5511999999999"
+          - type: "slack"
+            channel: "#alerts-critical"
+      - level: 2
+        delay: 15m
+        targets:
+          - type: "oncall"
+            contact: "secondary-oncall@smartalarm.com"
+            phone: "+5511888888888"
+          - type: "pagerduty"
+            service_key: "critical-service-key"
+      - level: 3
+        delay: 30m
+        targets:
+          - type: "manager"
+            contact: "engineering-manager@smartalarm.com"
+            phone: "+5511777777777"
+      - level: 4
+        delay: 60m
+        targets:
+          - type: "executive"
+            contact: "cto@smartalarm.com"
+            phone: "+5511666666666"
+
+  sla_alerts:
+    name: "SLA Breach Alerts"
+    description: "SLA compliance issues requiring immediate attention"
+    escalation_rules:
+      - level: 1
+        delay: 0m
+        targets:
+          - type: "sla_team"
+            contact: "sla-team@smartalarm.com"
+          - type: "slack"
+            channel: "#sla-alerts"
+      - level: 2
+        delay: 10m
+        targets:
+          - type: "oncall"
+            contact: "primary-oncall@smartalarm.com"
+            phone: "+5511999999999"
+          - type: "pagerduty"
+            service_key: "sla-service-key"
+      - level: 3
+        delay: 30m
+        targets:
+          - type: "executive"
+            contact: "cto@smartalarm.com"
+            phone: "+5511666666666"
+
+  warning_alerts:
+    name: "Warning Level Alerts"
+    description: "Performance and resource issues requiring attention"
+    escalation_rules:
+      - level: 1
+        delay: 0m
+        targets:
+          - type: "devops"
+            contact: "devops@smartalarm.com"
+          - type: "slack"
+            channel: "#alerts-warning"
+      - level: 2
+        delay: 60m
+        targets:
+          - type: "oncall"
+            contact: "primary-oncall@smartalarm.com"
+            phone: "+5511999999999"
+
+  business_alerts:
+    name: "Business Metrics Alerts"
+    description: "Business KPI and user engagement issues"
+    escalation_rules:
+      - level: 1
+        delay: 0m
+        targets:
+          - type: "business_team"
+            contact: "business-team@smartalarm.com"
+          - type: "slack"
+            channel: "#business-alerts"
+        conditions:
+          - time_range: "09:00-18:00"
+            timezone: "America/Sao_Paulo"
+            weekdays: ["monday", "tuesday", "wednesday", "thursday", "friday"]
+      - level: 2
+        delay: 4h
+        targets:
+          - type: "product_manager"
+            contact: "product@smartalarm.com"
+
+notification_templates:
+  critical_email:
+    subject: "[CRITICAL] Smart Alarm Alert: {{ .GroupLabels.alertname }}"
+    body: |
+      🚨 CRITICAL ALERT 🚨
+
+      Alert: {{ .GroupLabels.alertname }}
+      Severity: {{ .CommonLabels.severity }}
+      Service: {{ .CommonLabels.service }}
+      Started: {{ .StartsAt }}
+
+      {{ range .Alerts }}
+      Summary: {{ .Annotations.summary }}
+      Description: {{ .Annotations.description }}
+
+      Runbook: {{ .Annotations.runbook_url }}
+      Dashboard: http://grafana.smartalarm.com/d/system-overview
+
+      Labels:
+      {{ range .Labels.SortedPairs }}  {{ .Name }}: {{ .Value }}
+      {{ end }}
+      {{ end }}
+
+      IMMEDIATE ACTION REQUIRED
+
+      Next escalation in 15 minutes if not acknowledged.
+
+  sla_email:
+    subject: "[SLA BREACH] Smart Alarm: {{ .GroupLabels.alertname }}"
+    body: |
+      ⚠️ SLA BREACH DETECTED ⚠️
+
+      Alert: {{ .GroupLabels.alertname }}
+      SLA Type: {{ .CommonLabels.sla }}
+      Current Value: {{ .CommonAnnotations.current_value }}
+      Threshold: {{ .CommonAnnotations.threshold }}
+
+      {{ range .Alerts }}
+      Summary: {{ .Annotations.summary }}
+      Description: {{ .Annotations.description }}
+      Runbook: {{ .Annotations.runbook_url }}
+      {{ end }}
+
+      SLA Impact: This breach affects our {{ .CommonLabels.sla }} SLA commitment.
+
+      Dashboard: http://grafana.smartalarm.com/d/system-overview
+      SLA Dashboard: http://grafana.smartalarm.com/d/sla-monitoring
+
+      Immediate action required to restore SLA compliance.
+
+  slack_critical:
+    channel: "#alerts-critical"
+    title: "🚨 Critical Alert: {{ .GroupLabels.alertname }}"
+    text: |
+      *Alert:* {{ .GroupLabels.alertname }}
+      *Severity:* {{ .CommonLabels.severity }}
+      *Service:* {{ .CommonLabels.service }}
+
+      {{ range .Alerts }}
+      *Summary:* {{ .Annotations.summary }}
+      *Description:* {{ .Annotations.description }}
+      *Runbook:* <{{ .Annotations.runbook_url }}|View Runbook>
+      {{ end }}
+
+      *Dashboard:* <http://grafana.smartalarm.com/d/system-overview|System Overview>
+
+      <!channel> Immediate attention required!
+
+acknowledgment_settings:
+  timeout: 15m  # Auto-escalate if not acknowledged within 15 minutes
+  methods:
+    - email_reply
+    - slack_reaction
+    - pagerduty_ack
+    - phone_response
+
+auto_resolution:
+  enabled: true
+  timeout: 5m  # Auto-resolve if alert stops firing for 5 minutes
+
+notification_rate_limits:
+  critical:
+    max_per_hour: 10
+    burst: 3
+  warning:
+    max_per_hour: 5
+    burst: 2
+  business:
+    max_per_hour: 2
+    burst: 1

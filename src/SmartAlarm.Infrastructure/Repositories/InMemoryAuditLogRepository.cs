@@ -1,5 +1,6 @@
 using SmartAlarm.Domain.Entities;
 using SmartAlarm.Domain.Repositories;
+using SmartAlarm.Domain.Enums;
 using System.Collections.Concurrent;
 
 namespace SmartAlarm.Infrastructure.Repositories;

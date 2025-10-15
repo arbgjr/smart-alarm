@@ -1,0 +1,81 @@
+groups:
+  - name: sla_alerts
+    rules:
+      # SLA: 99.9% availability
+      - alert: SLAAvailabilityBreach
+        expr: (1 - (rate(smartalarm_requests_total{status_code=~"5.."}[5m]) / rate(smartalarm_requests_total[5m]))) * 100 < 99.9
+        for: 2m
+        labels:
+          severity: critical
+          sla: availability
+        annotations:
+          summary: "SLA availability breach detected"
+          description: "System availability is {{ $value }}%, below the 99.9% SLA target"
+          runbook_url: "https://docs.smartalarm.com/runbooks/sla-availability"
+
+      # SLA: Response time < 2 seconds (P95)
+      - alert: SLAResponseTimeBreach
+        expr: histogram_quantile(0.95, rate(smartalarm_request_duration_seconds_bucket[5m])) > 2
+        for: 3m
+        labels:
+          severity: critical
+          sla: response_time
+        annotations:
+          summary: "SLA response time breach detected"
+          description: "P95 response time is {{ $value }}s, above the 2s SLA target"
+          runbook_url: "https://docs.smartalarm.com/runbooks/sla-response-time"
+
+      # SLA: Error rate < 1%
+      - alert: SLAErrorRateBreach
+        expr: (rate(smartalarm_requests_total{status_code=~"4..|5.."}[5m]) / rate(smartalarm_requests_total[5m])) * 100 > 1
+        for: 2m
+        labels:
+          severity: critical
+          sla: error_rate
+        annotations:
+          summary: "SLA error rate breach detected"
+          description: "Error rate is {{ $value }}%, above the 1% SLA target"
+          runbook_url: "https://docs.smartalarm.com/runbooks/sla-error-rate"
+
+      # Business SLA: Alarm success rate > 95%
+      - alert: AlarmSuccessRateBreach
+        expr: smartalarm_alarm_success_rate * 100 < 95
+        for: 5m
+        labels:
+          severity: critical
+          sla: alarm_success
+        annotations:
+          summary: "Alarm success rate SLA breach"
+          description: "Alarm success rate is {{ $value }}%, below the 95% SLA target"
+          runbook_url: "https://docs.smartalarm.com/runbooks/alarm-success-rate"
+
+      # Warning alerts for SLA approaching thresholds
+      - alert: SLAAvailabilityWarning
+        expr: (1 - (rate(smartalarm_requests_total{status_code=~"5.."}[5m]) / rate(smartalarm_requests_total[5m]))) * 100 < 99.95
+        for: 1m
+        labels:
+          severity: warning
+          sla: availability
+        annotations:
+          summary: "SLA availability approaching threshold"
+          description: "System availability is {{ $value }}%, approaching the 99.9% SLA threshold"
+
+      - alert: SLAResponseTimeWarning
+        expr: histogram_quantile(0.95, rate(smartalarm_request_duration_seconds_bucket[5m])) > 1.5
+        for: 2m
+        labels:
+          severity: warning
+          sla: response_time
+        annotations:
+          summary: "SLA response time approaching threshold"
+          description: "P95 response time is {{ $value }}s, approaching the 2s SLA threshold"
+
+      - alert: SLAErrorRateWarning
+        expr: (rate(smartalarm_requests_total{status_code=~"4..|5.."}[5m]) / rate(smartalarm_requests_total[5m])) * 100 > 0.5
+        for: 1m
+        labels:
+          severity: warning
+          sla: error_rate
+        annotations:
+          summary: "SLA error rate approaching threshold"
+          description: "Error rate is {{ $value }}%, approaching the 1% SLA threshold"

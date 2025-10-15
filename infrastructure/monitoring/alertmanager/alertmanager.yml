@@ -1,163 +1,150 @@
 global:
   smtp_smarthost: 'localhost:587'
   smtp_from: 'alerts@smartalarm.com'
-  resolve_timeout: 5m
+  smtp_auth_username: 'alerts@smartalarm.com'
+  smtp_auth_password: 'your-smtp-password'
 
 route:
   group_by: ['alertname', 'cluster', 'service']
   group_wait: 10s
   group_interval: 10s
   repeat_interval: 1h
-  receiver: 'smart-alarm-team'
+  receiver: 'web.hook'
   routes:
+    # Critical alerts - immediate notification
     - match:
         severity: critical
-      receiver: 'smart-alarm-critical'
-      group_wait: 5s
-      repeat_interval: 30m
+      receiver: 'critical-alerts'
+      group_wait: 0s
+      repeat_interval: 5m
+
+    # SLA alerts - escalated notification
+    - match_re:
+        sla: '.*'
+      receiver: 'sla-alerts'
+      group_wait: 30s
+      repeat_interval: 15m
+
+    # Warning alerts - standard notification
     - match:
         severity: warning
-      receiver: 'smart-alarm-warning'
+      receiver: 'warning-alerts'
+      group_wait: 2m
+      repeat_interval: 30m
+
+    # Business alerts - business hours only
+    - match:
+        type: business
+      receiver: 'business-alerts'
+      group_wait: 5m
       repeat_interval: 2h
-    - match:
-        team: smart-alarm
-        alertname: SLOAvailabilityBreached
-      receiver: 'slo-breach-critical'
-      group_wait: 0s
-      repeat_interval: 15m
-    - match:
-        team: smart-alarm
-        alertname: SLOLatencyBreached
-      receiver: 'slo-breach-critical'
-      group_wait: 0s
-      repeat_interval: 15m
-    - match:
-        team: smart-alarm
-        alertname: SLOErrorRateBreached
-      receiver: 'slo-breach-critical'
-      group_wait: 0s
-      repeat_interval: 15m
+      active_time_intervals:
+        - business-hours
 
 receivers:
-  - name: 'smart-alarm-team'
-    email_configs:
-      - to: 'team@smartalarm.com'
-        subject: '[SmartAlarm] {{ .GroupLabels.alertname }}'
-        body: |
-          {{ range .Alerts }}
-          Alert: {{ .Annotations.summary }}
-          Description: {{ .Annotations.description }}
-          Runbook: {{ .Annotations.runbook }}
-          Labels: {{ .Labels }}
-          {{ end }}
-    slack_configs:
-      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
-        channel: '#smartalarm-alerts'
-        title: '[SmartAlarm] {{ .GroupLabels.alertname }}'
-        text: |
-          {{ range .Alerts }}
-          *Alert*: {{ .Annotations.summary }}
-          *Description*: {{ .Annotations.description }}
-          *Runbook*: {{ .Annotations.runbook }}
-          *Labels*: {{ range .Labels.SortedPairs }}{{ .Name }}={{ .Value }} {{ end }}
-          {{ end }}
+  - name: 'web.hook'
+    webhook_configs:
+      - url: 'http://localhost:5001/webhook'
+        send_resolved: true
 
-  - name: 'smart-alarm-critical'
+  - name: 'critical-alerts'
     email_configs:
       - to: 'oncall@smartalarm.com'
-        subject: '[CRITICAL] SmartAlarm Alert: {{ .GroupLabels.alertname }}'
+        subject: '[CRITICAL] Smart Alarm Alert: {{ .GroupLabels.alertname }}'
         body: |
-          CRITICAL ALERT - IMMEDIATE ACTION REQUIRED
-          
+          Alert: {{ .GroupLabels.alertname }}
+          Severity: {{ .CommonLabels.severity }}
+          Service: {{ .CommonLabels.service }}
+
           {{ range .Alerts }}
-          Alert: {{ .Annotations.summary }}
+          Summary: {{ .Annotations.summary }}
           Description: {{ .Annotations.description }}
-          Runbook: {{ .Annotations.runbook }}
-          Service: {{ .Labels.service }}
-          Instance: {{ .Labels.instance }}
-          Started: {{ .StartsAt }}
-          {{ end }}
-    slack_configs:
-      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
-        channel: '#smartalarm-critical'
-        title: '🚨 [CRITICAL] SmartAlarm Alert'
-        color: 'danger'
-        text: |
-          {{ range .Alerts }}
-          *🚨 CRITICAL ALERT - IMMEDIATE ACTION REQUIRED*
-          
-          *Alert*: {{ .Annotations.summary }}
-          *Description*: {{ .Annotations.description }}
-          *Runbook*: <{{ .Annotations.runbook }}|View Runbook>
-          *Service*: {{ .Labels.service }}
-          *Instance*: {{ .Labels.instance }}
-          *Started*: {{ .StartsAt }}
-          {{ end }}
-    pagerduty_configs:
-      - routing_key: 'YOUR_PAGERDUTY_INTEGRATION_KEY'
-        description: '{{ .GroupLabels.alertname }}: {{ .GroupLabels.service }}'
-        details:
-          alert: '{{ .GroupLabels.alertname }}'
-          service: '{{ .GroupLabels.service }}'
-          instance: '{{ .GroupLabels.instance }}'
-          description: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+          Runbook: {{ .Annotations.runbook_url }}
 
-  - name: 'smart-alarm-warning'
-    slack_configs:
-      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
-        channel: '#smartalarm-alerts'
-        title: '⚠️ [WARNING] SmartAlarm Alert'
-        color: 'warning'
-        text: |
-          {{ range .Alerts }}
-          *⚠️ Warning Alert*
-          
-          *Alert*: {{ .Annotations.summary }}
-          *Description*: {{ .Annotations.description }}
-          *Runbook*: <{{ .Annotations.runbook }}|View Runbook>
-          *Service*: {{ .Labels.service }}
-          *Instance*: {{ .Labels.instance }}
+          Labels:
+          {{ range .Labels.SortedPairs }}  {{ .Name }}: {{ .Value }}
+          {{ end }}
           {{ end }}
 
-  - name: 'slo-breach-critical'
+          Dashboard: http://grafana.smartalarm.com/d/system-overview
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#alerts-critical'
+        title: 'Critical Alert: {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *Summary:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          *Runbook:* {{ .Annotations.runbook_url }}
+          *Service:* {{ .CommonLabels.service }}
+          {{ end }}
+        send_resolved: true
+
+  - name: 'sla-alerts'
     email_configs:
-      - to: 'sre@smartalarm.com,product@smartalarm.com'
-        subject: '[SLO BREACH] SmartAlarm SLI/SLO Violation'
+      - to: 'sla-team@smartalarm.com'
+        subject: '[SLA BREACH] Smart Alarm: {{ .GroupLabels.alertname }}'
         body: |
-          SLO BREACH DETECTED - SERVICE LEVEL OBJECTIVES VIOLATED
-          
+          SLA Alert: {{ .GroupLabels.alertname }}
+          SLA Type: {{ .CommonLabels.sla }}
+
           {{ range .Alerts }}
-          Alert: {{ .Annotations.summary }}
+          Summary: {{ .Annotations.summary }}
           Description: {{ .Annotations.description }}
-          Runbook: {{ .Annotations.runbook }}
-          Service: {{ .Labels.service }}
-          SLO Impact: This may affect customer experience and business SLAs
+          Runbook: {{ .Annotations.runbook_url }}
           {{ end }}
-    slack_configs:
-      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
-        channel: '#smartalarm-slo'
-        title: '🎯 [SLO BREACH] Service Level Objective Violated'
-        color: 'danger'
-        text: |
+
+          Immediate action required to restore SLA compliance.
+    pagerduty_configs:
+      - routing_key: 'your-pagerduty-integration-key'
+        description: 'SLA Breach: {{ .GroupLabels.alertname }}'
+        severity: 'critical'
+
+  - name: 'warning-alerts'
+    email_configs:
+      - to: 'devops@smartalarm.com'
+        subject: '[WARNING] Smart Alarm: {{ .GroupLabels.alertname }}'
+        body: |
+          Warning Alert: {{ .GroupLabels.alertname }}
+
           {{ range .Alerts }}
-          *🎯 SLO BREACH - Customer Impact Possible*
-          
-          *Alert*: {{ .Annotations.summary }}
-          *Description*: {{ .Annotations.description }}
-          *Runbook*: <{{ .Annotations.runbook }}|View Runbook>
-          *Service*: {{ .Labels.service }}
-          *Business Impact*: This may affect customer experience and SLAs
+          Summary: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Runbook: {{ .Annotations.runbook_url }}
           {{ end }}
+
+  - name: 'business-alerts'
+    email_configs:
+      - to: 'business-team@smartalarm.com'
+        subject: '[BUSINESS] Smart Alarm Metrics: {{ .GroupLabels.alertname }}'
+        body: |
+          Business Alert: {{ .GroupLabels.alertname }}
+
+          {{ range .Alerts }}
+          Summary: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          {{ end }}
+
+time_intervals:
+  - name: business-hours
+    time_intervals:
+      - times:
+          - start_time: '09:00'
+            end_time: '18:00'
+        weekdays: ['monday:friday']
+        location: 'America/Sao_Paulo'
 
 inhibit_rules:
+  # Inhibit warning alerts if critical alert is firing
   - source_match:
       severity: 'critical'
     target_match:
       severity: 'warning'
-    equal: ['alertname', 'service', 'instance']
+    equal: ['alertname', 'service']
 
+  # Inhibit individual service alerts if system-wide alert is firing
   - source_match:
-      alertname: 'ServiceDown'
+      alertname: 'SystemDown'
     target_match_re:
-      alertname: '(HighErrorRate|HighResponseTime|DatabaseConnectionsHigh)'
-    equal: ['service', 'instance']
+      alertname: '.*ServiceDown'
+    equal: ['cluster']

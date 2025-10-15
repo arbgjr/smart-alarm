@@ -4,6 +4,7 @@ using OpenTelemetry.Trace;
 using OpenTelemetry.Metrics;
 using SmartAlarm.Api.Middleware;
 using SmartAlarm.Api.Configuration;
+using SmartAlarm.Api.Services;
 using SmartAlarm.KeyVault.Extensions;
 using SmartAlarm.Infrastructure;
 using SmartAlarm.Infrastructure.Extensions;
@@ -17,6 +18,12 @@ using SmartAlarm.Observability.Extensions;
 using Hangfire;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Add security configuration file
+builder.Configuration.AddJsonFile("appsettings.Security.json", optional: false, reloadOnChange: true);
+
+// Add observability configuration file
+builder.Configuration.AddJsonFile("appsettings.Observability.json", optional: true, reloadOnChange: true);
 
 // Configure Kestrel to remove Server header
 builder.WebHost.ConfigureKestrel(options =>
@@ -51,6 +58,12 @@ if (!builder.Environment.IsEnvironment("Testing"))
 {
     builder.Services.AddSmartAlarmInfrastructure(builder.Configuration);
 }
+
+// Add security services
+builder.Services.AddSecurityHeaders(builder.Configuration);
+builder.Services.AddSmartAlarmCors(builder.Configuration);
+builder.Services.Configure<RateLimitConfiguration>(builder.Configuration.GetSection("RateLimit"));
+builder.Services.AddScoped<IRateLimitingService, RateLimitingService>();
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
@@ -179,7 +192,7 @@ if (!builder.Environment.IsEnvironment("Testing"))
 
 
 // LGPD: Serviço de consentimento do usuário
-builder.Services.AddSingleton<SmartAlarm.Api.Services.IUserConsentService, SmartAlarm.Api.Services.UserConsentService>();
+builder.Services.AddScoped<SmartAlarm.Api.Services.IUserConsentService, SmartAlarm.Api.Services.UserConsentService>();
 
 // Configure KeyVault services
 
@@ -201,44 +214,23 @@ builder.Services.AddFido2Services(builder.Configuration);
 
 var app = builder.Build();
 
-// Configure security headers middleware
-app.Use(async (context, next) =>
-{
-    // Security headers for OWASP compliance - Set before processing
-    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
-    context.Response.Headers["X-Frame-Options"] = "DENY";
-    context.Response.Headers["X-XSS-Protection"] = "1; mode=block";
-    context.Response.Headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains";
-    context.Response.Headers["Content-Security-Policy"] = "default-src 'self'";
-    context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
-
-    await next();
-});
-
-// Remove server headers middleware (must be after controllers)
-app.Use(async (context, next) =>
-{
-    context.Response.OnStarting(() =>
-    {
-        context.Response.Headers.Remove("Server");
-        context.Response.Headers.Remove("X-Powered-By");
-        return Task.CompletedTask;
-    });
-
-    await next();
-});
+// Configure security middleware (order is important)
+app.UseSecurityHeaders();
 
 // Observabilidade: logging estruturado e tracing
 app.UseSerilogRequestLogging();
 app.UseObservability();
 
+// CORS configuration
+app.UseCors(CorsConfiguration.DefaultPolicyName);
+
 // Audit middleware for logging user actions
 app.UseMiddleware<SmartAlarm.Api.Middleware.AuditMiddleware>();
 
-// Rate limiting before authentication (disabled in testing environments)
+// Advanced rate limiting (disabled in testing environments)
 if (!app.Environment.IsEnvironment("Testing"))
 {
-    app.UseRateLimiter();
+    app.UseAdvancedRateLimit();
 }
 
 // Segurança: KeyVault, tratamento global de erros, autenticação e RBAC

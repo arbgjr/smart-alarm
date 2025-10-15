@@ -89,6 +89,11 @@ namespace SmartAlarm.Observability.Configuration
         /// Configuração do exportador OTLP
         /// </summary>
         public OtlpExporterConfiguration? Otlp { get; set; }
+
+        /// <summary>
+        /// Configuração do exportador Jaeger
+        /// </summary>
+        public JaegerExporterConfiguration? Jaeger { get; set; }
     }
 
     /// <summary>
@@ -148,5 +153,26 @@ namespace SmartAlarm.Observability.Configuration
         /// Endpoint para scraping das métricas
         /// </summary>
         public string Endpoint { get; set; } = "/metrics";
+    }
+
+    /// <summary>
+    /// Configuração do exportador Jaeger
+    /// </summary>
+    public class JaegerExporterConfiguration
+    {
+        /// <summary>
+        /// Indica se o exportador está habilitado
+        /// </summary>
+        public bool Enabled { get; set; } = true;
+
+        /// <summary>
+        /// Host do agente Jaeger
+        /// </summary>
+        public string AgentHost { get; set; } = "localhost";
+
+        /// <summary>
+        /// Porta do agente Jaeger
+        /// </summary>
+        public int AgentPort { get; set; } = 6831;
     }
 }

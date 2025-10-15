@@ -14,6 +14,7 @@ using SmartAlarm.Observability.Tracing;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using OpenTelemetry.Exporter;
 using Serilog;
 using Serilog.Events;
 using Serilog.Core;
@@ -116,6 +117,16 @@ namespace SmartAlarm.Observability.Extensions
                             options.Endpoint = new Uri(observabilityConfig.Tracing.Otlp.Endpoint);
                         });
                     }
+
+                    // Configurar Jaeger exporter se habilitado
+                    if (observabilityConfig.Tracing?.Jaeger?.Enabled == true)
+                    {
+                        tracerProvider.AddJaegerExporter(options =>
+                        {
+                            options.AgentHost = observabilityConfig.Tracing.Jaeger.AgentHost;
+                            options.AgentPort = observabilityConfig.Tracing.Jaeger.AgentPort;
+                        });
+                    }
                 })
                 .WithMetrics(meterProvider =>
                 {
@@ -144,6 +155,7 @@ namespace SmartAlarm.Observability.Extensions
 
             // Tracing customizado
             services.AddSingleton<SmartAlarmActivitySource>();
+            services.AddScoped<IDistributedTracingService, DistributedTracingService>();
 
             // Middleware de observabilidade não deve ser registrado como serviço
             // Ele será criado diretamente pelo UseMiddleware<>()

@@ -1,0 +1,107 @@
+groups:
+  - name: system_health
+    rules:
+      # Service availability alerts
+      - alert: ServiceDown
+        expr: up{job=~"smartalarm-.*"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "Service {{ $labels.job }} has been down for more than 1 minute"
+          runbook_url: "https://docs.smartalarm.com/runbooks/service-down"
+
+      - alert: HighErrorRate
+        expr: (rate(smartalarm_requests_total{status_code=~"5.."}[5m]) / rate(smartalarm_requests_total[5m])) * 100 > 5
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High error rate detected on {{ $labels.service }}"
+          description: "Error rate is {{ $value }}% on {{ $labels.service }}"
+          runbook_url: "https://docs.smartalarm.com/runbooks/high-error-rate"
+
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(smartalarm_request_duration_seconds_bucket[5m])) > 3
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High response time on {{ $labels.service }}"
+          description: "P95 response time is {{ $value }}s on {{ $labels.service }}"
+          runbook_url: "https://docs.smartalarm.com/runbooks/high-response-time"
+
+      # Resource utilization alerts
+      - alert: HighCPUUsage
+        expr: rate(process_cpu_seconds_total{job=~"smartalarm-.*"}[5m]) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage on {{ $labels.job }}"
+          description: "CPU usage is {{ $value }}% on {{ $labels.job }}"
+          runbook_url: "https://docs.smartalarm.com/runbooks/high-cpu-usage"
+
+      - alert: HighMemoryUsage
+        expr: (process_resident_memory_bytes{job=~"smartalarm-.*"} / 1024 / 1024) > 1024
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage on {{ $labels.job }}"
+          description: "Memory usage is {{ $value }}MB on {{ $labels.job }}"
+          runbook_url: "https://docs.smartalarm.com/runbooks/high-memory-usage"
+
+      # Database alerts
+      - alert: DatabaseConnectionPoolExhausted
+        expr: smartalarm_database_connections_active >= smartalarm_database_connections_max * 0.9
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Database connection pool nearly exhausted"
+          description: "Active connections: {{ $value }}, approaching maximum"
+          runbook_url: "https://docs.smartalarm.com/runbooks/database-connection-pool"
+
+      - alert: SlowDatabaseQueries
+        expr: histogram_quantile(0.95, rate(smartalarm_database_query_duration_seconds_bucket[5m])) > 1
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Slow database queries detected"
+          description: "P95 query time is {{ $value }}s"
+          runbook_url: "https://docs.smartalarm.com/runbooks/slow-database-queries"
+
+      # Cache alerts
+      - alert: LowCacheHitRatio
+        expr: smartalarm_cache_hit_ratio < 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low cache hit ratio"
+          description: "Cache hit ratio is {{ $value }}"
+          runbook_url: "https://docs.smartalarm.com/runbooks/low-cache-hit-ratio"
+
+      # Message queue alerts
+      - alert: HighMessageQueueSize
+        expr: smartalarm_messaging_queue_size > 1000
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High message queue size"
+          description: "Queue size is {{ $value }} messages"
+          runbook_url: "https://docs.smartalarm.com/runbooks/high-message-queue-size"
+
+      - alert: MessageQueueProcessingStalled
+        expr: rate(smartalarm_messaging_operations_total[5m]) == 0 and smartalarm_messaging_queue_size > 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Message queue processing stalled"
+          description: "No messages processed in 5 minutes but queue has {{ $value }} messages"
+          runbook_url: "https://docs.smartalarm.com/runbooks/message-queue-stalled"

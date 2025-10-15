@@ -1,0 +1,82 @@
+groups:
+  - name: business_metrics
+    rules:
+      # Alarm-related business alerts
+      - alert: LowAlarmSuccessRate
+        expr: smartalarm_alarm_success_rate < 0.9
+        for: 10m
+        labels:
+          severity: warning
+          type: business
+        annotations:
+          summary: "Low alarm success rate detected"
+          description: "Alarm success rate is {{ $value }}, below 90% threshold"
+          runbook_url: "https://docs.smartalarm.com/runbooks/low-alarm-success-rate"
+
+      - alert: HighAlarmResponseTime
+        expr: smartalarm_alarm_response_time_avg_seconds > 120
+        for: 5m
+        labels:
+          severity: warning
+          type: business
+        annotations:
+          summary: "High alarm response time"
+          description: "Average alarm response time is {{ $value }}s"
+          runbook_url: "https://docs.smartalarm.com/runbooks/high-alarm-response-time"
+
+      - alert: NoAlarmsCreatedToday
+        expr: increase(smartalarm_alarms_created_total[24h]) == 0
+        for: 1h
+        labels:
+          severity: warning
+          type: business
+        annotations:
+          summary: "No alarms created today"
+          description: "No new alarms have been created in the last 24 hours"
+          runbook_url: "https://docs.smartalarm.com/runbooks/no-alarms-created"
+
+      # User engagement alerts
+      - alert: LowUserActivity
+        expr: smartalarm_users_active_today < 10
+        for: 2h
+        labels:
+          severity: warning
+          type: business
+        annotations:
+          summary: "Low user activity detected"
+          description: "Only {{ $value }} active users today"
+          runbook_url: "https://docs.smartalarm.com/runbooks/low-user-activity"
+
+      - alert: HighUserChurnRate
+        expr: (1 - smartalarm_user_retention_rate_7d) > 0.5
+        for: 1h
+        labels:
+          severity: warning
+          type: business
+        annotations:
+          summary: "High user churn rate"
+          description: "7-day user retention rate is {{ $value }}"
+          runbook_url: "https://docs.smartalarm.com/runbooks/high-user-churn"
+
+      # Integration health alerts
+      - alert: IntegrationFailureRate
+        expr: rate(smartalarm_integration_failures_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          type: business
+        annotations:
+          summary: "High integration failure rate"
+          description: "Integration failure rate is {{ $value }}/min"
+          runbook_url: "https://docs.smartalarm.com/runbooks/integration-failures"
+
+      - alert: CalendarSyncIssues
+        expr: increase(smartalarm_calendar_sync_errors_total[1h]) > 10
+        for: 15m
+        labels:
+          severity: warning
+          type: business
+        annotations:
+          summary: "Calendar synchronization issues"
+          description: "{{ $value }} calendar sync errors in the last hour"
+          runbook_url: "https://docs.smartalarm.com/runbooks/calendar-sync-issues"

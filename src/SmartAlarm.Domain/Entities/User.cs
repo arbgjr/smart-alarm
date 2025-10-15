@@ -19,7 +19,7 @@ namespace SmartAlarm.Domain.Entities
         public DateTime CreatedAt { get; private set; }
         public DateTime? UpdatedAt { get; private set; }
         public DateTime? LastLoginAt { get; private set; }
-        
+
         // Location information for holiday detection
         public string? Country { get; private set; }
         public string? State { get; private set; }
@@ -30,14 +30,28 @@ namespace SmartAlarm.Domain.Entities
         public string? ExternalProviderId { get; private set; }
         public string? ExternalProvider { get; private set; }
 
+        // LGPD/GDPR compliance fields
+        public bool MarkedForDeletion { get; set; }
+        public DateTime? DeletionRequestedAt { get; set; }
+        public string? DeletionReason { get; set; }
+        public bool IsAnonymized { get; set; }
+        public DateTime? AnonymizedAt { get; set; }
+        public string? PreferredLanguage { get; set; } = "pt-BR";
+
         // Navegação para credenciais FIDO2
         public virtual ICollection<UserCredential> Credentials { get; private set; } = new List<UserCredential>();
 
-        // Navegação para roles (RBAC)  
+        // Navegação para roles (RBAC)
         public virtual ICollection<UserRole> UserRoles { get; private set; } = new List<UserRole>();
 
         // Navegação para preferências de feriado
         public virtual ICollection<UserHolidayPreference> HolidayPreferences { get; private set; } = new List<UserHolidayPreference>();
+
+        // Navegação para consentimentos LGPD/GDPR
+        public virtual ICollection<UserConsent> Consents { get; private set; } = new List<UserConsent>();
+
+        // Navegação para logs de auditoria
+        public virtual ICollection<AuditLog> AuditLogs { get; private set; } = new List<AuditLog>();
 
         // Private constructor for EF Core
         private User()
