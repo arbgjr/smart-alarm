@@ -3,6 +3,7 @@ using SmartAlarm.Observability.Extensions;
 using SmartAlarm.Infrastructure;
 using SmartAlarm.Application;
 using SmartAlarm.AiService.Infrastructure.MachineLearning;
+using FluentValidation;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,8 +14,8 @@ builder.Host.UseSerilog((context, configuration) =>
         .ReadFrom.Configuration(context.Configuration)
         .Enrich.FromLogContext()
         .WriteTo.Console()
-        .WriteTo.File("logs/smartalarm-ai-service.log", 
-            rollingInterval: RollingInterval.Day, 
+        .WriteTo.File("logs/smartalarm-ai-service.log",
+            rollingInterval: RollingInterval.Day,
             outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz}] [{Level:u3}] {Message:lj}{NewLine}{Exception}");
 });
 
@@ -25,11 +26,17 @@ builder.Services.AddObservability(builder.Configuration, "SmartAlarm.AiService",
 builder.Services.AddSingleton<IMachineLearningService, MachineLearningService>();
 
 // Registrar MediatR apontando para os handlers do AI Service e Application Layer
-builder.Services.AddMediatR(cfg => 
+builder.Services.AddMediatR(cfg =>
 {
     cfg.RegisterServicesFromAssembly(typeof(SmartAlarm.Application.Commands.CreateAlarmCommand).Assembly);
     cfg.RegisterServicesFromAssembly(typeof(SmartAlarm.AiService.Application.Commands.AnalyzeAlarmPatternsCommand).Assembly);
 });
+
+// Registrar validators
+builder.Services.AddScoped<IValidator<SmartAlarm.AiService.Application.Commands.AnalyzeAlarmPatternsCommand>, SmartAlarm.AiService.Application.Commands.AnalyzeAlarmPatternsCommandValidator>();
+builder.Services.AddScoped<IValidator<SmartAlarm.AiService.Application.Commands.GenerateRecommendationsCommand>, SmartAlarm.AiService.Application.Commands.GenerateRecommendationsCommandValidator>();
+builder.Services.AddScoped<IValidator<SmartAlarm.AiService.Application.Commands.TrainModelCommand>, SmartAlarm.AiService.Application.Commands.TrainModelCommandValidator>();
+builder.Services.AddScoped<IValidator<SmartAlarm.AiService.Application.Queries.PredictOptimalTimeQuery>, SmartAlarm.AiService.Application.Queries.PredictOptimalTimeQueryValidator>();
 
 // Registrar infraestrutura
 if (!builder.Environment.IsEnvironment("Testing"))
@@ -42,8 +49,8 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new() { 
-        Title = "SmartAlarm AI Service API", 
+    c.SwaggerDoc("v1", new() {
+        Title = "SmartAlarm AI Service API",
         Version = "v1",
         Description = "Serviço de IA para análise comportamental e recomendações do Smart Alarm"
     });

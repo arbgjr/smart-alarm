@@ -7,6 +7,9 @@ using Microsoft.IdentityModel.Tokens;
 using Polly;
 using Polly.Extensions.Http;
 using System.Text;
+using SmartAlarm.IntegrationService.Infrastructure.Webhooks;
+using SmartAlarm.IntegrationService.Infrastructure.RateLimiting;
+using SmartAlarm.IntegrationService.Infrastructure.Calendars;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,8 +20,8 @@ builder.Host.UseSerilog((context, configuration) =>
         .ReadFrom.Configuration(context.Configuration)
         .Enrich.FromLogContext()
         .WriteTo.Console()
-        .WriteTo.File("logs/smartalarm-integration-service.log", 
-            rollingInterval: RollingInterval.Day, 
+        .WriteTo.File("logs/smartalarm-integration-service.log",
+            rollingInterval: RollingInterval.Day,
             outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz}] [{Level:u3}] {Message:lj}{NewLine}{Exception}");
 });
 
@@ -26,15 +29,26 @@ builder.Host.UseSerilog((context, configuration) =>
 builder.Services.AddObservability(builder.Configuration, "SmartAlarm.IntegrationService", "1.0.0");
 
 // Registrar MediatR apontando para a Application Layer e handlers do Integration Service
-builder.Services.AddMediatR(cfg => 
+builder.Services.AddMediatR(cfg =>
 {
     cfg.RegisterServicesFromAssembly(typeof(SmartAlarm.Application.Commands.CreateAlarmCommand).Assembly);
     cfg.RegisterServicesFromAssembly(typeof(SmartAlarm.IntegrationService.Application.Commands.SyncExternalCalendarCommand).Assembly);
 });
 
 // Registrar serviços específicos do Integration Service
-builder.Services.AddScoped<SmartAlarm.IntegrationService.Application.Services.ICalendarRetryService, 
+builder.Services.AddScoped<SmartAlarm.IntegrationService.Application.Services.ICalendarRetryService,
                            SmartAlarm.IntegrationService.Application.Services.CalendarRetryService>();
+
+// Registrar infraestrutura de integração
+builder.Services.AddSingleton<SmartAlarm.IntegrationService.Infrastructure.Webhooks.IWebhookManager,
+                              SmartAlarm.IntegrationService.Infrastructure.Webhooks.WebhookManager>();
+builder.Services.AddSingleton<SmartAlarm.IntegrationService.Infrastructure.RateLimiting.IRateLimiter,
+                              SmartAlarm.IntegrationService.Infrastructure.RateLimiting.RateLimiter>();
+
+// Registrar serviços de calendário
+builder.Services.AddScoped<SmartAlarm.IntegrationService.Infrastructure.Calendars.GoogleCalendarService>();
+builder.Services.AddScoped<SmartAlarm.IntegrationService.Infrastructure.Calendars.ICalendarIntegrationService>(provider =>
+    provider.GetRequiredService<SmartAlarm.IntegrationService.Infrastructure.Calendars.GoogleCalendarService>());
 
 // Registrar infraestrutura
 if (!builder.Environment.IsEnvironment("Testing"))
@@ -98,7 +112,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
             ClockSkew = TimeSpan.FromMinutes(2)
         };
-        
+
         options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
         options.SaveToken = true;
     });
@@ -108,8 +122,8 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new() { 
-        Title = "SmartAlarm Integration Service API", 
+    c.SwaggerDoc("v1", new() {
+        Title = "SmartAlarm Integration Service API",
         Version = "v1",
         Description = "Serviço de integrações externas do Smart Alarm"
     });

@@ -60,8 +60,8 @@ namespace SmartAlarm.AiService.Controllers
                 activity?.SetTag("user.id", userId.ToString());
                 activity?.SetTag("operation", "analyze_alarm_patterns");
                 activity?.SetTag("max_days", maxDaysToAnalyze.ToString());
-                
-                _logger.LogInformation("Iniciando análise de padrões de alarmes para usuário {UserId} - CorrelationId: {CorrelationId}", 
+
+                _logger.LogInformation("Iniciando análise de padrões de alarmes para usuário {UserId} - CorrelationId: {CorrelationId}",
                     userId, _correlationContext.CorrelationId);
 
                 var command = new AnalyzeAlarmPatternsCommand(userId, startDate, endDate, maxDaysToAnalyze);
@@ -69,8 +69,8 @@ namespace SmartAlarm.AiService.Controllers
 
                 stopwatch.Stop();
                 _meter.RecordRequestDuration(stopwatch.ElapsedMilliseconds, "analyze_alarm_patterns", "success", "200");
-                
-                _logger.LogInformation("Análise de padrões de alarmes concluída para usuário {UserId} em {Duration}ms", 
+
+                _logger.LogInformation("Análise de padrões de alarmes concluída para usuário {UserId} em {Duration}ms",
                     userId, stopwatch.ElapsedMilliseconds);
 
                 return Ok(result);
@@ -80,11 +80,11 @@ namespace SmartAlarm.AiService.Controllers
                 stopwatch.Stop();
                 _meter.RecordRequestDuration(stopwatch.ElapsedMilliseconds, "analyze_alarm_patterns", "error", "500");
                 _meter.IncrementErrorCount("controller", "analyze_alarm_patterns", "exception");
-                
+
                 activity?.SetTag("error", true);
                 activity?.SetTag("error.message", ex.Message);
-                
-                _logger.LogError(ex, "Erro ao analisar padrões de alarmes para usuário {UserId} - CorrelationId: {CorrelationId}", 
+
+                _logger.LogError(ex, "Erro ao analisar padrões de alarmes para usuário {UserId} - CorrelationId: {CorrelationId}",
                     userId, _correlationContext.CorrelationId);
 
                 return StatusCode(500, new { error = "Erro interno do servidor", correlationId = _correlationContext.CorrelationId });
@@ -115,12 +115,12 @@ namespace SmartAlarm.AiService.Controllers
                 activity?.SetTag("operation", "predict_optimal_time");
                 activity?.SetTag("target_day", targetDay.ToString());
                 activity?.SetTag("context", context ?? "none");
-                
-                _logger.LogInformation("Iniciando predição de horário ótimo para usuário {UserId}, dia {TargetDay} - CorrelationId: {CorrelationId}", 
+
+                _logger.LogInformation("Iniciando predição de horário ótimo para usuário {UserId}, dia {TargetDay} - CorrelationId: {CorrelationId}",
                     userId, targetDay, _correlationContext.CorrelationId);
 
-                TimeSpan? preferredTimeRange = preferredTimeRangeHours.HasValue 
-                    ? TimeSpan.FromHours(preferredTimeRangeHours.Value) 
+                TimeSpan? preferredTimeRange = preferredTimeRangeHours.HasValue
+                    ? TimeSpan.FromHours(preferredTimeRangeHours.Value)
                     : null;
 
                 var query = new PredictOptimalTimeQuery(userId, targetDay, context, preferredTimeRange);
@@ -128,8 +128,8 @@ namespace SmartAlarm.AiService.Controllers
 
                 stopwatch.Stop();
                 _meter.RecordRequestDuration(stopwatch.ElapsedMilliseconds, "predict_optimal_time", "success", "200");
-                
-                _logger.LogInformation("Predição de horário ótimo concluída para usuário {UserId} em {Duration}ms", 
+
+                _logger.LogInformation("Predição de horário ótimo concluída para usuário {UserId} em {Duration}ms",
                     userId, stopwatch.ElapsedMilliseconds);
 
                 return Ok(result);
@@ -139,11 +139,110 @@ namespace SmartAlarm.AiService.Controllers
                 stopwatch.Stop();
                 _meter.RecordRequestDuration(stopwatch.ElapsedMilliseconds, "predict_optimal_time", "error", "500");
                 _meter.IncrementErrorCount("controller", "predict_optimal_time", "exception");
-                
+
                 activity?.SetTag("error", true);
                 activity?.SetTag("error.message", ex.Message);
-                
-                _logger.LogError(ex, "Erro ao predizer horário ótimo para usuário {UserId} - CorrelationId: {CorrelationId}", 
+
+                _logger.LogError(ex, "Erro ao predizer horário ótimo para usuário {UserId} - CorrelationId: {CorrelationId}",
+                    userId, _correlationContext.CorrelationId);
+
+                return StatusCode(500, new { error = "Erro interno do servidor", correlationId = _correlationContext.CorrelationId });
+            }
+        }
+
+        /// <summary>
+        /// Gera recomendações personalizadas usando IA
+        /// </summary>
+        /// <param name="userId">ID do usuário</param>
+        /// <param name="recommendationType">Tipo de recomendação (schedule, sleep_hygiene, optimization, all)</param>
+        /// <param name="maxRecommendations">Número máximo de recomendações (padrão: 5)</param>
+        /// <returns>Recomendações personalizadas geradas pela IA</returns>
+        [HttpPost("generate-recommendations")]
+        public async Task<IActionResult> GenerateRecommendations(
+            [FromQuery] Guid userId,
+            [FromQuery] string recommendationType = "all",
+            [FromQuery] int maxRecommendations = 5)
+        {
+            using var activity = _activitySource.StartActivity("AiController.GenerateRecommendations");
+            var stopwatch = Stopwatch.StartNew();
+
+            try
+            {
+                activity?.SetTag("user.id", userId.ToString());
+                activity?.SetTag("operation", "generate_recommendations");
+                activity?.SetTag("recommendation.type", recommendationType);
+                activity?.SetTag("recommendation.max_count", maxRecommendations.ToString());
+
+                _logger.LogInformation("Iniciando geração de recomendações para usuário {UserId}, tipo {Type} - CorrelationId: {CorrelationId}",
+                    userId, recommendationType, _correlationContext.CorrelationId);
+
+                var command = new GenerateRecommendationsCommand(userId, recommendationType, maxRecommendations);
+                var result = await _mediator.Send(command);
+
+                stopwatch.Stop();
+                _meter.RecordRequestDuration(stopwatch.ElapsedMilliseconds, "generate_recommendations", "success", "200");
+
+                _logger.LogInformation("Recomendações geradas para usuário {UserId} - Count: {Count} em {Duration}ms",
+                    userId, result.Recommendations.Count(), stopwatch.ElapsedMilliseconds);
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                stopwatch.Stop();
+                _meter.RecordRequestDuration(stopwatch.ElapsedMilliseconds, "generate_recommendations", "error", "500");
+                _meter.IncrementErrorCount("controller", "generate_recommendations", "exception");
+
+                activity?.SetTag("error", true);
+                activity?.SetTag("error.message", ex.Message);
+
+                _logger.LogError(ex, "Erro ao gerar recomendações para usuário {UserId} - CorrelationId: {CorrelationId}",
+                    userId, _correlationContext.CorrelationId);
+
+                return StatusCode(500, new { error = "Erro interno do servidor", correlationId = _correlationContext.CorrelationId });
+            }
+        }
+
+        /// <summary>
+        /// Treina o modelo de IA com dados históricos do usuário
+        /// </summary>
+        /// <param name="userId">ID do usuário</param>
+        /// <returns>Status do treinamento</returns>
+        [HttpPost("train-model")]
+        public async Task<IActionResult> TrainModel([FromQuery] Guid userId)
+        {
+            using var activity = _activitySource.StartActivity("AiController.TrainModel");
+            var stopwatch = Stopwatch.StartNew();
+
+            try
+            {
+                activity?.SetTag("user.id", userId.ToString());
+                activity?.SetTag("operation", "train_model");
+
+                _logger.LogInformation("Iniciando treinamento de modelo para usuário {UserId} - CorrelationId: {CorrelationId}",
+                    userId, _correlationContext.CorrelationId);
+
+                var command = new TrainModelCommand(userId);
+                var result = await _mediator.Send(command);
+
+                stopwatch.Stop();
+                _meter.RecordRequestDuration(stopwatch.ElapsedMilliseconds, "train_model", "success", "200");
+
+                _logger.LogInformation("Treinamento de modelo concluído para usuário {UserId} em {Duration}ms",
+                    userId, stopwatch.ElapsedMilliseconds);
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                stopwatch.Stop();
+                _meter.RecordRequestDuration(stopwatch.ElapsedMilliseconds, "train_model", "error", "500");
+                _meter.IncrementErrorCount("controller", "train_model", "exception");
+
+                activity?.SetTag("error", true);
+                activity?.SetTag("error.message", ex.Message);
+
+                _logger.LogError(ex, "Erro ao treinar modelo para usuário {UserId} - CorrelationId: {CorrelationId}",
                     userId, _correlationContext.CorrelationId);
 
                 return StatusCode(500, new { error = "Erro interno do servidor", correlationId = _correlationContext.CorrelationId });

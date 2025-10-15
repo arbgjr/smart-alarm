@@ -4,6 +4,10 @@ using SmartAlarm.Infrastructure;
 using SmartAlarm.Application;
 using Hangfire;
 using Hangfire.PostgreSql;
+using SmartAlarm.AlarmService.Infrastructure.DistributedProcessing;
+using SmartAlarm.AlarmService.Infrastructure.Queues;
+using SmartAlarm.AlarmService.Infrastructure.Metrics;
+using FluentValidation;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,8 +18,8 @@ builder.Host.UseSerilog((context, configuration) =>
         .ReadFrom.Configuration(context.Configuration)
         .Enrich.FromLogContext()
         .WriteTo.Console()
-        .WriteTo.File("logs/smartalarm-alarm-service.log", 
-            rollingInterval: RollingInterval.Day, 
+        .WriteTo.File("logs/smartalarm-alarm-service.log",
+            rollingInterval: RollingInterval.Day,
             outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz}] [{Level:u3}] {Message:lj}{NewLine}{Exception}");
 });
 
@@ -23,11 +27,20 @@ builder.Host.UseSerilog((context, configuration) =>
 builder.Services.AddObservability(builder.Configuration, "SmartAlarm.AlarmService", "1.0.0");
 
 // Registrar MediatR para handlers do próprio serviço
-builder.Services.AddMediatR(cfg => 
+builder.Services.AddMediatR(cfg =>
 {
     cfg.RegisterServicesFromAssembly(typeof(Program).Assembly);
     cfg.RegisterServicesFromAssembly(typeof(SmartAlarm.Application.Commands.CreateAlarmCommand).Assembly);
 });
+
+// Registrar serviços específicos do Alarm Service
+builder.Services.AddSingleton<SmartAlarm.AlarmService.Infrastructure.Metrics.AlarmServiceMetrics>();
+builder.Services.AddScoped<SmartAlarm.AlarmService.Infrastructure.DistributedProcessing.IDistributedAlarmProcessor, SmartAlarm.AlarmService.Infrastructure.DistributedProcessing.DistributedAlarmProcessor>();
+builder.Services.AddScoped<SmartAlarm.AlarmService.Infrastructure.Queues.IAlarmQueue, SmartAlarm.AlarmService.Infrastructure.Queues.HangfireAlarmQueue>();
+
+// Registrar validators
+builder.Services.AddScoped<IValidator<SmartAlarm.AlarmService.Application.Commands.ProcessDistributedAlarmCommand>, SmartAlarm.AlarmService.Application.Commands.ProcessDistributedAlarmCommandValidator>();
+builder.Services.AddScoped<IValidator<SmartAlarm.AlarmService.Application.Queries.GetQueueStatisticsQuery>, SmartAlarm.AlarmService.Application.Queries.GetQueueStatisticsQueryValidator>();
 
 // Registrar infraestrutura
 if (!builder.Environment.IsEnvironment("Testing"))
@@ -53,8 +66,8 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new() { 
-        Title = "SmartAlarm Alarm Service API", 
+    c.SwaggerDoc("v1", new() {
+        Title = "SmartAlarm Alarm Service API",
         Version = "v1",
         Description = "Serviço principal de gerenciamento de alarmes do Smart Alarm"
     });
