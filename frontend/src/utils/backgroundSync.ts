@@ -41,7 +41,7 @@ export class BackgroundSync {
 
     this.syncQueue.push(syncData);
     this.saveSyncQueue();
-    
+
     // Try to sync immediately if online
     if (navigator.onLine) {
       this.processQueue();
@@ -130,10 +130,10 @@ export class BackgroundSync {
     const { action, entity, data } = syncData;
 
     switch (entity) {
-      case 'alarm':
+      case 'alarm': {
         // Import alarm service dynamically to avoid circular dependencies
         const { alarmService } = await import('@/services/alarmService');
-        
+
         switch (action) {
           case 'create':
             await alarmService.createAlarm(data);
@@ -146,11 +146,12 @@ export class BackgroundSync {
             break;
         }
         break;
-      
-      case 'routine':
+      }
+
+      case 'routine': {
         // Import routine service dynamically to avoid circular dependencies
         const { RoutineService } = await import('@/services');
-        
+
         switch (action) {
           case 'create':
             await RoutineService.createRoutine(data);
@@ -163,6 +164,7 @@ export class BackgroundSync {
             break;
         }
         break;
+      }
     }
 
     console.log(`Successfully synced: ${syncData.id}`);

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useSignalRConnection, useRealTimeAlarmEvents } from '../utils/signalRConnection';
-import { alarmService } from '../services/alarmService';
+// import { alarmService } from '../services/alarmService';
 
 interface DashboardMetrics {
   activeAlarms: number;
@@ -92,7 +92,7 @@ export function useDashboardMetrics() {
   // Update metrics when data is fetched
   useEffect(() => {
     if (dashboardData) {
-      setMetrics(dashboardData.metrics || metrics);
+      setMetrics(prevMetrics => dashboardData.metrics || prevMetrics);
       setChartData(dashboardData.chartData || []);
       setRecentActivity(dashboardData.recentActivity || []);
     }

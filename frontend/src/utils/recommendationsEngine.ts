@@ -1,7 +1,7 @@
 // Personalized Recommendations Engine
 import { mlDataCollector } from './mlDataCollector';
-import { alarmOptimizer } from './alarmOptimizer';
-import type { UserBehaviorData, SleepPatternMetrics } from './mlDataCollector';
+// import { alarmOptimizer } from './alarmOptimizer';
+import type { SleepPatternMetrics } from './mlDataCollector';
 
 export interface PersonalizedRecommendation {
   id: string;
@@ -133,19 +133,19 @@ class RecommendationsEngine {
   /**
    * Generate personalized recommendations based on user data
    */
-  public generateRecommendations(context?: Partial<RecommendationContext>): PersonalizedRecommendation[] {
+  public generateRecommendations(): PersonalizedRecommendation[] {
     const analytics = mlDataCollector.getLocalAnalytics();
     if (!analytics) {
-      return this.getOnboardingRecommendations(context);
+      return this.getOnboardingRecommendations();
     }
 
     const recommendations: PersonalizedRecommendation[] = [];
-    
+
     // Analyze sleep patterns and generate recommendations
-    recommendations.push(...this.analyzeSleepConsistency(analytics, context));
-    recommendations.push(...this.analyzeSleepDuration(analytics, context));
-    recommendations.push(...this.analyzeAlarmTiming(analytics, context));
-    recommendations.push(...this.analyzeLifestyleFactors(analytics, context));
+    recommendations.push(...this.analyzeSleepConsistency(analytics));
+    recommendations.push(...this.analyzeSleepDuration(analytics));
+    recommendations.push(...this.analyzeAlarmTiming(analytics));
+    recommendations.push(...this.analyzeLifestyleFactors(analytics));
 
     // Sort by priority and relevance
     return recommendations
@@ -156,13 +156,13 @@ class RecommendationsEngine {
       .slice(0, 8); // Limit to top 8 recommendations
   }
 
-  private analyzeSleepConsistency(analytics: SleepPatternMetrics, context?: Partial<RecommendationContext>): PersonalizedRecommendation[] {
+  private analyzeSleepConsistency(analytics: SleepPatternMetrics): PersonalizedRecommendation[] {
     const recommendations: PersonalizedRecommendation[] = [];
-    
+
     if (analytics.sleepConsistency < 0.7) {
       const template = this.RECOMMENDATION_TEMPLATES.get('inconsistent_bedtime')!;
       const variationMinutes = Math.round((1 - analytics.sleepConsistency) * 60);
-      
+
       recommendations.push({
         id: 'sleep-consistency-' + Date.now(),
         ...template,
@@ -188,14 +188,14 @@ class RecommendationsEngine {
     return recommendations;
   }
 
-  private analyzeSleepDuration(analytics: SleepPatternMetrics, context?: Partial<RecommendationContext>): PersonalizedRecommendation[] {
+  private analyzeSleepDuration(analytics: SleepPatternMetrics): PersonalizedRecommendation[] {
     const recommendations: PersonalizedRecommendation[] = [];
-    const optimalRange = this.getOptimalSleepRange(context?.age || 30);
-    
+    const optimalRange = this.getOptimalSleepRange(30); // Default age
+
     if (analytics.avgSleepDuration < optimalRange.min || analytics.avgSleepDuration > optimalRange.max) {
       const template = this.RECOMMENDATION_TEMPLATES.get('insufficient_sleep')!;
       const isInsufficient = analytics.avgSleepDuration < optimalRange.min;
-      
+
       recommendations.push({
         id: 'sleep-duration-' + Date.now(),
         ...template,
@@ -227,12 +227,12 @@ class RecommendationsEngine {
     return recommendations;
   }
 
-  private analyzeAlarmTiming(analytics: SleepPatternMetrics, context?: Partial<RecommendationContext>): PersonalizedRecommendation[] {
+  private analyzeAlarmTiming(analytics: SleepPatternMetrics): PersonalizedRecommendation[] {
     const recommendations: PersonalizedRecommendation[] = [];
-    
+
     if (analytics.optimalAlarmWindow.confidence > 0.6) {
       const template = this.RECOMMENDATION_TEMPLATES.get('alarm_optimization')!;
-      
+
       recommendations.push({
         id: 'alarm-timing-' + Date.now(),
         ...template,
@@ -257,13 +257,13 @@ class RecommendationsEngine {
     return recommendations;
   }
 
-  private analyzeLifestyleFactors(analytics: SleepPatternMetrics, context?: Partial<RecommendationContext>): PersonalizedRecommendation[] {
+  private analyzeLifestyleFactors(analytics: SleepPatternMetrics): PersonalizedRecommendation[] {
     const recommendations: PersonalizedRecommendation[] = [];
-    
+
     // Evening routine recommendation
     if (analytics.sleepConsistency < 0.8) {
       const template = this.RECOMMENDATION_TEMPLATES.get('evening_routine')!;
-      
+
       recommendations.push({
         id: 'evening-routine-' + Date.now(),
         ...template,
@@ -310,7 +310,7 @@ class RecommendationsEngine {
     return recommendations;
   }
 
-  private getOnboardingRecommendations(context?: Partial<RecommendationContext>): PersonalizedRecommendation[] {
+  private getOnboardingRecommendations(): PersonalizedRecommendation[] {
     // Return general recommendations for new users
     return [
       {
@@ -345,10 +345,10 @@ class RecommendationsEngine {
     const wakeTimeMinutes = this.timeToMinutes(analytics.avgWakeupTime);
     const targetSleepHours = 8; // Optimal for most adults
     const bedtimeMinutes = wakeTimeMinutes - (targetSleepHours * 60);
-    
+
     // Handle overnight calculation
     const adjustedBedtimeMinutes = bedtimeMinutes < 0 ? bedtimeMinutes + (24 * 60) : bedtimeMinutes;
-    
+
     return this.minutesToTime(adjustedBedtimeMinutes);
   }
 
@@ -378,17 +378,16 @@ class RecommendationsEngine {
    * Get recommendations filtered by category
    */
   public getRecommendationsByCategory(
-    category: PersonalizedRecommendation['category'],
-    context?: Partial<RecommendationContext>
+    category: PersonalizedRecommendation['category']
   ): PersonalizedRecommendation[] {
-    return this.generateRecommendations(context).filter(rec => rec.category === category);
+    return this.generateRecommendations().filter(rec => rec.category === category);
   }
 
   /**
    * Get high-priority recommendations
    */
-  public getCriticalRecommendations(context?: Partial<RecommendationContext>): PersonalizedRecommendation[] {
-    return this.generateRecommendations(context).filter(rec => rec.priority === 'critical' || rec.priority === 'high');
+  public getCriticalRecommendations(): PersonalizedRecommendation[] {
+    return this.generateRecommendations().filter(rec => rec.priority === 'critical' || rec.priority === 'high');
   }
 
   /**
@@ -402,7 +401,7 @@ class RecommendationsEngine {
       effectivenessRating,
       userId: this.getCurrentUserId()
     };
-    
+
     // Store in localStorage for now (could sync to backend later)
     const implementations = JSON.parse(localStorage.getItem('recommendation-implementations') || '[]');
     implementations.push(implementationData);
@@ -423,13 +422,13 @@ class RecommendationsEngine {
 export const recommendationsEngine = RecommendationsEngine.getInstance();
 
 // React hook for components
-export function usePersonalizedRecommendations(context?: Partial<RecommendationContext>) {
+export function usePersonalizedRecommendations() {
   return {
-    getRecommendations: () => recommendationsEngine.generateRecommendations(context),
-    getByCategory: (category: PersonalizedRecommendation['category']) => 
-      recommendationsEngine.getRecommendationsByCategory(category, context),
-    getCritical: () => recommendationsEngine.getCriticalRecommendations(context),
-    markImplemented: (id: string, rating?: 1 | 2 | 3 | 4 | 5) => 
+    getRecommendations: () => recommendationsEngine.generateRecommendations(),
+    getByCategory: (category: PersonalizedRecommendation['category']) =>
+      recommendationsEngine.getRecommendationsByCategory(category),
+    getCritical: () => recommendationsEngine.getCriticalRecommendations(),
+    markImplemented: (id: string, rating?: 1 | 2 | 3 | 4 | 5) =>
       recommendationsEngine.markRecommendationImplemented(id, rating)
   };
 }

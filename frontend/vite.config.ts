@@ -174,6 +174,12 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: './src/test/setup.ts',
     css: true,
+    exclude: [
+      'node_modules/**',
+      'tests/e2e/**',
+      'dist/**',
+      'build/**'
+    ],
     coverage: {
       reporter: ['text', 'json', 'html'],
       exclude: [
@@ -182,6 +188,7 @@ export default defineConfig({
         'src/**/*.test.{ts,tsx}',
         'src/**/*.spec.{ts,tsx}',
         'src/vite-env.d.ts',
+        'tests/e2e/**',
       ],
       thresholds: {
         global: {

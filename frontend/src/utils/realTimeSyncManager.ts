@@ -3,7 +3,7 @@ import { signalRManager, type AlarmEvent, type SyncEvent } from './signalRConnec
 import { pushNotificationManager } from './pushNotifications';
 import { mlDataCollector } from './mlDataCollector';
 import { useAlarmsStore } from '@/stores/alarmsStore';
-import { useAuthStore } from '@/stores/authStore';
+// import { useAuthStore } from '@/stores/authStore';
 import { backgroundSync } from './backgroundSync';
 
 export interface AlarmSyncStatus {
@@ -73,7 +73,7 @@ class RealTimeSyncManager {
     try {
       // Initialize SignalR connection
       await signalRManager.initialize();
-      
+
       // Setup event handlers
       this.setupSignalREventHandlers();
       this.setupPresenceTracking();
@@ -169,7 +169,7 @@ class RealTimeSyncManager {
       }
 
       // Update local alarm
-      await this.applyRemoteUpdate(event, localAlarm);
+      await this.applyRemoteUpdate(event);
 
       // Update sync status
       this.updateSyncStatus(event.alarmId, {
@@ -192,7 +192,7 @@ class RealTimeSyncManager {
       // Track the alarm trigger in ML data
       mlDataCollector.trackAlarmDismissed(
         event.alarmId,
-        event.data?.originalTime || '',
+        event.timestamp,
         event.timestamp,
         'button', // Default dismissal method
         0 // Unknown response time for remote triggers
@@ -236,7 +236,7 @@ class RealTimeSyncManager {
       // Track dismissal in ML data
       mlDataCollector.trackAlarmDismissed(
         event.alarmId,
-        event.data?.originalTime || '',
+        event.timestamp,
         event.timestamp,
         event.data?.dismissalMethod || 'button',
         event.data?.responseTime || 0
@@ -334,7 +334,7 @@ class RealTimeSyncManager {
    */
   private handleConnectionChange(status: any): void {
     console.log('SignalR connection status changed:', status);
-    
+
     if (status.isConnected) {
       // Reconnected - request sync
       this.requestPartialSync();
@@ -348,10 +348,10 @@ class RealTimeSyncManager {
     if (this.syncInProgress) return;
 
     this.syncInProgress = true;
-    
+
     try {
       console.log('Starting full sync...');
-      
+
       // Get local alarms
       const alarmsStore = useAlarmsStore.getState();
       const localAlarms = alarmsStore.alarms;
@@ -430,7 +430,7 @@ class RealTimeSyncManager {
 
     } catch (error) {
       console.error('Failed to send alarm update:', error);
-      
+
       // Mark as pending sync
       this.updateSyncStatus(alarmId, {
         lastSyncTime: new Date().toISOString(),
@@ -448,11 +448,11 @@ class RealTimeSyncManager {
     try {
       // This would require more detailed alarm data in the event
       console.log('New remote alarm detected:', event.alarmId);
-      
+
       // In a real implementation, you'd fetch the full alarm data
       // and add it to the local store
       await this.requestPartialSync();
-      
+
     } catch (error) {
       console.error('Failed to handle new remote alarm:', error);
     }
@@ -461,30 +461,30 @@ class RealTimeSyncManager {
   /**
    * Apply remote update to local alarm
    */
-  private async applyRemoteUpdate(event: AlarmEvent, localAlarm: any): Promise<void> {
+  private async applyRemoteUpdate(event: AlarmEvent): Promise<void> {
     try {
       const alarmsStore = useAlarmsStore.getState();
-      
+
       // Apply the update based on event type
       switch (event.type) {
         case 'updated':
           // Update alarm properties (would need more detailed data)
           console.log('Applying remote alarm update:', event.alarmId);
           break;
-          
+
         case 'enabled':
           await alarmsStore.updateAlarm(event.alarmId, { isEnabled: true });
           break;
-          
+
         case 'disabled':
           await alarmsStore.updateAlarm(event.alarmId, { isEnabled: false });
           break;
-          
+
         case 'deleted':
           await alarmsStore.removeAlarm(event.alarmId);
           break;
       }
-      
+
     } catch (error) {
       console.error('Failed to apply remote update:', error);
     }
@@ -497,7 +497,7 @@ class RealTimeSyncManager {
     // Simple conflict detection - in production you'd have more sophisticated logic
     const eventTime = new Date(event.timestamp);
     const lastSyncTime = new Date(syncStatus.lastSyncTime);
-    
+
     // If both devices modified the alarm within 30 seconds, it's potentially a conflict
     return Math.abs(eventTime.getTime() - lastSyncTime.getTime()) < 30000;
   }
@@ -526,7 +526,7 @@ class RealTimeSyncManager {
     };
 
     this.multiDeviceState.conflicts.push(conflict);
-    
+
     // Mark as conflict state
     this.updateSyncStatus(event.alarmId, {
       ...syncStatus,
@@ -534,7 +534,7 @@ class RealTimeSyncManager {
     });
 
     console.warn('Alarm conflict detected:', conflict);
-    
+
     // Auto-resolve using last-writer-wins for now
     await this.autoResolveConflict(conflict);
   }
@@ -545,12 +545,12 @@ class RealTimeSyncManager {
   private async autoResolveConflict(conflict: AlarmConflict): Promise<void> {
     try {
       // Sort devices by timestamp (most recent first)
-      const sortedDevices = conflict.devices.sort((a, b) => 
+      const sortedDevices = conflict.devices.sort((a, b) =>
         new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
       );
 
       const winner = sortedDevices[0];
-      
+
       // Apply the winning change
       if (winner.deviceId !== this.getDeviceId()) {
         // Remote device won - apply their changes
@@ -560,7 +560,7 @@ class RealTimeSyncManager {
           timestamp: winner.timestamp,
           userId: '', // Would be filled in real implementation
           data: winner.data
-        }, null);
+        });
       }
 
       // Mark conflict as resolved
@@ -579,7 +579,7 @@ class RealTimeSyncManager {
 
     } catch (error) {
       console.error('Failed to resolve conflict:', error);
-      
+
       // Mark as error state
       this.updateSyncStatus(conflict.alarmId, {
         lastSyncTime: new Date().toISOString(),
@@ -595,7 +595,7 @@ class RealTimeSyncManager {
    */
   private async resolveConflicts(): Promise<void> {
     const unresolvedConflicts = this.multiDeviceState.conflicts.filter(c => !c.resolvedBy);
-    
+
     for (const conflict of unresolvedConflicts) {
       await this.autoResolveConflict(conflict);
     }
@@ -609,7 +609,7 @@ class RealTimeSyncManager {
     const eventTime = new Date(event.timestamp);
     const now = new Date();
     const timeDiff = now.getTime() - eventTime.getTime();
-    
+
     return timeDiff < 60000 && event.deviceId !== this.getDeviceId();
   }
 
@@ -693,7 +693,7 @@ class RealTimeSyncManager {
   private getDeviceId(): string {
     const stored = localStorage.getItem('smart-alarm-device-id');
     if (stored) return stored;
-    
+
     const deviceId = `device-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     localStorage.setItem('smart-alarm-device-id', deviceId);
     return deviceId;
@@ -708,7 +708,7 @@ export function useRealTimeSync() {
   return {
     initialize: () => realTimeSyncManager.initialize(),
     performFullSync: () => realTimeSyncManager.performFullSync(),
-    sendAlarmUpdate: (alarmId: string, type: AlarmEvent['type'], data?: any) => 
+    sendAlarmUpdate: (alarmId: string, type: AlarmEvent['type'], data?: any) =>
       realTimeSyncManager.sendAlarmUpdate(alarmId, type, data),
     getSyncStatus: () => realTimeSyncManager.getSyncStatus(),
     getMultiDeviceState: () => realTimeSyncManager.getMultiDeviceState(),

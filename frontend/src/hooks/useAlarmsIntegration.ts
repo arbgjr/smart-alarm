@@ -20,7 +20,7 @@ export function useAlarmsIntegration(params?: AlarmQueryParams) {
     queryKey: alarmKeys.list(params),
     queryFn: async () => {
       const response = await alarmService.getAlarms(params);
-      
+
       // Convert DTOs to Alarm interface and sync with Zustand store
       const alarms = response.data.map(convertAlarmDtoToAlarm);
       setAlarms(alarms);
@@ -29,7 +29,7 @@ export function useAlarmsIntegration(params?: AlarmQueryParams) {
         response.totalPages,
         response.totalElements
       );
-      
+
       return response;
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
@@ -67,7 +67,7 @@ export function useCreateAlarmIntegration() {
       queryClient.invalidateQueries({ queryKey: alarmKeys.active() });
       queryClient.invalidateQueries({ queryKey: alarmKeys.today() });
       queryClient.setQueryData(alarmKeys.detail(newAlarm.id), newAlarm);
-      
+
       // Zustand store is already updated by createAlarm action
     },
   });
@@ -85,7 +85,7 @@ export function useUpdateAlarmIntegration() {
       queryClient.invalidateQueries({ queryKey: alarmKeys.lists() });
       queryClient.invalidateQueries({ queryKey: alarmKeys.active() });
       queryClient.invalidateQueries({ queryKey: alarmKeys.today() });
-      
+
       // Zustand store is already updated by editAlarm action
     },
   });
@@ -103,7 +103,7 @@ export function useDeleteAlarmIntegration() {
       queryClient.invalidateQueries({ queryKey: alarmKeys.lists() });
       queryClient.invalidateQueries({ queryKey: alarmKeys.active() });
       queryClient.invalidateQueries({ queryKey: alarmKeys.today() });
-      
+
       // Zustand store is already updated by deleteAlarm action
     },
   });
@@ -120,7 +120,7 @@ export function useToggleAlarmIntegration() {
       queryClient.invalidateQueries({ queryKey: alarmKeys.lists() });
       queryClient.invalidateQueries({ queryKey: alarmKeys.active() });
       queryClient.invalidateQueries({ queryKey: alarmKeys.today() });
-      
+
       // Zustand store is already updated by toggleAlarm action
     },
   });
@@ -174,7 +174,7 @@ export function useOfflineSync() {
 
     window.addEventListener('online', handleOnline);
     return () => window.removeEventListener('online', handleOnline);
-  }, []);
+  }, [syncOfflineChanges]);
 
   return { syncOfflineChanges };
 }

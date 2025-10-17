@@ -75,7 +75,8 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     ...props
   }, ref) => {
     // Generate unique ID if not provided
-    const inputId = id || React.useId();
+    const generatedId = React.useId();
+    const inputId = id || generatedId;
 
     // Determine variant based on error state
     const finalVariant = errorMessage ? 'error' : variant;

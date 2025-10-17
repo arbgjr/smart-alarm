@@ -71,7 +71,7 @@ class PushNotificationManager {
       // Get service worker registration from PWA plugin
       this.swRegistration = await navigator.serviceWorker.ready;
       console.log('Service Worker ready for push notifications');
-      
+
       // Check for existing subscription
       this.subscription = await this.swRegistration.pushManager.getSubscription();
       if (this.subscription) {
@@ -87,7 +87,7 @@ class PushNotificationManager {
    */
   public getPermissionStatus(): PushNotificationPermission {
     const isSupported = 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window;
-    
+
     if (!isSupported) {
       return {
         state: 'denied',
@@ -122,7 +122,7 @@ class PushNotificationManager {
 
     // Request permission
     const permission = await Notification.requestPermission();
-    
+
     if (permission === 'granted') {
       console.log('Notification permission granted');
       // Automatically subscribe to push notifications
@@ -158,7 +158,7 @@ class PushNotificationManager {
       // Create new subscription
       const subscription = await this.swRegistration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: this.urlBase64ToUint8Array(this.VAPID_PUBLIC_KEY)
+        applicationServerKey: this.urlBase64ToUint8Array(this.VAPID_PUBLIC_KEY) as BufferSource
       });
 
       this.subscription = subscription;
@@ -191,13 +191,13 @@ class PushNotificationManager {
     try {
       // Unsubscribe from browser
       await this.subscription.unsubscribe();
-      
+
       // Remove subscription from backend
       await this.removeSubscriptionFromBackend();
-      
+
       this.subscription = null;
       console.log('Successfully unsubscribed from push notifications');
-      
+
     } catch (error) {
       console.error('Failed to unsubscribe from push notifications:', error);
       throw error;
@@ -223,19 +223,19 @@ class PushNotificationManager {
         body: payload.body,
         icon: payload.icon || '/pwa-192x192.png',
         badge: payload.badge || '/pwa-192x192.png',
-        image: payload.image,
+        // image: payload.image, // Not supported in all browsers
         tag: payload.tag || 'smart-alarm-notification',
         data: payload.data,
         requireInteraction: payload.requireInteraction || false,
         silent: payload.silent || false,
-        timestamp: payload.timestamp ? new Date(payload.timestamp).getTime() : Date.now()
+        // timestamp: payload.timestamp ? new Date(payload.timestamp).getTime() : Date.now() // Not standard
       });
 
       // Handle notification click
       notification.onclick = (event) => {
         event.preventDefault();
         notification.close();
-        
+
         // Handle navigation
         if (payload.data?.url) {
           if ('clients' in navigator.serviceWorker) {
@@ -273,7 +273,7 @@ class PushNotificationManager {
   ): Promise<void> {
     const now = new Date();
     const triggerDate = new Date(`${now.toDateString()} ${triggerTime}`);
-    
+
     // If trigger time is past, schedule for next day
     if (triggerDate < now) {
       triggerDate.setDate(triggerDate.getDate() + 1);
@@ -360,7 +360,7 @@ class PushNotificationManager {
    */
   private scheduleLocalNotification(scheduleTime: Date, payload: NotificationPayload): void {
     const delay = scheduleTime.getTime() - Date.now();
-    
+
     if (delay > 0) {
       setTimeout(() => {
         this.showLocalNotification(payload);
@@ -386,7 +386,7 @@ class PushNotificationManager {
   private urlBase64ToUint8Array(base64String: string): Uint8Array {
     const padding = '='.repeat((4 - base64String.length % 4) % 4);
     const base64 = (base64String + padding)
-      .replace(/\-/g, '+')
+      .replace(/-/g, '+')
       .replace(/_/g, '/');
 
     const rawData = window.atob(base64);
@@ -529,7 +529,7 @@ class PushNotificationManager {
   private getDeviceId(): string {
     const stored = localStorage.getItem('smart-alarm-device-id');
     if (stored) return stored;
-    
+
     const deviceId = `device-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     localStorage.setItem('smart-alarm-device-id', deviceId);
     return deviceId;
@@ -548,7 +548,7 @@ class PushNotificationManager {
     }
 
     const subscription = await this.swRegistration?.pushManager.getSubscription();
-    
+
     return {
       isSubscribed: !!subscription,
       subscription: subscription ? this.createSubscriptionData(subscription) : null,
@@ -569,10 +569,10 @@ export function usePushNotifications() {
     unsubscribe: () => pushNotificationManager.unsubscribe(),
     getSubscriptionStatus: () => pushNotificationManager.getSubscriptionStatus(),
     showNotification: (payload: NotificationPayload) => pushNotificationManager.showLocalNotification(payload),
-    scheduleAlarm: (alarmId: string, time: string, name: string) => 
+    scheduleAlarm: (alarmId: string, time: string, name: string) =>
       pushNotificationManager.scheduleAlarmNotification(alarmId, time, name),
     cancelAlarm: (alarmId: string) => pushNotificationManager.cancelAlarmNotification(alarmId),
-    scheduleReminder: (message: string, delayMinutes?: number) => 
+    scheduleReminder: (message: string, delayMinutes?: number) =>
       pushNotificationManager.scheduleOptimizationReminder(message, delayMinutes)
   };
 }

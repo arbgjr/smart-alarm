@@ -43,6 +43,10 @@ firebase-adminsdk-*.json
 **/coverage/
 **/nyc_output/
 
+# Test results and artifacts
+**/test-results/
+**/playwright-report/
+
 # Dependency directories
 **/node_modules/
 **/jspm_packages/
