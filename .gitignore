@@ -3,6 +3,8 @@
 
 # ===== ENVIRONMENT & SECRETS =====
 .env
+.env.*
+.env.development
 .env.production.local
 **/secrets.yaml
 **/production.yaml
@@ -46,6 +48,14 @@ firebase-adminsdk-*.json
 # Test results and artifacts
 **/test-results/
 **/playwright-report/
+**/playwright-html-report/
+**/.last-run.json
+**/playwright-results.json
+**/*.png
+**/*.jpg
+**/*.jpeg
+**/*.gif
+**/*.webp
 
 # Dependency directories
 **/node_modules/
@@ -279,6 +289,15 @@ uploads/temp/
 temp-files/
 
 coverage-report/
+
+# Development scripts and configs
+docker-compose.dev.yml
+scripts/dev/
+**/performance/
+
+# Test fixtures and setup
+**/fixtures/
+**/TestContainers/
 
 # ===== DEPRECATED & ARCHIVED =====
 # Trash directory for obsolete documentation
