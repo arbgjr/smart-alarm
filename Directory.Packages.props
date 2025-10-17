@@ -38,6 +38,7 @@
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.8" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.8" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.8" />
+    <PackageVersion Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.8" />
 
     <!-- Oracle (Última versão estável para .NET 8) -->
