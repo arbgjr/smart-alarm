@@ -1,6 +1,6 @@
 // SignalR Real-time Communication Hub
 import * as signalR from '@microsoft/signalr';
-import { useAuthStore } from '@/stores/authStore';
+// import { useAuthStore } from '@/stores/authStore';
 
 export interface AlarmEvent {
   alarmId: string;
@@ -70,7 +70,7 @@ class SignalRConnectionManager {
   private generateDeviceId(): string {
     const stored = localStorage.getItem('smart-alarm-device-id');
     if (stored) return stored;
-    
+
     const deviceId = `device-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     localStorage.setItem('smart-alarm-device-id', deviceId);
     return deviceId;
@@ -399,7 +399,7 @@ class SignalRConnectionManager {
     this.connectionStatus.isConnected = isConnected;
     this.connectionStatus.connectionId = connectionId;
     this.connectionStatus.lastConnected = isConnected ? new Date().toISOString() : this.connectionStatus.lastConnected;
-    
+
     this.emitEvent('connectionStatusChanged', this.connectionStatus);
   }
 
@@ -414,11 +414,11 @@ class SignalRConnectionManager {
     }
 
     const delay = this.RECONNECT_INTERVAL * Math.pow(2, this.connectionStatus.reconnectAttempts);
-    
+
     this.reconnectTimer = setTimeout(async () => {
       this.connectionStatus.reconnectAttempts++;
       console.log(`SignalR reconnection attempt ${this.connectionStatus.reconnectAttempts}`);
-      
+
       try {
         await this.initialize();
       } catch (error) {
@@ -484,16 +484,16 @@ export function useSignalRConnection() {
     connect: () => signalRManager.initialize(),
     disconnect: () => signalRManager.disconnect(),
     getStatus: () => signalRManager.getConnectionStatus(),
-    sendAlarmEvent: (event: Omit<AlarmEvent, 'userId' | 'timestamp'>) => 
+    sendAlarmEvent: (event: Omit<AlarmEvent, 'userId' | 'timestamp'>) =>
       signalRManager.sendAlarmEvent(event),
-    sendSyncEvent: (event: Omit<SyncEvent, 'userId' | 'timestamp' | 'deviceId'>) => 
+    sendSyncEvent: (event: Omit<SyncEvent, 'userId' | 'timestamp' | 'deviceId'>) =>
       signalRManager.sendSyncEvent(event),
-    requestSync: (type?: 'alarms' | 'settings' | 'ml_data' | 'all') => 
+    requestSync: (type?: 'alarms' | 'settings' | 'ml_data' | 'all') =>
       signalRManager.requestSync(type),
     updatePresence: (isActive: boolean) => signalRManager.updatePresence(isActive),
-    addEventListener: (event: string, handler: Function) => 
+    addEventListener: (event: string, handler: Function) =>
       signalRManager.addEventListener(event, handler),
-    removeEventListener: (event: string, handler: Function) => 
+    removeEventListener: (event: string, handler: Function) =>
       signalRManager.removeEventListener(event, handler)
   };
 }

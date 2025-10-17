@@ -3,39 +3,46 @@ using Microsoft.Extensions.Logging;
 using SmartAlarm.Application.Abstractions;
 using SmartAlarm.Application.DTOs.Notifications;
 using System.Text.Json;
+using System.Net.Http;
+using System.Text;
 
 namespace SmartAlarm.Infrastructure.Services;
 
 public class PushNotificationService : IPushNotificationService
 {
-    private readonly IConfiguration _configuration;
     private readonly ILogger<PushNotificationService> _logger;
+    private readonly IConfiguration _configuration;
     private readonly HttpClient _httpClient;
+    private readonly Dictionary<string, List<DeviceRegistration>> _userDevices;
 
     public PushNotificationService(
-        IConfiguration configuration,
         ILogger<PushNotificationService> logger,
+        IConfiguration configuration,
         HttpClient httpClient)
     {
-        _configuration = configuration;
-        _logger = logger;
-        _httpClient = httpClient;
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+        _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+        _userDevices = new Dictionary<string, List<DeviceRegistration>>();
     }
 
     public async Task SendPushNotificationAsync(string userId, PushNotificationDto notification, CancellationToken cancellationToken = default)
     {
         try
         {
-            // This is a placeholder implementation
-            // In a real scenario, you would integrate with FCM, APNS, or other push notification services
+            _logger.LogInformation("Sending push notification to user {UserId}", userId);
 
-            _logger.LogInformation("Sending push notification to user {UserId}: {Title}",
-                userId, notification.Title);
+            if (!_userDevices.TryGetValue(userId, out var devices) || !devices.Any())
+            {
+                _logger.LogWarning("No registered devices found for user {UserId}", userId);
+                return;
+            }
 
-            // Simulate sending push notification
-            await Task.Delay(100, cancellationToken);
+            var tasks = devices.Select(device => SendToDevice(device, notification, cancellationToken));
+            await Task.WhenAll(tasks);
 
-            _logger.LogInformation("Push notification sent successfully to user {UserId}", userId);
+            _logger.LogDebug("Successfully sent push notification to {DeviceCount} devices for user {UserId}",
+                devices.Count, userId);
         }
         catch (Exception ex)
         {
@@ -48,14 +55,32 @@ public class PushNotificationService : IPushNotificationService
     {
         try
         {
-            // Store device token in database for future push notifications
-            _logger.LogInformation("Registering device for user {UserId} on platform {Platform}",
-                userId, platform);
+            _logger.LogInformation("Registering device for user {UserId} on platform {Platform}", userId, platform);
 
-            // This would typically store the device token in the database
-            await Task.Delay(50, cancellationToken);
+            if (!_userDevices.ContainsKey(userId))
+            {
+                _userDevices[userId] = new List<DeviceRegistration>();
+            }
 
-            _logger.LogInformation("Device registered successfully for user {UserId}", userId);
+            var existingDevice = _userDevices[userId].FirstOrDefault(d => d.DeviceToken == deviceToken);
+            if (existingDevice != null)
+            {
+                existingDevice.LastUpdated = DateTime.UtcNow;
+                existingDevice.Platform = platform;
+            }
+            else
+            {
+                _userDevices[userId].Add(new DeviceRegistration
+                {
+                    DeviceToken = deviceToken,
+                    Platform = platform,
+                    RegisteredAt = DateTime.UtcNow,
+                    LastUpdated = DateTime.UtcNow,
+                    IsActive = true
+                });
+            }
+
+            _logger.LogDebug("Device registered successfully for user {UserId}", userId);
         }
         catch (Exception ex)
         {
@@ -70,10 +95,23 @@ public class PushNotificationService : IPushNotificationService
         {
             _logger.LogInformation("Unregistering device for user {UserId}", userId);
 
-            // This would typically remove the device token from the database
-            await Task.Delay(50, cancellationToken);
-
-            _logger.LogInformation("Device unregistered successfully for user {UserId}", userId);
+            if (_userDevices.TryGetValue(userId, out var devices))
+            {
+                var deviceToRemove = devices.FirstOrDefault(d => d.DeviceToken == deviceToken);
+                if (deviceToRemove != null)
+                {
+                    devices.Remove(deviceToRemove);
+                    _logger.LogDebug("Device unregistered successfully for user {UserId}", userId);
+                }
+                else
+                {
+                    _logger.LogWarning("Device token not found for user {UserId}", userId);
+                }
+            }
+            else
+            {
+                _logger.LogWarning("No devices registered for user {UserId}", userId);
+            }
         }
         catch (Exception ex)
         {
@@ -86,23 +124,116 @@ public class PushNotificationService : IPushNotificationService
     {
         try
         {
-            var userIdList = userIds.ToList();
-            _logger.LogInformation("Sending bulk push notification to {UserCount} users: {Title}",
-                userIdList.Count, notification.Title);
+            _logger.LogInformation("Sending bulk push notification to {UserCount} users", userIds.Count());
 
-            // Send notifications in parallel for better performance
-            var tasks = userIdList.Select(userId =>
-                SendPushNotificationAsync(userId, notification, cancellationToken));
-
+            var tasks = userIds.Select(userId => SendPushNotificationAsync(userId, notification, cancellationToken));
             await Task.WhenAll(tasks);
 
-            _logger.LogInformation("Bulk push notification sent successfully to {UserCount} users",
-                userIdList.Count);
+            _logger.LogDebug("Successfully sent bulk push notification to {UserCount} users", userIds.Count());
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to send bulk push notification");
             throw;
         }
+    }
+
+    private async Task SendToDevice(DeviceRegistration device, PushNotificationDto notification, CancellationToken cancellationToken)
+    {
+        try
+        {
+            switch (device.Platform.ToLowerInvariant())
+            {
+                case "android":
+                case "fcm":
+                    await SendFcmNotification(device.DeviceToken, notification, cancellationToken);
+                    break;
+                case "ios":
+                case "apns":
+                    await SendApnsNotification(device.DeviceToken, notification, cancellationToken);
+                    break;
+                case "web":
+                    await SendWebPushNotification(device.DeviceToken, notification, cancellationToken);
+                    break;
+                default:
+                    _logger.LogWarning("Unsupported platform: {Platform}", device.Platform);
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send notification to device {DeviceToken} on platform {Platform}",
+                device.DeviceToken, device.Platform);
+        }
+    }
+
+    private async Task SendFcmNotification(string deviceToken, PushNotificationDto notification, CancellationToken cancellationToken)
+    {
+        var fcmServerKey = _configuration["PushNotifications:FCM:ServerKey"];
+        if (string.IsNullOrEmpty(fcmServerKey))
+        {
+            _logger.LogWarning("FCM Server Key not configured");
+            return;
+        }
+
+        var payload = new
+        {
+            to = deviceToken,
+            notification = new
+            {
+                title = notification.Title,
+                body = notification.Body,
+                icon = notification.Icon,
+                sound = notification.Sound,
+                click_action = notification.ClickAction
+            },
+            data = notification.Data,
+            priority = notification.Priority switch
+            {
+                3 => "high",
+                2 => "normal",
+                _ => "normal"
+            },
+            time_to_live = notification.TimeToLive
+        };
+
+        var json = JsonSerializer.Serialize(payload);
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        _httpClient.DefaultRequestHeaders.Clear();
+        _httpClient.DefaultRequestHeaders.Add("Authorization", $"key={fcmServerKey}");
+
+        var response = await _httpClient.PostAsync("https://fcm.googleapis.com/fcm/send", content, cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+            _logger.LogError("FCM notification failed: {StatusCode} - {Content}", response.StatusCode, errorContent);
+        }
+    }
+
+    private async Task SendApnsNotification(string deviceToken, PushNotificationDto notification, CancellationToken cancellationToken)
+    {
+        // APNS implementation would go here
+        // This is a placeholder for Apple Push Notification Service integration
+        _logger.LogInformation("APNS notification would be sent to device {DeviceToken}", deviceToken);
+        await Task.CompletedTask;
+    }
+
+    private async Task SendWebPushNotification(string deviceToken, PushNotificationDto notification, CancellationToken cancellationToken)
+    {
+        // Web Push implementation would go here
+        // This is a placeholder for Web Push Protocol integration
+        _logger.LogInformation("Web Push notification would be sent to device {DeviceToken}", deviceToken);
+        await Task.CompletedTask;
+    }
+
+    private class DeviceRegistration
+    {
+        public string DeviceToken { get; set; } = string.Empty;
+        public string Platform { get; set; } = string.Empty;
+        public DateTime RegisteredAt { get; set; }
+        public DateTime LastUpdated { get; set; }
+        public bool IsActive { get; set; }
     }
 }

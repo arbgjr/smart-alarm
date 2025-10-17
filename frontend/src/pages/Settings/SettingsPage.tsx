@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, User, Bell, Link as LinkIcon, Download, Upload, Save, RefreshCw } from 'lucide-react';
+import { ArrowLeft, User, Bell, Link as LinkIcon, Download, Save, RefreshCw } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { ErrorBoundary } from '../../components/molecules/ErrorBoundary/ErrorBoundary';
 import { UserProfileSettings } from '../../components/Settings/UserProfileSettings';

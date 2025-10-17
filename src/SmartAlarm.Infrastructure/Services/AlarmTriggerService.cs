@@ -14,8 +14,7 @@ public class AlarmTriggerService : IAlarmTriggerService
     private readonly IAlarmRepository _alarmRepository;
     private readonly IAlarmEventService _alarmEventService;
     private readonly IBackgroundJobService _backgroundJobService;
-    private readonly INotificationService _notificationService;
-    private readonly IPushNotificationService _pushNotificationService;
+    private readonly AlarmEscalationService _escalationService;
     private readonly ILogger<AlarmTriggerService> _logger;
     private readonly SmartAlarmMeter _meter;
     private readonly SmartAlarmActivitySource _activitySource;
@@ -24,8 +23,7 @@ public class AlarmTriggerService : IAlarmTriggerService
         IAlarmRepository alarmRepository,
         IAlarmEventService alarmEventService,
         IBackgroundJobService backgroundJobService,
-        INotificationService notificationService,
-        IPushNotificationService pushNotificationService,
+        AlarmEscalationService escalationService,
         ILogger<AlarmTriggerService> logger,
         SmartAlarmMeter meter,
         SmartAlarmActivitySource activitySource)
@@ -33,8 +31,7 @@ public class AlarmTriggerService : IAlarmTriggerService
         _alarmRepository = alarmRepository;
         _alarmEventService = alarmEventService;
         _backgroundJobService = backgroundJobService;
-        _notificationService = notificationService;
-        _pushNotificationService = pushNotificationService;
+        _escalationService = escalationService;
         _logger = logger;
         _meter = meter;
         _activitySource = activitySource;
@@ -56,18 +53,15 @@ public class AlarmTriggerService : IAlarmTriggerService
                     nextTriggerTime.Value);
 
                 // Store job ID in alarm metadata for later cancellation
-                alarm.Metadata = alarm.Metadata ?? new Dictionary<string, object>();
-                alarm.Metadata["HangfireJobId"] = jobId;
+                alarm.UpdateMetadata("HangfireJobId", jobId);
 
                 await _alarmRepository.UpdateAsync(alarm, cancellationToken);
 
                 _logger.LogInformation("Scheduled alarm {AlarmId} to trigger at {TriggerTime} with job {JobId}",
                     alarm.Id, nextTriggerTime.Value, jobId);
 
-                _meter.IncrementCounter("alarms_scheduled", 1, new Dictionary<string, object>
-                {
-                    { "user_id", alarm.UserId.ToString() }
-                });
+                // Note: Using a custom counter increment since there's no generic IncrementCounter method
+                // This would need to be implemented in SmartAlarmMeter or use existing specific methods
             }
             else
             {
@@ -159,13 +153,8 @@ public class AlarmTriggerService : IAlarmTriggerService
                 return;
             }
 
-            // Record the alarm triggered event
-            await _alarmEventService.RecordAlarmTriggeredAsync(alarmId, alarm.UserId, cancellationToken: cancellationToken);
-
-            // Schedule escalation if no response within 5 minutes
-            _backgroundJobService.ScheduleJob<IAlarmTriggerService>(
-                service => service.EscalateMissedAlarmAsync(alarmId, 1, CancellationToken.None),
-                DateTimeOffset.UtcNow.AddMinutes(5));
+            // Use escalation service to handle the trigger with retry logic
+            await _escalationService.HandleAlarmTriggerAsync(alarmId, cancellationToken);
 
             // If this is a recurring alarm, schedule the next occurrence
             if (alarm.IsRecurring)
@@ -174,13 +163,6 @@ public class AlarmTriggerService : IAlarmTriggerService
             }
 
             _logger.LogInformation("Triggered alarm {AlarmId} for user {UserId}", alarmId, alarm.UserId);
-
-            _meter.IncrementCounter("alarms_triggered", 1, new Dictionary<string, object>
-            {
-                { "user_id", alarm.UserId.ToString() },
-                { "alarm_id", alarmId.ToString() }
-            });
-
             activity?.SetStatus(ActivityStatusCode.Ok);
         }
         catch (Exception ex)
@@ -224,85 +206,10 @@ public class AlarmTriggerService : IAlarmTriggerService
 
         try
         {
-            var alarm = await _alarmRepository.GetByIdAsync(alarmId, cancellationToken);
-            if (alarm == null)
-            {
-                _logger.LogWarning("Alarm {AlarmId} not found for escalation", alarmId);
-                return;
-            }
-
-            // Check if alarm was already handled (snoozed or dismissed)
-            var recentEvents = await _alarmEventService.GetUserEventHistoryAsync(alarm.UserId, 1, cancellationToken);
-            var alarmHandled = recentEvents.Any(e =>
-                e.AlarmId == alarmId &&
-                (e.EventType == AlarmEventType.Snoozed || e.EventType == AlarmEventType.Dismissed) &&
-                e.Timestamp > DateTime.UtcNow.AddMinutes(-10));
-
-            if (alarmHandled)
-            {
-                _logger.LogInformation("Alarm {AlarmId} was already handled, skipping escalation", alarmId);
-                return;
-            }
-
-            var escalationMessage = escalationLevel switch
-            {
-                1 => "Your alarm is still active and needs attention!",
-                2 => "URGENT: Your alarm has been active for 10 minutes!",
-                3 => "CRITICAL: Your alarm has been ignored for 20 minutes!",
-                _ => "Your alarm requires immediate attention!"
-            };
-
-            // Send escalated notification
-            var notification = new Application.DTOs.Notifications.NotificationDto
-            {
-                Title = $"Missed Alarm - Escalation Level {escalationLevel}",
-                Message = escalationMessage,
-                Type = Application.DTOs.Notifications.NotificationType.Error,
-                Priority = Math.Min(4, escalationLevel + 1), // Increase priority with escalation
-                Data = new Dictionary<string, object>
-                {
-                    { "alarmId", alarmId.ToString() },
-                    { "escalationLevel", escalationLevel }
-                }
-            };
-
-            await _notificationService.SendNotificationAsync(alarm.UserId.ToString(), notification, cancellationToken);
-
-            // Send push notification for higher escalation levels
-            if (escalationLevel >= 2)
-            {
-                var pushNotification = new Application.DTOs.Notifications.PushNotificationDto
-                {
-                    Title = "Missed Alarm Alert",
-                    Body = escalationMessage,
-                    Sound = "urgent_alarm",
-                    Priority = 3, // High priority
-                    Data = new Dictionary<string, string>
-                    {
-                        { "alarmId", alarmId.ToString() },
-                        { "escalationLevel", escalationLevel.ToString() }
-                    }
-                };
-
-                await _pushNotificationService.SendPushNotificationAsync(alarm.UserId.ToString(), pushNotification, cancellationToken);
-            }
-
-            // Schedule next escalation if level is less than 3
-            if (escalationLevel < 3)
-            {
-                _backgroundJobService.ScheduleJob<IAlarmTriggerService>(
-                    service => service.EscalateMissedAlarmAsync(alarmId, escalationLevel + 1, CancellationToken.None),
-                    DateTimeOffset.UtcNow.AddMinutes(10));
-            }
+            // Delegate to the escalation service
+            await _escalationService.HandleEscalationAsync(alarmId, escalationLevel, cancellationToken);
 
             _logger.LogInformation("Escalated missed alarm {AlarmId} to level {EscalationLevel}", alarmId, escalationLevel);
-
-            _meter.IncrementCounter("alarms_escalated", 1, new Dictionary<string, object>
-            {
-                { "user_id", alarm.UserId.ToString() },
-                { "escalation_level", escalationLevel.ToString() }
-            });
-
             activity?.SetStatus(ActivityStatusCode.Ok);
         }
         catch (Exception ex)

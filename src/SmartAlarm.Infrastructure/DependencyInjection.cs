@@ -8,6 +8,7 @@ using SmartAlarm.Infrastructure.Data;
 using SmartAlarm.Infrastructure.Repositories;
 using SmartAlarm.Infrastructure.Repositories.EntityFramework;
 using SmartAlarm.Infrastructure.Services;
+using SmartAlarm.Domain.Repositories;
 using SmartAlarm.Infrastructure.Security;
 using SmartAlarm.Infrastructure.Security.OAuth;
 using SmartAlarm.Domain.Abstractions;
@@ -52,6 +53,7 @@ namespace SmartAlarm.Infrastructure
                 services.AddScoped<IUserHolidayPreferenceRepository, EfUserHolidayPreferenceRepository>();
                 services.AddScoped<IExceptionPeriodRepository, EfExceptionPeriodRepository>();
                 services.AddScoped<IAlarmEventRepository, EfAlarmEventRepository>();
+                services.AddScoped<IAuditLogRepository, EfAuditLogRepository>();
             }
             else
             {
@@ -74,6 +76,7 @@ namespace SmartAlarm.Infrastructure
                 services.AddScoped<IUserHolidayPreferenceRepository, EfUserHolidayPreferenceRepository>();
                 services.AddScoped<IExceptionPeriodRepository, EfExceptionPeriodRepository>();
                 services.AddScoped<IAlarmEventRepository, EfAlarmEventRepository>();
+                services.AddScoped<IAuditLogRepository, EfAuditLogRepository>();
             }
 
             return services.AddCommonInfrastructureServices();
@@ -132,18 +135,19 @@ namespace SmartAlarm.Infrastructure
 
             // Register infrastructure services
             services.AddScoped<IEmailService, LoggingEmailService>();
-            services.AddScoped<INotificationService, LoggingNotificationService>();
+
             // Temporary implementation of IFileParser to resolve DI
             services.AddScoped<SmartAlarm.Application.Services.IFileParser>(provider =>
                 new TemporaryFileParser());
 
-            // Register new notification services
-            services.AddScoped<SmartAlarm.Application.Abstractions.INotificationService, SmartAlarm.Infrastructure.Services.NotificationService>();
+            // Register notification services with proper hierarchy
             services.AddScoped<SmartAlarm.Application.Abstractions.IPushNotificationService, SmartAlarm.Infrastructure.Services.PushNotificationService>();
+            services.AddScoped<SmartAlarm.Application.Abstractions.INotificationService, SmartAlarm.Infrastructure.Services.SignalRNotificationService>();
             services.AddHttpClient<SmartAlarm.Infrastructure.Services.PushNotificationService>();
 
             // Register background job and alarm trigger services
             services.AddScoped<SmartAlarm.Application.Abstractions.IBackgroundJobService, SmartAlarm.Infrastructure.Services.HangfireBackgroundJobService>();
+            services.AddScoped<SmartAlarm.Infrastructure.Services.AlarmEscalationService>();
             services.AddScoped<SmartAlarm.Application.Abstractions.IAlarmTriggerService, SmartAlarm.Infrastructure.Services.AlarmTriggerService>();
 
             // Register audit services
@@ -151,14 +155,15 @@ namespace SmartAlarm.Infrastructure
 
             // Register calendar integration services
             services.AddScoped<SmartAlarm.Application.Services.External.IOutlookCalendarService, SmartAlarm.Infrastructure.Services.External.OutlookCalendarService>();
+            services.AddScoped<SmartAlarm.Application.Services.External.IGoogleCalendarService, SmartAlarm.Infrastructure.Services.External.GoogleCalendarService>();
+            services.AddScoped<SmartAlarm.Application.Services.External.ICalendarificService, SmartAlarm.Infrastructure.Services.External.CalendarificService>();
             services.AddScoped<SmartAlarm.Application.Abstractions.ICalendarIntegrationService, SmartAlarm.Infrastructure.Services.CalendarIntegrationService>();
             services.AddHttpClient<SmartAlarm.Infrastructure.Services.External.OutlookCalendarService>();
+            services.AddHttpClient<SmartAlarm.Infrastructure.Services.External.GoogleCalendarService>();
 
             // Register new services for Phase 1 & 2
             services.AddScoped<IAlarmEventService, AlarmEventService>();
             services.AddScoped<IHolidayCacheService, HolidayCacheService>();
-            services.AddScoped<ICalendarificService, CalendarificService>();
-            services.AddScoped<IGoogleCalendarService, GoogleCalendarService>();
             services.AddScoped<ISmartAlarmService, SmartAlarmService>();
             services.AddScoped<IPatternDetectionService, PatternDetectionService>();
 

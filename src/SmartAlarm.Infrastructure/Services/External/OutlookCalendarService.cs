@@ -1,7 +1,7 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using SmartAlarm.Application.Services.External;
+using SmartAlarm.Domain.Repositories;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
@@ -211,6 +211,7 @@ namespace SmartAlarm.Infrastructure.Services.External
                         Guid.NewGuid(),
                         userId,
                         "OutlookCalendar",
+                        Domain.Enums.IntegrationType.OutlookCalendar,
                         "Outlook Calendar Integration",
                         new Dictionary<string, string>());
 

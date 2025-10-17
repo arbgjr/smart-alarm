@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
@@ -41,9 +42,9 @@ namespace SmartAlarm.Infrastructure.Services
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
 
             // Configurações Firebase obrigatórias
-            _serverKey = _configuration["Firebase:ServerKey"] 
+            _serverKey = _configuration["Firebase:ServerKey"]
                 ?? throw new InvalidOperationException("Firebase:ServerKey não configurado");
-            _senderId = _configuration["Firebase:SenderId"] 
+            _senderId = _configuration["Firebase:SenderId"]
                 ?? throw new InvalidOperationException("Firebase:SenderId não configurado");
 
             // Configurar cliente HTTP para Firebase
@@ -52,6 +53,37 @@ namespace SmartAlarm.Infrastructure.Services
             _httpClient.DefaultRequestHeaders.Add("User-Agent", "SmartAlarm/1.0");
 
             _logger.LogInformation("FirebaseNotificationService initialized with SenderId {SenderId}", _senderId);
+        }
+
+        public async Task SendNotificationAsync(string userId, string title, string message, CancellationToken cancellationToken = default)
+        {
+            using var activity = _activitySource.StartActivity("Firebase.SendNotification");
+            activity?.SetTag("notification.operation", "send_notification");
+            activity?.SetTag("notification.user_id", userId);
+            activity?.SetTag("notification.title", title);
+
+            _logger.LogInformation("Sending notification to user {UserId} with title '{Title}'", userId, title);
+
+            var deviceToken = _configuration[$"Users:{userId}:DeviceToken"];
+
+            if (string.IsNullOrEmpty(deviceToken))
+            {
+                _logger.LogWarning("Device token not found for user {UserId}, using email fallback", userId);
+
+                try
+                {
+                    var userEmail = _configuration[$"Users:{userId}:Email"] ?? $"user{userId}@smartalarm.local";
+                    await SendEmailFallbackAsync(userEmail, title, message);
+                    _logger.LogInformation("Fallback email notification sent to user {UserId}", userId);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to send fallback email notification to user {UserId}", userId);
+                }
+                return;
+            }
+
+            await SendPushNotificationAsync(deviceToken, title, message);
         }
 
         public async Task SendPushNotificationAsync(string deviceToken, string title, string message)
@@ -151,11 +183,11 @@ namespace SmartAlarm.Infrastructure.Services
             // Em produção real, seria necessário buscar o device token do usuário no banco de dados
             // Por enquanto, vamos simular usando uma configuração ou assumir que será passado
             var deviceToken = _configuration[$"Users:{userId}:DeviceToken"];
-            
+
             if (string.IsNullOrEmpty(deviceToken))
             {
                 _logger.LogWarning("Device token not found for user {UserId}, using email fallback", userId);
-                
+
                 // Implementar fallback para email
                 try
                 {
@@ -184,11 +216,11 @@ namespace SmartAlarm.Infrastructure.Services
                 userId, title);
 
             var deviceToken = _configuration[$"Users:{userId}:DeviceToken"];
-            
+
             if (string.IsNullOrEmpty(deviceToken))
             {
                 _logger.LogWarning("Device token not found for user {UserId}, using email fallback for system notification", userId);
-                
+
                 // Implementar fallback para email
                 try
                 {
@@ -216,7 +248,7 @@ namespace SmartAlarm.Infrastructure.Services
                 userId);
 
             var deviceToken = _configuration[$"Users:{userId}:DeviceToken"];
-            
+
             if (string.IsNullOrEmpty(deviceToken))
             {
                 _logger.LogWarning("Device token not found for user {UserId}, cannot send reminder notification", userId);
@@ -274,8 +306,8 @@ namespace SmartAlarm.Infrastructure.Services
                 if (response.IsSuccessStatusCode)
                 {
                     _meter.RecordExternalServiceCallDuration(stopwatch.ElapsedMilliseconds, "Firebase", "SendMulticastNotification", true);
-                    
-                    _logger.LogInformation("Successfully sent multicast notification to {DeviceCount} devices in {Duration}ms", 
+
+                    _logger.LogInformation("Successfully sent multicast notification to {DeviceCount} devices in {Duration}ms",
                         deviceTokens.Length, stopwatch.ElapsedMilliseconds);
                 }
                 else
@@ -317,7 +349,7 @@ namespace SmartAlarm.Infrastructure.Services
                                $"SmartAlarm";
 
                 // Log do email que seria enviado
-                _logger.LogInformation("Email fallback notification prepared for {Email}: Subject={Subject}", 
+                _logger.LogInformation("Email fallback notification prepared for {Email}: Subject={Subject}",
                     userEmail, emailSubject);
 
                 // Em produção real, isso seria uma chamada para um serviço de email como SendGrid, SES, etc.

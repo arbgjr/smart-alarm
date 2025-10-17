@@ -59,7 +59,7 @@ describe('AlarmsStore', () => {
     // Clear store state before each test
     useAlarmsStore.getState().clearAll();
     vi.clearAllMocks();
-    
+
     // Mock navigator.onLine
     Object.defineProperty(navigator, 'onLine', {
       writable: true,
@@ -74,7 +74,7 @@ describe('AlarmsStore', () => {
   describe('Initial State', () => {
     it('should have correct initial state', () => {
       const { result } = renderHook(() => useAlarmsStore());
-      
+
       expect(result.current.alarms).toEqual([]);
       expect(result.current.selectedAlarm).toBeNull();
       expect(result.current.filters).toEqual({});
@@ -90,7 +90,7 @@ describe('AlarmsStore', () => {
   describe('Basic State Management', () => {
     it('should set alarms correctly', () => {
       const { result } = renderHook(() => useAlarmsStore());
-      
+
       act(() => {
         result.current.setAlarms([mockAlarm]);
       });
@@ -101,7 +101,7 @@ describe('AlarmsStore', () => {
 
     it('should add alarm correctly', () => {
       const { result } = renderHook(() => useAlarmsStore());
-      
+
       act(() => {
         result.current.addAlarm(mockAlarm);
       });
@@ -112,7 +112,7 @@ describe('AlarmsStore', () => {
 
     it('should update alarm correctly', () => {
       const { result } = renderHook(() => useAlarmsStore());
-      
+
       // Add initial alarm
       act(() => {
         result.current.addAlarm(mockAlarm);
@@ -129,7 +129,7 @@ describe('AlarmsStore', () => {
 
     it('should remove alarm correctly', () => {
       const { result } = renderHook(() => useAlarmsStore());
-      
+
       // Add initial alarm
       act(() => {
         result.current.addAlarm(mockAlarm);
@@ -151,7 +151,7 @@ describe('AlarmsStore', () => {
 
     it('should set selected alarm', () => {
       const { result } = renderHook(() => useAlarmsStore());
-      
+
       act(() => {
         result.current.setSelectedAlarm(mockAlarm);
       });
@@ -161,7 +161,7 @@ describe('AlarmsStore', () => {
 
     it('should set filters and reset page', () => {
       const { result } = renderHook(() => useAlarmsStore());
-      
+
       // Set current page to 3
       act(() => {
         result.current.setPagination(3, 5, 50);
@@ -180,7 +180,7 @@ describe('AlarmsStore', () => {
 
     it('should set pagination correctly', () => {
       const { result } = renderHook(() => useAlarmsStore());
-      
+
       act(() => {
         result.current.setPagination(2, 5, 45);
       });
@@ -201,10 +201,9 @@ describe('AlarmsStore', () => {
       mockAlarmService.createAlarm.mockResolvedValue(mockCreatedAlarm);
 
       const { result } = renderHook(() => useAlarmsStore());
-      
-      let createdAlarm;
+
       await act(async () => {
-        createdAlarm = await result.current.createAlarm(mockAlarmFormData);
+        await result.current.createAlarm(mockAlarmFormData);
       });
 
       expect(mockAlarmService.createAlarm).toHaveBeenCalledWith({
@@ -214,7 +213,7 @@ describe('AlarmsStore', () => {
         isRecurring: true,
         recurrencePattern: 'monday,friday',
       });
-      
+
       expect(result.current.alarms).toHaveLength(1);
       expect(result.current.alarms[0].name).toBe('Test Alarm');
       expect(result.current.isLoading).toBe(false);
@@ -225,7 +224,7 @@ describe('AlarmsStore', () => {
       mockAlarmService.updateAlarm.mockResolvedValue(updatedAlarmDto);
 
       const { result } = renderHook(() => useAlarmsStore());
-      
+
       // Add initial alarm
       act(() => {
         result.current.addAlarm(mockAlarm);
@@ -244,7 +243,7 @@ describe('AlarmsStore', () => {
       mockAlarmService.deleteAlarm.mockResolvedValue(undefined);
 
       const { result } = renderHook(() => useAlarmsStore());
-      
+
       // Add initial alarm
       act(() => {
         result.current.addAlarm(mockAlarm);
@@ -263,7 +262,7 @@ describe('AlarmsStore', () => {
 
     it('should toggle alarm', async () => {
       const { result } = renderHook(() => useAlarmsStore());
-      
+
       // Add initial alarm
       act(() => {
         result.current.addAlarm(mockAlarm);
@@ -287,10 +286,9 @@ describe('AlarmsStore', () => {
 
     it('should create alarm offline with background sync', async () => {
       const { result } = renderHook(() => useAlarmsStore());
-      
-      let createdAlarm;
+
       await act(async () => {
-        createdAlarm = await result.current.createAlarm(mockAlarmFormData);
+        await result.current.createAlarm(mockAlarmFormData);
       });
 
       expect(result.current.alarms).toHaveLength(1);
@@ -302,7 +300,7 @@ describe('AlarmsStore', () => {
 
     it('should update alarm offline with background sync', async () => {
       const { result } = renderHook(() => useAlarmsStore());
-      
+
       // Add initial alarm
       act(() => {
         result.current.addAlarm(mockAlarm);
@@ -319,7 +317,7 @@ describe('AlarmsStore', () => {
 
     it('should delete alarm offline with background sync', async () => {
       const { result } = renderHook(() => useAlarmsStore());
-      
+
       // Add initial alarm
       act(() => {
         result.current.addAlarm(mockAlarm);
@@ -341,7 +339,7 @@ describe('AlarmsStore', () => {
       mockAlarmService.createAlarm.mockRejectedValue(error);
 
       const { result } = renderHook(() => useAlarmsStore());
-      
+
       let thrownError;
       await act(async () => {
         try {
@@ -362,7 +360,7 @@ describe('AlarmsStore', () => {
       mockAlarmService.updateAlarm.mockRejectedValue(error);
 
       const { result } = renderHook(() => useAlarmsStore());
-      
+
       // Add initial alarm
       act(() => {
         result.current.addAlarm(mockAlarm);
@@ -389,7 +387,7 @@ describe('AlarmsStore', () => {
       mockAlarmService.deleteAlarm.mockRejectedValue(error);
 
       const { result } = renderHook(() => useAlarmsStore());
-      
+
       // Add initial alarm
       act(() => {
         result.current.addAlarm(mockAlarm);
@@ -413,7 +411,7 @@ describe('AlarmsStore', () => {
   describe('Bulk Operations', () => {
     beforeEach(() => {
       const { result } = renderHook(() => useAlarmsStore());
-      
+
       act(() => {
         result.current.addAlarm(mockAlarm);
         result.current.addAlarm({ ...mockAlarm, id: '2', name: 'Alarm 2' });
@@ -423,7 +421,7 @@ describe('AlarmsStore', () => {
 
     it('should enable multiple alarms', async () => {
       const { result } = renderHook(() => useAlarmsStore());
-      
+
       const editAlarmSpy = vi.spyOn(result.current, 'editAlarm').mockResolvedValue(mockAlarm);
 
       await act(async () => {
@@ -437,7 +435,7 @@ describe('AlarmsStore', () => {
 
     it('should disable multiple alarms', async () => {
       const { result } = renderHook(() => useAlarmsStore());
-      
+
       const editAlarmSpy = vi.spyOn(result.current, 'editAlarm').mockResolvedValue(mockAlarm);
 
       await act(async () => {
@@ -451,7 +449,7 @@ describe('AlarmsStore', () => {
 
     it('should delete multiple alarms', async () => {
       const { result } = renderHook(() => useAlarmsStore());
-      
+
       const deleteAlarmSpy = vi.spyOn(result.current, 'deleteAlarm').mockResolvedValue();
 
       await act(async () => {
@@ -467,18 +465,18 @@ describe('AlarmsStore', () => {
   describe('Utility Functions', () => {
     beforeEach(() => {
       const { result } = renderHook(() => useAlarmsStore());
-      
+
       act(() => {
         result.current.addAlarm(mockAlarm);
-        result.current.addAlarm({ 
-          ...mockAlarm, 
-          id: '2', 
+        result.current.addAlarm({
+          ...mockAlarm,
+          id: '2',
           name: 'Disabled Alarm',
-          isEnabled: false 
+          isEnabled: false
         });
-        result.current.addAlarm({ 
-          ...mockAlarm, 
-          id: '3', 
+        result.current.addAlarm({
+          ...mockAlarm,
+          id: '3',
           name: 'Weekend Alarm',
           daysOfWeek: ['saturday', 'sunday']
         });
@@ -487,17 +485,17 @@ describe('AlarmsStore', () => {
 
     it('should get alarm by ID', () => {
       const { result } = renderHook(() => useAlarmsStore());
-      
+
       const alarm = result.current.getAlarmById('1');
       expect(alarm).toEqual(mockAlarm);
-      
+
       const nonExistent = result.current.getAlarmById('999');
       expect(nonExistent).toBeUndefined();
     });
 
     it('should get active alarms only', () => {
       const { result } = renderHook(() => useAlarmsStore());
-      
+
       const activeAlarms = result.current.getActiveAlarms();
       expect(activeAlarms).toHaveLength(2);
       expect(activeAlarms.every(alarm => alarm.isEnabled)).toBe(true);
@@ -505,11 +503,11 @@ describe('AlarmsStore', () => {
 
     it('should get alarms for specific day', () => {
       const { result } = renderHook(() => useAlarmsStore());
-      
+
       const mondayAlarms = result.current.getAlarmsForDay('monday');
       expect(mondayAlarms).toHaveLength(1);
       expect(mondayAlarms[0].id).toBe('1');
-      
+
       const saturdayAlarms = result.current.getAlarmsForDay('saturday');
       expect(saturdayAlarms).toHaveLength(1);
       expect(saturdayAlarms[0].id).toBe('3');
@@ -521,16 +519,16 @@ describe('AlarmsStore', () => {
       vi.setSystemTime(mockNow);
 
       const { result } = renderHook(() => useAlarmsStore());
-      
+
       const upcomingAlarms = result.current.getUpcomingAlarms(2); // Next 2 hours
       expect(upcomingAlarms).toHaveLength(2); // Both enabled alarms at 07:00
     });
 
     it('should clear all data', () => {
       const { result } = renderHook(() => useAlarmsStore());
-      
+
       expect(result.current.alarms).toHaveLength(3);
-      
+
       act(() => {
         result.current.clearAll();
       });
@@ -547,7 +545,7 @@ describe('AlarmsStore', () => {
   describe('Persistence', () => {
     it('should persist alarms state to localStorage', () => {
       const { result } = renderHook(() => useAlarmsStore());
-      
+
       act(() => {
         result.current.addAlarm(mockAlarm);
         result.current.setFilters({ enabled: true });
@@ -556,7 +554,7 @@ describe('AlarmsStore', () => {
       expect(localStorageMock.setItem).toHaveBeenCalled();
       const setItemCalls = vi.mocked(localStorageMock.setItem).mock.calls;
       const persistCall = setItemCalls.find(call => call[0] === 'smart-alarm-alarms');
-      
+
       expect(persistCall).toBeDefined();
       const persistedData = JSON.parse(persistCall![1]);
       expect(persistedData.state.alarms).toHaveLength(1);

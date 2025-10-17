@@ -1,4 +1,5 @@
 using SmartAlarm.Domain.Enums;
+using SmartAlarm.Domain.Entities;
 
 namespace SmartAlarm.Api.Services;
 
@@ -51,26 +52,21 @@ public interface IUserConsentService
     /// Verifica se o processamento de dados está em conformidade
     /// </summary>
     Task<ComplianceStatus> CheckComplianceStatusAsync(Guid userId);
+
+    /// <summary>
+    /// Registra consentimento do usuário (versão síncrona)
+    /// </summary>
+    void RegisterConsent(string userId, bool consentGiven);
+
+    /// <summary>
+    /// Verifica se o usuário deu consentimento (versão síncrona)
+    /// </summary>
+    bool HasConsent(string userId);
 }
 
 
 
-/// <summary>
-/// Consentimento do usuário
-/// </summary>
-public class UserConsent
-{
-    public Guid Id { get; set; }
-    public Guid UserId { get; set; }
-    public ConsentType ConsentType { get; set; }
-    public bool Granted { get; set; }
-    public DateTime GrantedAt { get; set; }
-    public DateTime? RevokedAt { get; set; }
-    public string? Details { get; set; }
-    public string? IpAddress { get; set; }
-    public string? UserAgent { get; set; }
-    public string ConsentVersion { get; set; } = "1.0";
-}
+
 
 /// <summary>
 /// Exportação de dados pessoais

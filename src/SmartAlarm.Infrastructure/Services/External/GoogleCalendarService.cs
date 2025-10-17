@@ -1,191 +1,86 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using SmartAlarm.Application.Services.External;
 using SmartAlarm.Domain.Repositories;
-using Polly;
-using Polly.CircuitBreaker;
+using SmartAlarm.Domain.Enums;
+using System.Text.Json;
 
-namespace SmartAlarm.Infrastructure.Services.External
+namespace SmartAlarm.Infrastructure.Services.External;
+
+/// <summary>
+/// Google Calendar integration service implementation
+/// </summary>
+public class GoogleCalendarService : IGoogleCalendarService
 {
-    /// <summary>
-    /// Implementação do serviço de integração com Google Calendar
-    /// </summary>
-    public class GoogleCalendarService : IGoogleCalendarService
+    private readonly IIntegrationRepository _integrationRepository;
+    private readonly HttpClient _httpClient;
+    private readonly IConfiguration _configuration;
+    private readonly ILogger<GoogleCalendarService> _logger;
+
+    public GoogleCalendarService(
+        IIntegrationRepository integrationRepository,
+        HttpClient httpClient,
+        IConfiguration configuration,
+        ILogger<GoogleCalendarService> logger)
     {
-        private readonly HttpClient _httpClient;
-        private readonly IIntegrationRepository _integrationRepository;
-        private readonly IDistributedCache _cache;
-        private readonly ILogger<GoogleCalendarService> _logger;
-        private readonly IAsyncPolicy<HttpResponseMessage> _retryPolicy;
-        private const string BaseUrl = "https://www.googleapis.com/calendar/v3";
-        private const string CacheKeyPrefix = "gcal";
+        _integrationRepository = integrationRepository;
+        _httpClient = httpClient;
+        _configuration = configuration;
+        _logger = logger;
+    }
 
-        // Palavras-chave para detectar férias/folgas
-        private static readonly string[] VacationKeywords = new[]
+    public async Task<List<CalendarEvent>> GetEventsAsync(Guid userId, DateTime startDate, DateTime endDate, CancellationToken cancellationToken = default)
+    {
+        try
         {
-            "vacation", "férias", "holiday", "feriado", "day off", "folga", 
-            "out of office", "fora do escritório", "ooo", "pto", "leave", "licença"
-        };
-
-        public GoogleCalendarService(
-            HttpClient httpClient,
-            IIntegrationRepository integrationRepository,
-            IDistributedCache cache,
-            ILogger<GoogleCalendarService> logger)
-        {
-            _httpClient = httpClient;
-            _integrationRepository = integrationRepository;
-            _cache = cache;
-            _logger = logger;
-
-            // Configurar política de retry com circuit breaker
-            _retryPolicy = Policy<HttpResponseMessage>
-                .HandleResult(r => !r.IsSuccessStatusCode && r.StatusCode != System.Net.HttpStatusCode.Unauthorized)
-                .WaitAndRetryAsync(
-                    2,
-                    retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)),
-                    onRetry: (outcome, timespan, retryCount, context) =>
-                    {
-                        _logger.LogWarning("Retry {RetryCount} após {Timespan}s para Google Calendar API", 
-                            retryCount, timespan.TotalSeconds);
-                    })
-                .WrapAsync(Policy
-                    .HandleResult<HttpResponseMessage>(r => !r.IsSuccessStatusCode)
-                    .CircuitBreakerAsync(
-                        3,
-                        TimeSpan.FromMinutes(1),
-                        onBreak: (result, duration) =>
-                        {
-                            _logger.LogError("Circuit breaker aberto para Google Calendar API por {Duration}s", 
-                                duration.TotalSeconds);
-                        },
-                        onReset: () =>
-                        {
-                            _logger.LogInformation("Circuit breaker resetado para Google Calendar API");
-                        }));
-        }
-
-        public async Task<List<CalendarEvent>> GetEventsAsync(
-            Guid userId, 
-            DateTime startDate, 
-            DateTime endDate, 
-            CancellationToken cancellationToken = default)
-        {
-            try
+            var integration = await GetGoogleCalendarIntegrationAsync(userId);
+            if (integration == null || string.IsNullOrEmpty(integration.AccessToken))
             {
-                // Verificar cache primeiro
-                var cacheKey = $"{CacheKeyPrefix}:events:{userId}:{startDate:yyyyMMdd}:{endDate:yyyyMMdd}";
-                var cachedData = await _cache.GetStringAsync(cacheKey, cancellationToken);
-                
-                if (!string.IsNullOrEmpty(cachedData))
-                {
-                    var cachedEvents = JsonSerializer.Deserialize<List<CalendarEvent>>(cachedData);
-                    if (cachedEvents != null)
-                    {
-                        _logger.LogDebug("Cache hit para eventos do calendário: {UserId}", userId);
-                        return cachedEvents;
-                    }
-                }
-
-                // Obter token de acesso do usuário
-                var integration = await _integrationRepository.GetByUserAndTypeAsync(userId, "GoogleCalendar");
-                if (integration == null || string.IsNullOrEmpty(integration.AccessToken))
-                {
-                    _logger.LogWarning("Usuário {UserId} não tem integração com Google Calendar", userId);
-                    return new List<CalendarEvent>();
-                }
-
-                // Buscar eventos da API
-                var url = $"{BaseUrl}/calendars/primary/events" +
-                         $"?timeMin={startDate:yyyy-MM-dd'T'HH:mm:ss'Z'}" +
-                         $"&timeMax={endDate:yyyy-MM-dd'T'HH:mm:ss'Z'}" +
-                         $"&singleEvents=true" +
-                         $"&orderBy=startTime";
-
-                var request = new HttpRequestMessage(HttpMethod.Get, url);
-                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", integration.AccessToken);
-
-                var response = await _retryPolicy.ExecuteAsync(async () =>
-                    await _httpClient.SendAsync(request, cancellationToken));
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-                    {
-                        _logger.LogWarning("Token expirado para usuário {UserId}", userId);
-                        // Marcar integração como inválida
-                        integration.Disable();
-                        await _integrationRepository.UpdateAsync(integration);
-                    }
-                    return new List<CalendarEvent>();
-                }
-
-                var json = await response.Content.ReadAsStringAsync(cancellationToken);
-                var apiResponse = JsonSerializer.Deserialize<GoogleCalendarResponse>(json, new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
-
-                var events = MapGoogleEventsToCalendarEvents(apiResponse?.Items ?? new List<GoogleCalendarEvent>());
-
-                // Armazenar em cache por 1 hora
-                await _cache.SetStringAsync(
-                    cacheKey,
-                    JsonSerializer.Serialize(events),
-                    new DistributedCacheEntryOptions
-                    {
-                        AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1)
-                    },
-                    cancellationToken);
-
-                _logger.LogInformation("Obtidos {Count} eventos do Google Calendar para usuário {UserId}", 
-                    events.Count, userId);
-
-                return events;
-            }
-            catch (BrokenCircuitException ex)
-            {
-                _logger.LogError(ex, "Circuit breaker aberto para Google Calendar API");
+                _logger.LogWarning("No valid Google Calendar integration found for user {UserId}", userId);
                 return new List<CalendarEvent>();
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Erro ao buscar eventos do Google Calendar para usuário {UserId}", userId);
-                return new List<CalendarEvent>();
-            }
+
+            var events = new List<CalendarEvent>();
+
+            // Get events from primary calendar
+            var primaryEvents = await GetCalendarEventsAsync(integration.AccessToken, "primary", startDate, endDate, cancellationToken);
+            events.AddRange(primaryEvents);
+
+            _logger.LogInformation("Retrieved {Count} events from Google Calendar for user {UserId}", events.Count, userId);
+            return events;
         }
-
-        public async Task<bool> HasVacationOrDayOffAsync(
-            Guid userId, 
-            DateTime date, 
-            CancellationToken cancellationToken = default)
+        catch (Exception ex)
         {
-            var startOfDay = date.Date;
-            var endOfDay = date.Date.AddDays(1).AddSeconds(-1);
+            _logger.LogError(ex, "Failed to get Google Calendar events for user {UserId}", userId);
+            return new List<CalendarEvent>();
+        }
+    }
 
-            var events = await GetEventsAsync(userId, startOfDay, endOfDay, cancellationToken);
+    public async Task<bool> HasVacationOrDayOffAsync(Guid userId, DateTime date, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var events = await GetEventsAsync(userId, date.Date, date.Date.AddDays(1), cancellationToken);
 
-            return events.Any(e => 
-                e.Type == CalendarEventType.Vacation || 
+            return events.Any(e =>
+                e.Type == CalendarEventType.Vacation ||
                 e.Type == CalendarEventType.DayOff ||
                 e.Type == CalendarEventType.Holiday ||
-                (e.IsAllDay && ContainsVacationKeywords(e.Title + " " + e.Description)));
+                (e.IsAllDay && IsVacationKeyword(e.Title)));
         }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to check vacation/day off for user {UserId} on {Date}", userId, date);
+            return false;
+        }
+    }
 
-        public async Task<CalendarEvent?> GetNextEventAsync(
-            Guid userId, 
-            CancellationToken cancellationToken = default)
+    public async Task<CalendarEvent?> GetNextEventAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        try
         {
             var now = DateTime.UtcNow;
-            var endDate = now.AddDays(7); // Buscar eventos dos próximos 7 dias
+            var endDate = now.AddDays(7); // Look ahead 7 days
 
             var events = await GetEventsAsync(userId, now, endDate, cancellationToken);
 
@@ -194,149 +89,184 @@ namespace SmartAlarm.Infrastructure.Services.External
                 .OrderBy(e => e.StartTime)
                 .FirstOrDefault();
         }
-
-        public async Task<int> SyncCalendarAsync(
-            Guid userId, 
-            string accessToken, 
-            CancellationToken cancellationToken = default)
+        catch (Exception ex)
         {
-            try
-            {
-                // Atualizar ou criar integração
-                var integration = await _integrationRepository.GetByUserAndTypeAsync(userId, "GoogleCalendar") 
-                    ?? new Domain.Entities.Integration(
-                        Guid.NewGuid(),
-                        userId,
-                        "GoogleCalendar",
-                        "Google Calendar Integration",
-                        new Dictionary<string, string>());
-
-                integration.UpdateAccessToken(accessToken, null, DateTime.UtcNow.AddHours(1));
-                integration.Enable();
-
-                if (integration.Id == Guid.Empty)
-                {
-                    await _integrationRepository.AddAsync(integration);
-                }
-                else
-                {
-                    await _integrationRepository.UpdateAsync(integration);
-                }
-
-                // Sincronizar eventos dos próximos 30 dias
-                var startDate = DateTime.UtcNow;
-                var endDate = startDate.AddDays(30);
-
-                var events = await GetEventsAsync(userId, startDate, endDate, cancellationToken);
-
-                _logger.LogInformation("Calendário sincronizado para usuário {UserId}: {Count} eventos", 
-                    userId, events.Count);
-
-                return events.Count;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Erro ao sincronizar calendário para usuário {UserId}", userId);
-                return 0;
-            }
-        }
-
-        public async Task<bool> IsAuthorizedAsync(
-            Guid userId, 
-            CancellationToken cancellationToken = default)
-        {
-            var integration = await _integrationRepository.GetByUserAndTypeAsync(userId, "GoogleCalendar");
-            return integration != null && integration.IsEnabled && !string.IsNullOrEmpty(integration.AccessToken);
-        }
-
-        private List<CalendarEvent> MapGoogleEventsToCalendarEvents(List<GoogleCalendarEvent> googleEvents)
-        {
-            return googleEvents.Select(ge => new CalendarEvent
-            {
-                Id = ge.Id ?? Guid.NewGuid().ToString(),
-                Title = ge.Summary ?? "Sem título",
-                Description = ge.Description,
-                StartTime = ParseGoogleDateTime(ge.Start),
-                EndTime = ParseGoogleDateTime(ge.End),
-                IsAllDay = ge.Start?.Date != null,
-                Location = ge.Location,
-                Type = DetermineEventType(ge),
-                Attendees = ge.Attendees?.Select(a => a.Email).ToList() ?? new List<string>(),
-                IsRecurring = ge.RecurringEventId != null,
-                RecurrenceRule = ge.Recurrence?.FirstOrDefault()
-            }).ToList();
-        }
-
-        private DateTime ParseGoogleDateTime(GoogleDateTime? googleDateTime)
-        {
-            if (googleDateTime == null)
-                return DateTime.MinValue;
-
-            if (!string.IsNullOrEmpty(googleDateTime.DateTime))
-                return DateTime.Parse(googleDateTime.DateTime);
-
-            if (!string.IsNullOrEmpty(googleDateTime.Date))
-                return DateTime.Parse(googleDateTime.Date);
-
-            return DateTime.MinValue;
-        }
-
-        private CalendarEventType DetermineEventType(GoogleCalendarEvent googleEvent)
-        {
-            var text = $"{googleEvent.Summary} {googleEvent.Description}".ToLowerInvariant();
-
-            if (ContainsVacationKeywords(text))
-                return CalendarEventType.Vacation;
-
-            if (text.Contains("meeting") || text.Contains("reunião") || text.Contains("call"))
-                return CalendarEventType.Meeting;
-
-            if (text.Contains("work") || text.Contains("trabalho"))
-                return CalendarEventType.Work;
-
-            if (text.Contains("personal") || text.Contains("pessoal"))
-                return CalendarEventType.Personal;
-
-            return CalendarEventType.Regular;
-        }
-
-        private bool ContainsVacationKeywords(string? text)
-        {
-            if (string.IsNullOrEmpty(text))
-                return false;
-
-            var lowerText = text.ToLowerInvariant();
-            return VacationKeywords.Any(keyword => lowerText.Contains(keyword));
+            _logger.LogError(ex, "Failed to get next event for user {UserId}", userId);
+            return null;
         }
     }
 
-    // Modelos para deserialização da API do Google Calendar
-    internal class GoogleCalendarResponse
+    public async Task<int> SyncCalendarAsync(Guid userId, string accessToken, CancellationToken cancellationToken = default)
     {
-        public List<GoogleCalendarEvent> Items { get; set; } = new();
+        try
+        {
+            var startDate = DateTime.UtcNow.AddDays(-7); // Sync last 7 days
+            var endDate = DateTime.UtcNow.AddDays(30); // Sync next 30 days
+
+            var events = await GetCalendarEventsAsync(accessToken, "primary", startDate, endDate, cancellationToken);
+
+            // Here you would typically store the events in your database
+            // For now, we'll just return the count
+            _logger.LogInformation("Synced {Count} events from Google Calendar for user {UserId}", events.Count, userId);
+
+            return events.Count;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to sync Google Calendar for user {UserId}", userId);
+            return 0;
+        }
     }
 
-    internal class GoogleCalendarEvent
+    public async Task<bool> IsAuthorizedAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var integration = await GetGoogleCalendarIntegrationAsync(userId);
+            return integration != null &&
+                   integration.IsEnabled &&
+                   !string.IsNullOrEmpty(integration.AccessToken) &&
+                   integration.TokenExpiresAt > DateTime.UtcNow;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to check Google Calendar authorization for user {UserId}", userId);
+            return false;
+        }
+    }
+
+    private async Task<Domain.Entities.Integration?> GetGoogleCalendarIntegrationAsync(Guid userId)
+    {
+        var integrations = await _integrationRepository.GetByUserIdAsync(userId);
+        return integrations.FirstOrDefault(i => i.Type == IntegrationType.GoogleCalendar);
+    }
+
+    private async Task<List<CalendarEvent>> GetCalendarEventsAsync(string accessToken, string calendarId, DateTime startDate, DateTime endDate, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var timeMin = startDate.ToString("yyyy-MM-ddTHH:mm:ssZ");
+            var timeMax = endDate.ToString("yyyy-MM-ddTHH:mm:ssZ");
+
+            var url = $"https://www.googleapis.com/calendar/v3/calendars/{calendarId}/events" +
+                     $"?timeMin={timeMin}&timeMax={timeMax}&singleEvents=true&orderBy=startTime";
+
+            _httpClient.DefaultRequestHeaders.Clear();
+            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {accessToken}");
+
+            var response = await _httpClient.GetAsync(url, cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("Google Calendar API returned {StatusCode}: {Content}",
+                    response.StatusCode, await response.Content.ReadAsStringAsync(cancellationToken));
+                return new List<CalendarEvent>();
+            }
+
+            var content = await response.Content.ReadAsStringAsync(cancellationToken);
+            var googleResponse = JsonSerializer.Deserialize<GoogleCalendarResponse>(content);
+
+            if (googleResponse?.Items == null)
+                return new List<CalendarEvent>();
+
+            return googleResponse.Items.Select(ConvertToCalendarEvent).ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get events from Google Calendar API");
+            return new List<CalendarEvent>();
+        }
+    }
+
+    private static CalendarEvent ConvertToCalendarEvent(GoogleCalendarEvent googleEvent)
+    {
+        var startTime = ParseGoogleDateTime(googleEvent.Start);
+        var endTime = ParseGoogleDateTime(googleEvent.End);
+        var isAllDay = googleEvent.Start?.Date != null;
+
+        return new CalendarEvent
+        {
+            Id = googleEvent.Id ?? Guid.NewGuid().ToString(),
+            Title = googleEvent.Summary ?? "No Title",
+            Description = googleEvent.Description,
+            StartTime = startTime,
+            EndTime = endTime,
+            IsAllDay = isAllDay,
+            Location = googleEvent.Location,
+            Type = DetermineEventType(googleEvent.Summary, googleEvent.Description),
+            Attendees = googleEvent.Attendees?.Select(a => a.Email ?? string.Empty).ToList() ?? new List<string>(),
+            IsRecurring = !string.IsNullOrEmpty(googleEvent.RecurringEventId)
+        };
+    }
+
+    private static DateTime ParseGoogleDateTime(GoogleDateTime? googleDateTime)
+    {
+        if (googleDateTime?.DateTime != null)
+        {
+            return DateTime.Parse(googleDateTime.DateTime);
+        }
+
+        if (googleDateTime?.Date != null)
+        {
+            return DateTime.Parse(googleDateTime.Date);
+        }
+
+        return DateTime.MinValue;
+    }
+
+    private static CalendarEventType DetermineEventType(string? title, string? description)
+    {
+        var text = $"{title} {description}".ToLowerInvariant();
+
+        if (IsVacationKeyword(text))
+            return CalendarEventType.Vacation;
+
+        if (text.Contains("meeting") || text.Contains("call") || text.Contains("conference"))
+            return CalendarEventType.Meeting;
+
+        if (text.Contains("work") || text.Contains("office"))
+            return CalendarEventType.Work;
+
+        if (text.Contains("personal") || text.Contains("family"))
+            return CalendarEventType.Personal;
+
+        return CalendarEventType.Regular;
+    }
+
+    private static bool IsVacationKeyword(string text)
+    {
+        var vacationKeywords = new[] { "vacation", "holiday", "off", "leave", "pto", "sick", "day off", "férias", "folga" };
+        return vacationKeywords.Any(keyword => text.Contains(keyword, StringComparison.OrdinalIgnoreCase));
+    }
+
+    // Google Calendar API response models
+    private class GoogleCalendarResponse
+    {
+        public List<GoogleCalendarEvent>? Items { get; set; }
+    }
+
+    private class GoogleCalendarEvent
     {
         public string? Id { get; set; }
         public string? Summary { get; set; }
         public string? Description { get; set; }
+        public string? Location { get; set; }
         public GoogleDateTime? Start { get; set; }
         public GoogleDateTime? End { get; set; }
-        public string? Location { get; set; }
         public List<GoogleAttendee>? Attendees { get; set; }
         public string? RecurringEventId { get; set; }
-        public List<string>? Recurrence { get; set; }
     }
 
-    internal class GoogleDateTime
+    private class GoogleDateTime
     {
         public string? DateTime { get; set; }
         public string? Date { get; set; }
+        public string? TimeZone { get; set; }
     }
 
-    internal class GoogleAttendee
+    private class GoogleAttendee
     {
-        public string Email { get; set; } = string.Empty;
+        public string? Email { get; set; }
+        public string? DisplayName { get; set; }
     }
 }

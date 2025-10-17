@@ -33,6 +33,35 @@ namespace SmartAlarm.Infrastructure.Data
 
             // Apply all entity configurations
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(SmartAlarmDbContext).Assembly);
+
+            // Ensure UserRole has composite primary key (explicit configuration for tests)
+            modelBuilder.Entity<UserRole>(entity =>
+            {
+                entity.HasKey(ur => new { ur.UserId, ur.RoleId });
+
+                entity.Property(ur => ur.CreatedAt)
+                    .IsRequired()
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                entity.Property(ur => ur.IsActive)
+                    .IsRequired()
+                    .HasDefaultValue(true);
+
+                entity.Property(ur => ur.ExpiresAt)
+                    .IsRequired(false);
+
+                entity.HasOne(ur => ur.User)
+                    .WithMany(u => u.UserRoles)
+                    .HasForeignKey(ur => ur.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(ur => ur.Role)
+                    .WithMany(r => r.UserRoles)
+                    .HasForeignKey(ur => ur.RoleId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.ToTable("UserRoles");
+            });
         }
     }
 }

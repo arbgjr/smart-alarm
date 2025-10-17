@@ -17,7 +17,7 @@ namespace SmartAlarm.Observability.Tracing
         /// </summary>
         Task<T> TraceBusinessOperationAsync<T>(
             string operationName,
-            Func<Activity?, Task<T>> operation,
+            Func<Activity?, Task<T>> operationFunc,
             Dictionary<string, object>? tags = null);
 
         /// <summary>
@@ -27,7 +27,7 @@ namespace SmartAlarm.Observability.Tracing
             string entityType,
             string operationName,
             string? entityId,
-            Func<Activity?, Task<T>> operation,
+            Func<Activity?, Task<T>> operationFunc,
             Dictionary<string, object>? tags = null);
 
         /// <summary>
@@ -37,7 +37,7 @@ namespace SmartAlarm.Observability.Tracing
             string entityType,
             string operation,
             string? entityId,
-            Func<Activity?, Task<T>> operation,
+            Func<Activity?, Task<T>> operationFunc,
             Dictionary<string, object>? tags = null);
 
         /// <summary>
@@ -47,7 +47,7 @@ namespace SmartAlarm.Observability.Tracing
             string serviceName,
             string operation,
             string? endpoint,
-            Func<Activity?, Task<T>> operation,
+            Func<Activity?, Task<T>> operationFunc,
             Dictionary<string, object>? tags = null);
 
         /// <summary>
@@ -82,7 +82,7 @@ namespace SmartAlarm.Observability.Tracing
 
         public async Task<T> TraceBusinessOperationAsync<T>(
             string operationName,
-            Func<Activity?, Task<T>> operation,
+            Func<Activity?, Task<T>> operationFunc,
             Dictionary<string, object>? tags = null)
         {
             using var activity = _activitySource.StartActivity($"business.{operationName}");
@@ -106,7 +106,7 @@ namespace SmartAlarm.Observability.Tracing
 
                 _logger.LogDebug("Iniciando operação de negócio: {OperationName}", operationName);
 
-                var result = await operation(activity);
+                var result = await operationFunc(activity);
 
                 SmartAlarmActivitySource.SetSuccess(activity, "Business operation completed successfully");
 
@@ -126,7 +126,7 @@ namespace SmartAlarm.Observability.Tracing
             string entityType,
             string operationName,
             string? entityId,
-            Func<Activity?, Task<T>> operation,
+            Func<Activity?, Task<T>> operationFunc,
             Dictionary<string, object>? tags = null)
         {
             using var activity = _activitySource.StartDomainActivity(operationName, entityType, entityId);
@@ -146,7 +146,7 @@ namespace SmartAlarm.Observability.Tracing
                 _logger.LogDebug("Iniciando operação de domínio: {EntityType}.{OperationName} [{EntityId}]",
                     entityType, operationName, entityId ?? "N/A");
 
-                var result = await operation(activity);
+                var result = await operationFunc(activity);
 
                 SmartAlarmActivitySource.SetSuccess(activity, $"Domain operation {operationName} completed");
 
@@ -168,7 +168,7 @@ namespace SmartAlarm.Observability.Tracing
             string entityType,
             string operation,
             string? entityId,
-            Func<Activity?, Task<T>> operation,
+            Func<Activity?, Task<T>> operationFunc,
             Dictionary<string, object>? tags = null)
         {
             using var activity = _activitySource.StartRepositoryActivity(operation, entityType, entityId);
@@ -188,7 +188,7 @@ namespace SmartAlarm.Observability.Tracing
                 _logger.LogDebug("Iniciando operação de repository: {EntityType}.{Operation} [{EntityId}]",
                     entityType, operation, entityId ?? "N/A");
 
-                var result = await operation(activity);
+                var result = await operationFunc(activity);
 
                 SmartAlarmActivitySource.SetSuccess(activity, $"Repository operation {operation} completed");
 
@@ -210,7 +210,7 @@ namespace SmartAlarm.Observability.Tracing
             string serviceName,
             string operation,
             string? endpoint,
-            Func<Activity?, Task<T>> operation,
+            Func<Activity?, Task<T>> operationFunc,
             Dictionary<string, object>? tags = null)
         {
             using var activity = _activitySource.StartExternalApiActivity(serviceName, operation, endpoint);
@@ -230,7 +230,7 @@ namespace SmartAlarm.Observability.Tracing
                 _logger.LogDebug("Iniciando chamada para API externa: {ServiceName}.{Operation} [{Endpoint}]",
                     serviceName, operation, endpoint ?? "N/A");
 
-                var result = await operation(activity);
+                var result = await operationFunc(activity);
 
                 SmartAlarmActivitySource.SetSuccess(activity, $"External API call to {serviceName} completed");
 
@@ -287,11 +287,8 @@ namespace SmartAlarm.Observability.Tracing
                 activity.SetTag("session.id", _correlationContext.SessionId);
             }
 
-            // Adicionar propriedades de contexto customizadas
-            foreach (var property in _correlationContext.GetAllProperties())
-            {
-                activity.SetTag($"context.{property.Key.ToLowerInvariant()}", property.Value);
-            }
+            // Note: Context properties would need to be exposed via interface if needed
+            // For now, we only use the basic correlation properties
         }
     }
 }

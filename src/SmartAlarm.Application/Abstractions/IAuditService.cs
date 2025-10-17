@@ -51,6 +51,26 @@ public interface IAuditService
     /// Anonimiza dados de um usuário (LGPD/GDPR)
     /// </summary>
     Task AnonymizeUserDataAsync(Guid userId, string reason);
+
+    /// <summary>
+    /// Obtém trilha de auditoria de um usuário específico
+    /// </summary>
+    Task<IEnumerable<AuditLogEntry>> GetUserAuditTrailAsync(Guid userId, DateTime? startDate = null, DateTime? endDate = null);
+
+    /// <summary>
+    /// Obtém trilha de auditoria de uma entidade específica
+    /// </summary>
+    Task<IEnumerable<AuditLogEntry>> GetEntityAuditTrailAsync(string entityType, string entityId);
+
+    /// <summary>
+    /// Obtém eventos de segurança
+    /// </summary>
+    Task<IEnumerable<AuditLogEntry>> GetSecurityEventsAsync(DateTime? startDate = null, DateTime? endDate = null);
+
+    /// <summary>
+    /// Limpa logs antigos baseado em dias de retenção
+    /// </summary>
+    Task CleanupOldLogsAsync(int retentionDays);
 }
 
 /// <summary>
@@ -96,6 +116,8 @@ public class AuditLogEntry
     public string Action { get; set; } = string.Empty;
     public string? OldValue { get; set; }
     public string? NewValue { get; set; }
+    public string? OldValues { get; set; } // Alternative property name used by controller
+    public string? NewValues { get; set; } // Alternative property name used by controller
     public string Details { get; set; } = string.Empty;
     public string? IpAddress { get; set; }
     public string? UserAgent { get; set; }

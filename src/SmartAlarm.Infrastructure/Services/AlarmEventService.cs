@@ -23,7 +23,7 @@ public class AlarmEventService : IAlarmEventService
     private readonly SmartAlarmMeter _meter;
     private readonly ICorrelationContext _correlationContext;
     private readonly SmartAlarmActivitySource _activitySource;
-    private readonly INotificationService _notificationService;
+    private readonly SmartAlarm.Application.Abstractions.INotificationService _notificationService;
     private readonly IPushNotificationService _pushNotificationService;
 
     public AlarmEventService(
@@ -32,7 +32,7 @@ public class AlarmEventService : IAlarmEventService
         SmartAlarmMeter meter,
         ICorrelationContext correlationContext,
         SmartAlarmActivitySource activitySource,
-        INotificationService notificationService,
+        SmartAlarm.Application.Abstractions.INotificationService notificationService,
         IPushNotificationService pushNotificationService)
     {
         _repository = repository ?? throw new ArgumentNullException(nameof(repository));
@@ -551,5 +551,39 @@ public class AlarmEventService : IAlarmEventService
     private static bool ShouldSendPushNotification(AlarmEventType eventType)
     {
         return eventType == AlarmEventType.Triggered;
+    }
+
+    public async Task RecordAlarmEscalatedAsync(
+        Guid alarmId,
+        Guid userId,
+        int escalationLevel,
+        CancellationToken cancellationToken = default)
+    {
+        using var activity = _activitySource.StartActivity("AlarmEventService.RecordAlarmEscalated");
+        activity?.SetTag("alarm.id", alarmId.ToString());
+        activity?.SetTag("user.id", userId.ToString());
+        activity?.SetTag("escalation.level", escalationLevel.ToString());
+
+        try
+        {
+            await RecordEventAsync(
+                alarmId,
+                userId,
+                AlarmEventType.Escalated,
+                metadata: escalationLevel.ToString(),
+                cancellationToken: cancellationToken);
+
+            _logger.LogWarning("Alarm {AlarmId} escalated to level {EscalationLevel} for user {UserId}",
+                alarmId, escalationLevel, userId);
+
+            activity?.SetStatus(ActivityStatusCode.Ok);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to record alarm escalation for alarm {AlarmId}, user {UserId}, level {EscalationLevel}",
+                alarmId, userId, escalationLevel);
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+            throw;
+        }
     }
 }

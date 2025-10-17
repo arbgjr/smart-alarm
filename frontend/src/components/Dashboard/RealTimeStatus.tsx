@@ -36,7 +36,7 @@ export const RealTimeStatus: React.FC<RealTimeStatusProps> = ({ className = '' }
       setSystemStatus(prev => ({
         ...prev,
         signalRConnected: status.isConnected,
-        lastSync: status.lastConnected
+        lastSync: status.lastConnected || null
       }));
     };
 

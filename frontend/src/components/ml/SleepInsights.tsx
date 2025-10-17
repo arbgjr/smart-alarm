@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useMLDataCollection } from '@/utils/mlDataCollector';
-import { useAlarmOptimization } from '@/utils/alarmOptimizer';
+// import { useAlarmOptimization } from '@/utils/alarmOptimizer';
 import { useUIStore } from '@/stores/uiStore';
-import { 
-  ChartBarIcon, 
-  LightBulbIcon, 
+import {
+  ChartBarIcon,
+  LightBulbIcon,
   ClockIcon,
   SparklesIcon,
   ShieldCheckIcon,
@@ -24,24 +24,24 @@ interface SleepRecommendation {
 }
 
 export const SleepInsights: React.FC = () => {
-  const { 
-    isEnabled, 
-    pendingCount, 
-    enableCollection, 
-    disableCollection, 
+  const {
+    isEnabled,
+    pendingCount,
+    enableCollection,
+    disableCollection,
     getLocalAnalytics,
     exportData,
     deleteData,
     forceSync
   } = useMLDataCollection();
-  
-  const { getSmartRecommendation, calculateOptimalTime } = useAlarmOptimization();
-  
+
+  // const { getSmartRecommendation, calculateOptimalTime } = useAlarmOptimization();
+
   const { openModal } = useUIStore();
   const [analytics, setAnalytics] = useState<any>(null);
   const [recommendations, setRecommendations] = useState<SleepRecommendation[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [showPrivacySettings, setShowPrivacySettings] = useState(false);
+  const [, setShowPrivacySettings] = useState(false);
 
   useEffect(() => {
     if (isEnabled) {
@@ -102,7 +102,7 @@ export const SleepInsights: React.FC = () => {
   const handleEnableML = async (): Promise<void> => {
     enableCollection();
     setIsLoading(true);
-    
+
     // Simulate loading analytics
     setTimeout(() => {
       const data = getLocalAnalytics();
@@ -118,7 +118,7 @@ export const SleepInsights: React.FC = () => {
     setIsLoading(true);
     const success = await forceSync();
     setIsLoading(false);
-    
+
     if (success) {
       // Show success feedback
       console.log('Data synced successfully');
@@ -244,7 +244,7 @@ export const SleepInsights: React.FC = () => {
                 </div>
               </div>
               <div className="w-24 h-2 bg-gray-200 rounded-full">
-                <div 
+                <div
                   className="h-2 bg-blue-500 rounded-full transition-all duration-500"
                   style={{ width: `${analytics.sleepConsistency * 100}%` }}
                 />
@@ -285,8 +285,8 @@ export const SleepInsights: React.FC = () => {
               <div
                 key={rec.id}
                 className={`border rounded-lg p-4 ${
-                  rec.impact === 'high' 
-                    ? 'border-red-200 bg-red-50' 
+                  rec.impact === 'high'
+                    ? 'border-red-200 bg-red-50'
                     : rec.impact === 'medium'
                     ? 'border-yellow-200 bg-yellow-50'
                     : 'border-blue-200 bg-blue-50'
@@ -333,7 +333,7 @@ export const SleepInsights: React.FC = () => {
             <CogIcon className="h-5 w-5 mr-2 text-purple-500" />
             Intelligent Alarm Optimization
           </h3>
-          
+
           <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
             <div className="flex items-start space-x-3">
               <BellIcon className="h-6 w-6 text-purple-600 mt-0.5 flex-shrink-0" />
@@ -344,7 +344,7 @@ export const SleepInsights: React.FC = () => {
                 <p className="text-sm text-purple-800 mb-3">
                   Our AI analyzes your sleep cycles to wake you during light sleep phases for easier, more refreshing mornings.
                 </p>
-                
+
                 {analytics.optimalAlarmWindow.confidence > 0.6 && (
                   <div className="bg-white rounded-lg p-3 border border-purple-200">
                     <div className="flex items-center justify-between mb-2">
@@ -382,7 +382,7 @@ export const SleepInsights: React.FC = () => {
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Sleep Efficiency:</span>
                   <span className={`font-medium ${analytics.sleepConsistency > 0.7 ? 'text-green-600' : 'text-yellow-600'}`}>
-                    {analytics.sleepConsistency > 0.8 ? 'Excellent' : 
+                    {analytics.sleepConsistency > 0.8 ? 'Excellent' :
                      analytics.sleepConsistency > 0.6 ? 'Good' : 'Fair'}
                   </span>
                 </div>
@@ -456,7 +456,7 @@ export const SleepInsights: React.FC = () => {
             Disable Insights
           </button>
         </div>
-        
+
         {pendingCount > 0 && (
           <div className="mt-4 text-sm text-gray-600">
             {pendingCount} data points pending sync

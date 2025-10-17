@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Filter, Calendar, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { Search, Filter, Calendar, Clock } from 'lucide-react';
 
 interface AlarmFiltersProps {
   searchTerm: string;

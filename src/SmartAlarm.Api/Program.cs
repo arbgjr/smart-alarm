@@ -16,6 +16,7 @@ using FluentValidation;
 using System.Reflection;
 using SmartAlarm.Observability.Extensions;
 using Hangfire;
+using Hangfire.PostgreSql;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -100,6 +101,8 @@ if (!builder.Environment.IsEnvironment("Testing"))
 
 // Add background services
 builder.Services.AddHostedService<SmartAlarm.Api.Services.MissedAlarmBackgroundService>();
+builder.Services.AddHostedService<SmartAlarm.Api.Services.AuditCleanupBackgroundService>();
+builder.Services.AddHostedService<SmartAlarm.Api.Services.CalendarSyncBackgroundService>();
 
 // Sobrescreve a resposta padrão de erro de modelo inválido
 builder.Services.Configure<Microsoft.AspNetCore.Mvc.ApiBehaviorOptions>(options =>

@@ -1,29 +1,42 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Clock, Calendar, Repeat, TrendingUp, Users, Activity, RefreshCw, Menu, Settings } from 'lucide-react';
-import { useViewport } from '../../utils/responsive';
-import { useAuth } from '../../hooks/useAuth';
-import { useActiveAlarms, useTodaysAlarms } from '../../hooks/useAlarms';
-import { useActiveRoutines } from '../../hooks/useRoutines';
-import { useDashboardMetrics } from '../../hooks/useDashboardMetrics';
-import { AlarmList } from '../../components/AlarmList';
-import { RoutineList } from '../../components/RoutineList';
-import { AlarmForm } from '../../components/molecules/AlarmForm';
-import { RoutineForm } from '../../components/molecules/RoutineForm';
-import { ErrorBoundary } from '../../components/molecules/ErrorBoundary/ErrorBoundary';
-import { MetricsCard } from '../../components/Dashboard/MetricsCard';
-import { AlarmChart } from '../../components/Dashboard/AlarmChart';
-import { RecentActivity } from '../../components/Dashboard/RecentActivity';
-import { RealTimeStatus } from '../../components/Dashboard/RealTimeStatus';
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import { Clock, Menu, Settings, Repeat } from "lucide-react";
+import { useViewport } from "../../utils/responsive";
+import { useAuth } from "../../hooks/useAuth";
+import { useActiveAlarms, useTodaysAlarms } from "../../hooks/useAlarms";
+import { useActiveRoutines } from "../../hooks/useRoutines";
+import { useDashboardMetrics } from "../../hooks/useDashboardMetrics";
+import { AlarmList } from "../../components/AlarmList";
+import { RoutineList } from "../../components/RoutineList";
+import { AlarmForm } from "../../components/molecules/AlarmForm";
+import { RoutineForm } from "../../components/molecules/RoutineForm";
+import { ErrorBoundary } from "../../components/molecules/ErrorBoundary/ErrorBoundary";
+import {
+  RecentActivity,
+  RealTimeStatus,
+  EnhancedMetricsGrid,
+  EnhancedAlarmChart,
+  RealTimeNotifications,
+  QuickActionsPanel,
+} from "../../components/Dashboard";
 
 interface DashboardProps {}
 
 export const Dashboard: React.FC<DashboardProps> = () => {
   const { user, isLoading } = useAuth();
-  const { data: activeAlarms, isLoading: isLoadingActiveAlarms } = useActiveAlarms();
-  const { data: todaysAlarms, isLoading: isLoadingTodaysAlarms } = useTodaysAlarms();
-  const { data: activeRoutines, isLoading: isLoadingActiveRoutines } = useActiveRoutines();
-  const { metrics, chartData, recentActivity, isLoading: isLoadingMetrics, refreshMetrics } = useDashboardMetrics();
+  const { data: activeAlarms, isLoading: isLoadingActiveAlarms } =
+    useActiveAlarms();
+  const { data: todaysAlarms, isLoading: isLoadingTodaysAlarms } =
+    useTodaysAlarms();
+  const { data: activeRoutines, isLoading: isLoadingActiveRoutines } =
+    useActiveRoutines();
+  const {
+    metrics,
+    chartData,
+    recentActivity,
+    isLoading: isLoadingMetrics,
+    refreshMetrics,
+  } = useDashboardMetrics();
   const viewport = useViewport();
 
   // Mobile navigation state
@@ -77,7 +90,11 @@ export const Dashboard: React.FC<DashboardProps> = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-4">
-              <h1 className={`font-bold text-gray-900 ${viewport.isMobile ? 'text-xl' : 'text-2xl'}`}>
+              <h1
+                className={`font-bold text-gray-900 ${
+                  viewport.isMobile ? "text-xl" : "text-2xl"
+                }`}
+              >
                 Smart Alarm
               </h1>
             </div>
@@ -105,7 +122,7 @@ export const Dashboard: React.FC<DashboardProps> = () => {
                     <Settings className="w-5 h-5" />
                   </Link>
                   <span className="text-sm text-gray-700 hidden sm:block">
-                    Welcome, {user?.name || user?.email || 'User'}
+                    Welcome, {user?.name || user?.email || "User"}
                   </span>
                 </>
               )}
@@ -115,9 +132,13 @@ export const Dashboard: React.FC<DashboardProps> = () => {
                 className="bg-white p-2 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 aria-label="User menu"
               >
-                <div className={`bg-blue-600 rounded-full flex items-center justify-center ${viewport.isMobile ? 'w-8 h-8' : 'w-10 h-10'}`}>
+                <div
+                  className={`bg-blue-600 rounded-full flex items-center justify-center ${
+                    viewport.isMobile ? "w-8 h-8" : "w-10 h-10"
+                  }`}
+                >
                   <span className="text-white text-sm font-medium">
-                    {(user?.name?.[0] || user?.email?.[0] || 'U').toUpperCase()}
+                    {(user?.name?.[0] || user?.email?.[0] || "U").toUpperCase()}
                   </span>
                 </div>
               </button>
@@ -130,7 +151,7 @@ export const Dashboard: React.FC<DashboardProps> = () => {
           <div className="border-t border-gray-200 bg-white">
             <div className="px-4 py-3 space-y-3">
               <div className="text-sm text-gray-700">
-                Welcome, {user?.name || user?.email || 'User'}
+                Welcome, {user?.name || user?.email || "User"}
               </div>
               <div className="flex flex-col space-y-2">
                 <Link
@@ -175,193 +196,100 @@ export const Dashboard: React.FC<DashboardProps> = () => {
           </div>
 
           {/* Enhanced Metrics Grid */}
-          <div className={`grid gap-4 mb-6 ${
-            viewport.isMobile
-              ? 'grid-cols-1'
-              : viewport.isTablet
-                ? 'grid-cols-2'
-                : 'grid-cols-2 lg:grid-cols-4'
-          }`}>
-            <MetricsCard
-              title="Active Alarms"
-              value={isLoadingActiveAlarms ? '...' : activeAlarms?.length || 0}
-              icon={Clock}
-              iconColor="bg-blue-500"
-              isLoading={isLoadingActiveAlarms}
-              change={{
-                value: 12,
-                type: 'increase',
-                period: 'last week'
-              }}
-            />
+          <EnhancedMetricsGrid
+            metrics={{
+              ...metrics,
+              activeAlarms: activeAlarms?.length || 0,
+              todaysAlarms: todaysAlarms?.length || 0,
+              activeRoutines: activeRoutines?.length || 0,
+            }}
+            isLoading={
+              isLoadingMetrics ||
+              isLoadingActiveAlarms ||
+              isLoadingTodaysAlarms ||
+              isLoadingActiveRoutines
+            }
+            className="mb-6"
+          />
 
-            <MetricsCard
-              title="Today's Alarms"
-              value={isLoadingTodaysAlarms ? '...' : todaysAlarms?.length || 0}
-              icon={Calendar}
-              iconColor="bg-green-500"
-              isLoading={isLoadingTodaysAlarms}
-              change={{
-                value: 5,
-                type: 'increase',
-                period: 'yesterday'
-              }}
-            />
-
-            <MetricsCard
-              title="Active Routines"
-              value={isLoadingActiveRoutines ? '...' : activeRoutines?.length || 0}
-              icon={Repeat}
-              iconColor="bg-purple-500"
-              isLoading={isLoadingActiveRoutines}
-              change={{
-                value: 0,
-                type: 'neutral',
-                period: 'last week'
-              }}
-            />
-
-            <MetricsCard
-              title="Success Rate"
-              value={isLoadingMetrics ? '...' : `${metrics.successRate.toFixed(1)}%`}
-              icon={TrendingUp}
-              iconColor="bg-orange-500"
-              isLoading={isLoadingMetrics}
-              change={{
-                value: 3.2,
-                type: 'increase',
-                period: 'last month'
-              }}
-            />
-          </div>
-
-          {/* Performance Metrics */}
-          <div className={`grid gap-4 mb-6 ${
-            viewport.isMobile
-              ? 'grid-cols-1'
-              : 'grid-cols-1 md:grid-cols-3'
-          }`}>
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total Triggered</p>
-                  <p className="text-2xl font-bold text-blue-600">
-                    {isLoadingMetrics ? '...' : metrics.totalTriggered}
-                  </p>
-                </div>
-                <Activity className="w-8 h-8 text-blue-500" />
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Avg Response Time</p>
-                  <p className="text-2xl font-bold text-green-600">
-                    {isLoadingMetrics ? '...' : `${metrics.avgResponseTime}s`}
-                  </p>
-                </div>
-                <Clock className="w-8 h-8 text-green-500" />
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total Snoozed</p>
-                  <p className="text-2xl font-bold text-yellow-600">
-                    {isLoadingMetrics ? '...' : metrics.totalSnoozed}
-                  </p>
-                </div>
-                <Users className="w-8 h-8 text-yellow-500" />
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Actions */}
-          <div className="bg-white shadow-sm rounded-lg border border-gray-200 mb-8">
-            <div className="px-6 py-4">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-medium text-gray-900">Quick Actions</h2>
-                <button
-                  onClick={refreshMetrics}
-                  className="inline-flex items-center px-3 py-1 text-sm text-gray-600 hover:text-gray-900 transition-colors"
-                  title="Refresh dashboard data"
-                >
-                  <RefreshCw className="w-4 h-4 mr-1" />
-                  Refresh
-                </button>
-              </div>
-              <div className="flex flex-wrap gap-4">
-                <button
-                  onClick={handleCreateAlarm}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-                >
-                  <Clock className="w-4 h-4 mr-2" />
-                  Create Alarm
-                </button>
-                <button
-                  onClick={handleCreateRoutine}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
-                >
-                  <Repeat className="w-4 h-4 mr-2" />
-                  Create Routine
-                </button>
-                <Link
-                  to="/alarms"
-                  className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-                >
-                  <Calendar className="w-4 h-4 mr-2" />
-                  Manage Alarms
-                </Link>
-              </div>
-            </div>
-          </div>
+          {/* Quick Actions Panel */}
+          <QuickActionsPanel
+            onCreateAlarm={handleCreateAlarm}
+            onCreateRoutine={handleCreateRoutine}
+            onRefreshData={refreshMetrics}
+            onImportData={() => console.log("Import data")}
+            onExportData={() => console.log("Export data")}
+            className="mb-8"
+          />
           {/* Charts and Analytics */}
-          <div className={`grid gap-6 mb-6 ${
-            viewport.isMobile
-              ? 'grid-cols-1'
-              : 'grid-cols-1 lg:grid-cols-3'
-          }`}>
-            {/* Alarm Activity Chart */}
+          <div
+            className={`grid gap-6 mb-6 ${
+              viewport.isMobile ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-3"
+            }`}
+          >
+            {/* Enhanced Alarm Activity Chart */}
             <div className="lg:col-span-2">
-              <ErrorBoundary fallback={
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                  <p className="text-center text-gray-500">Unable to load chart data</p>
-                </div>
-              }>
-                <AlarmChart
+              <ErrorBoundary
+                fallback={
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <p className="text-center text-gray-500">
+                      Unable to load chart data
+                    </p>
+                  </div>
+                }
+              >
+                <EnhancedAlarmChart
                   data={chartData}
                   isLoading={isLoadingMetrics}
                 />
               </ErrorBoundary>
             </div>
 
-            {/* Real-time Status */}
-            <div>
-              <ErrorBoundary fallback={
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                  <p className="text-center text-gray-500">Unable to load status</p>
-                </div>
-              }>
+            {/* Real-time Status and Notifications */}
+            <div className="space-y-6">
+              <ErrorBoundary
+                fallback={
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <p className="text-center text-gray-500">
+                      Unable to load status
+                    </p>
+                  </div>
+                }
+              >
                 <RealTimeStatus />
+              </ErrorBoundary>
+
+              <ErrorBoundary
+                fallback={
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <p className="text-center text-gray-500">
+                      Unable to load notifications
+                    </p>
+                  </div>
+                }
+              >
+                <RealTimeNotifications maxNotifications={3} />
               </ErrorBoundary>
             </div>
           </div>
 
           {/* Main Content Grid */}
-          <div className={`grid gap-6 ${
-            viewport.isMobile
-              ? 'grid-cols-1'
-              : 'grid-cols-1 lg:grid-cols-3'
-          }`}>
+          <div
+            className={`grid gap-6 ${
+              viewport.isMobile ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-3"
+            }`}
+          >
             {/* Recent Activity */}
             <div className="lg:col-span-1">
-              <ErrorBoundary fallback={
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                  <p className="text-center text-gray-500">Unable to load activity</p>
-                </div>
-              }>
+              <ErrorBoundary
+                fallback={
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <p className="text-center text-gray-500">
+                      Unable to load activity
+                    </p>
+                  </div>
+                }
+              >
                 <RecentActivity
                   activities={recentActivity}
                   isLoading={isLoadingMetrics}
@@ -376,7 +304,9 @@ export const Dashboard: React.FC<DashboardProps> = () => {
               <div className="bg-white rounded-lg shadow-sm border border-gray-200">
                 <div className="px-6 py-4 border-b border-gray-200">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-medium text-gray-900">Recent Alarms</h3>
+                    <h3 className="text-lg font-medium text-gray-900">
+                      Recent Alarms
+                    </h3>
                     <Link
                       to="/alarms"
                       className="text-sm text-blue-600 hover:text-blue-500 font-medium"
@@ -386,11 +316,15 @@ export const Dashboard: React.FC<DashboardProps> = () => {
                   </div>
                 </div>
                 <div className="p-6">
-                  <ErrorBoundary fallback={
-                    <div className="text-center py-8">
-                      <p className="text-gray-500">Unable to load alarms. Please try refreshing the page.</p>
-                    </div>
-                  }>
+                  <ErrorBoundary
+                    fallback={
+                      <div className="text-center py-8">
+                        <p className="text-gray-500">
+                          Unable to load alarms. Please try refreshing the page.
+                        </p>
+                      </div>
+                    }
+                  >
                     <AlarmList
                       alarms={activeAlarms || []}
                       isLoading={isLoadingActiveAlarms}
@@ -404,7 +338,9 @@ export const Dashboard: React.FC<DashboardProps> = () => {
               <div className="bg-white rounded-lg shadow-sm border border-gray-200">
                 <div className="px-6 py-4 border-b border-gray-200">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-medium text-gray-900">Recent Routines</h3>
+                    <h3 className="text-lg font-medium text-gray-900">
+                      Recent Routines
+                    </h3>
                     <Link
                       to="/routines"
                       className="text-sm text-blue-600 hover:text-blue-500 font-medium"
@@ -414,11 +350,16 @@ export const Dashboard: React.FC<DashboardProps> = () => {
                   </div>
                 </div>
                 <div className="p-6">
-                  <ErrorBoundary fallback={
-                    <div className="text-center py-8">
-                      <p className="text-gray-500">Unable to load routines. Please try refreshing the page.</p>
-                    </div>
-                  }>
+                  <ErrorBoundary
+                    fallback={
+                      <div className="text-center py-8">
+                        <p className="text-gray-500">
+                          Unable to load routines. Please try refreshing the
+                          page.
+                        </p>
+                      </div>
+                    }
+                  >
                     <RoutineList
                       routines={activeRoutines || []}
                       isLoading={isLoadingActiveRoutines}

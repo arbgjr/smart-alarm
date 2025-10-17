@@ -37,25 +37,26 @@ namespace SmartAlarm.Infrastructure.Tests.Repositories
 
             _context = new SmartAlarmDbContext(options);
             _context.Database.EnsureCreated();
-            
+
             // Create mock dependencies for user repository
             var userLogger = new Mock<ILogger<EfUserRepository>>();
             var userMeter = new Mock<SmartAlarmMeter>();
             var userCorrelationContext = new Mock<ICorrelationContext>();
             var userActivitySource = new Mock<SmartAlarmActivitySource>();
-            
+
             _userRepository = new EfUserRepository(_context, userLogger.Object, userMeter.Object, userCorrelationContext.Object, userActivitySource.Object);
-            
+
             // Create mock dependencies for alarm repository
             var logger = new Mock<ILogger<EfAlarmRepository>>();
             var meter = new Mock<SmartAlarmMeter>();
             var correlationContext = new Mock<ICorrelationContext>();
             var activitySource = new Mock<SmartAlarmActivitySource>();
-            
+
             _alarmRepository = new EfAlarmRepository(_context, logger.Object, meter.Object, correlationContext.Object, activitySource.Object);
         }
 
-        [Fact, Category("Integration")]
+        [Fact]
+        [Trait("Category", "Integration")]
         public async Task EfUserRepository_Should_AddAndRetrieveUser()
         {
             // Arrange
@@ -74,7 +75,8 @@ namespace SmartAlarm.Infrastructure.Tests.Repositories
             retrievedUser.Email.Address.Should().Be("test@example.com");
         }
 
-        [Fact, Category("Integration")]
+        [Fact]
+        [Trait("Category", "Integration")]
         public async Task EfUserRepository_Should_FindUserByEmail()
         {
             // Arrange
@@ -90,7 +92,8 @@ namespace SmartAlarm.Infrastructure.Tests.Repositories
             retrievedUser.Email.Address.Should().Be("email@example.com");
         }
 
-        [Fact, Category("Integration")]
+        [Fact]
+        [Trait("Category", "Integration")]
         public async Task EfAlarmRepository_Should_AddAndRetrieveAlarm()
         {
             // Arrange
@@ -113,7 +116,8 @@ namespace SmartAlarm.Infrastructure.Tests.Repositories
             retrievedAlarm.UserId.Should().Be(userId);
         }
 
-        [Fact, Category("Integration")]
+        [Fact]
+        [Trait("Category", "Integration")]
         public async Task EfAlarmRepository_Should_GetAlarmsByUserId()
         {
             // Arrange

@@ -1,5 +1,5 @@
 // ML Data Collection Pipeline for Smart Alarm
-interface UserBehaviorData {
+export interface UserBehaviorData {
   userId: string;
   timestamp: string;
   eventType: 'alarm_created' | 'alarm_triggered' | 'alarm_dismissed' | 'alarm_snoozed' | 'sleep_pattern' | 'app_interaction';
@@ -10,19 +10,19 @@ interface UserBehaviorData {
     actualTime?: string;
     snoozeCount?: number;
     dismissalMethod?: 'button' | 'voice' | 'gesture' | 'timeout';
-    
+
     // Sleep pattern data
     bedtime?: string;
     wakeupTime?: string;
     sleepDuration?: number;
     sleepQuality?: 1 | 2 | 3 | 4 | 5; // User-reported quality
-    
+
     // Contextual data
     dayOfWeek?: string;
     weather?: string;
     deviceType?: 'mobile' | 'desktop' | 'tablet';
     timezone?: string;
-    
+
     // Behavioral patterns
     responseTime?: number; // Time to dismiss/snooze
     interactionPattern?: 'quick' | 'delayed' | 'multiple_snooze';
@@ -41,7 +41,7 @@ interface UserBehaviorData {
   };
 }
 
-interface SleepPatternMetrics {
+export interface SleepPatternMetrics {
   avgBedtime: string;
   avgWakeupTime: string;
   avgSleepDuration: number;
@@ -120,8 +120,8 @@ class MLDataCollector {
   ): void {
     if (!this.isEnabled) return;
 
-    const timeDiff = this.calculateTimeDifference(originalTime, actualTime);
-    
+    // const timeDiff = this.calculateTimeDifference(originalTime, actualTime);
+
     this.addDataPoint({
       eventType: 'alarm_dismissed',
       data: {
@@ -176,7 +176,7 @@ class MLDataCollector {
   }
 
   // Track general app interactions for behavior analysis
-  public trackAppInteraction(interactionType: string, duration: number, context?: Record<string, any>): void {
+  public trackAppInteraction(_interactionType: string, duration: number, context?: Record<string, any>): void {
     if (!this.isEnabled) return;
 
     this.addDataPoint({
@@ -207,7 +207,7 @@ class MLDataCollector {
     };
 
     this.dataQueue.push(dataPoint);
-    
+
     // Limit queue size to prevent memory issues
     if (this.dataQueue.length > this.MAX_QUEUE_SIZE) {
       this.dataQueue.shift();
@@ -217,11 +217,11 @@ class MLDataCollector {
     this.attemptSync();
   }
 
-  private calculateTimeDifference(originalTime: string, actualTime: string): number {
-    const original = new Date(`1970-01-01T${originalTime}`);
-    const actual = new Date(actualTime);
-    return Math.abs(actual.getTime() - original.getTime());
-  }
+  // private calculateTimeDifference(originalTime: string, actualTime: string): number {
+  //   const original = new Date(`1970-01-01T${originalTime}`);
+  //   const actual = new Date(actualTime);
+  //   return Math.abs(actual.getTime() - original.getTime());
+  // }
 
   private calculateSleepDuration(bedtime: string, wakeupTime: string): number {
     const bed = new Date(`1970-01-01T${bedtime}`);
@@ -347,11 +347,11 @@ class MLDataCollector {
     // Calculate standard deviation for consistency
     const bedtimeVariance = this.calculateTimeVariance(bedtimes);
     const wakeupVariance = this.calculateTimeVariance(wakeupTimes);
-    
+
     // Convert to 0-1 score (lower variance = higher consistency)
     const maxVariance = 3600; // 1 hour in seconds
     const consistency = Math.max(0, 1 - (bedtimeVariance + wakeupVariance) / (2 * maxVariance));
-    
+
     return Math.round(consistency * 100) / 100;
   }
 
@@ -363,26 +363,26 @@ class MLDataCollector {
 
     const mean = seconds.reduce((a, b) => a + b) / seconds.length;
     const variance = seconds.reduce((sum, value) => sum + Math.pow(value - mean, 2), 0) / seconds.length;
-    
+
     return Math.sqrt(variance);
   }
 
   private calculateOptimalWindow(wakeupTimes: string[]): SleepPatternMetrics['optimalAlarmWindow'] {
     const avgWakeup = this.calculateAverageTime(wakeupTimes);
     const variance = this.calculateTimeVariance(wakeupTimes);
-    
+
     // Create 30-minute window around average time
     const [hours, minutes] = avgWakeup.split(':').map(Number);
     const avgMinutes = hours * 60 + minutes;
-    
+
     const startMinutes = Math.max(0, avgMinutes - 15);
     const endMinutes = avgMinutes + 15;
-    
+
     const startHours = Math.floor(startMinutes / 60);
     const startMins = startMinutes % 60;
     const endHours = Math.floor(endMinutes / 60);
     const endMins = endMinutes % 60;
-    
+
     return {
       start: `${startHours.toString().padStart(2, '0')}:${startMins.toString().padStart(2, '0')}`,
       end: `${endHours.toString().padStart(2, '0')}:${endMins.toString().padStart(2, '0')}`,
@@ -422,7 +422,7 @@ export const mlDataCollector = MLDataCollector.getInstance();
 export function useMLDataCollection() {
   const isEnabled = mlDataCollector['isEnabled'];
   const pendingCount = mlDataCollector.getPendingDataCount();
-  
+
   return {
     isEnabled,
     pendingCount,

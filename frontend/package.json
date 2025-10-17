@@ -23,7 +23,12 @@
     "test:e2e:ci": "playwright test --reporter=json --output-dir=test-results/artifacts",
     "docker:test:up": "docker-compose -f docker-compose.test.yml up -d",
     "docker:test:down": "docker-compose -f docker-compose.test.yml down",
-    "docker:test:logs": "docker-compose -f docker-compose.test.yml logs -f"
+    "docker:test:logs": "docker-compose -f docker-compose.test.yml logs -f",
+    "test:performance": "powershell -ExecutionPolicy Bypass -File tests/performance/run-performance-tests.ps1 -TestType load",
+    "test:performance:load": "powershell -ExecutionPolicy Bypass -File tests/performance/run-performance-tests.ps1 -TestType load",
+    "test:performance:stress": "powershell -ExecutionPolicy Bypass -File tests/performance/run-performance-tests.ps1 -TestType stress",
+    "test:performance:spike": "powershell -ExecutionPolicy Bypass -File tests/performance/run-performance-tests.ps1 -TestType spike",
+    "test:performance:all": "powershell -ExecutionPolicy Bypass -File tests/performance/run-performance-tests.ps1 -TestType all"
   },
   "dependencies": {
     "@heroicons/react": "^2.0.18",
@@ -39,7 +44,7 @@
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.15.0",
     "tailwind-merge": "^3.3.1",
-    "vite-plugin-pwa": "^1.0.3",
+    "vite-plugin-pwa": "^1.1.0",
     "workbox-window": "^7.3.0",
     "zustand": "^4.4.1"
   },

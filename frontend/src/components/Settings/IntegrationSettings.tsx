@@ -82,7 +82,7 @@ export const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
     }
   ]);
 
-  const [showWebhookForm, setShowWebhookForm] = useState(false);
+  // const [showWebhookForm] = useState(false);
 
   const handleConnect = async (integrationId: string) => {
     setIntegrations(prev => prev.map(integration =>

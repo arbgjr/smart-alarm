@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Mail, Phone, MapPin, Calendar, Shield, Eye, EyeOff } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Shield, Eye, EyeOff } from 'lucide-react';
 
 interface UserProfileSettingsProps {
   user: any;

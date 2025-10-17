@@ -37,24 +37,25 @@ namespace SmartAlarm.Infrastructure.Tests.UnitOfWork
 
             _context = new SmartAlarmDbContext(options);
             _context.Database.EnsureCreated();
-            
+
             // Create mock dependencies for observability
             var logger = new Mock<ILogger<EfAlarmRepository>>();
             var meter = new Mock<SmartAlarmMeter>();
             var correlationContext = new Mock<ICorrelationContext>();
             var activitySource = new Mock<SmartAlarmActivitySource>();
-            
+
             // Create repositories with mock dependencies
             var alarmRepository = new EfAlarmRepository(_context, logger.Object, meter.Object, correlationContext.Object, activitySource.Object);
             var userRepository = new Mock<IUserRepository>().Object;
             var scheduleRepository = new Mock<IScheduleRepository>().Object;
             var routineRepository = new Mock<IRoutineRepository>().Object;
             var integrationRepository = new Mock<IIntegrationRepository>().Object;
-            
+
             _unitOfWork = new EfUnitOfWork(_context, alarmRepository, userRepository, scheduleRepository, routineRepository, integrationRepository);
         }
 
-        [Fact, Category("Integration")]
+        [Fact]
+        [Trait("Category", "Integration")]
         public async Task UnitOfWork_Should_CoordinateMultipleRepositories()
         {
             // Arrange
@@ -76,7 +77,8 @@ namespace SmartAlarm.Infrastructure.Tests.UnitOfWork
             retrievedAlarm.Name.Value.Should().Be("UoW Alarm");
         }
 
-        [Fact, Category("Integration")]
+        [Fact]
+        [Trait("Category", "Integration")]
         public async Task UnitOfWork_Should_HandleTransactions()
         {
             // Arrange
@@ -99,7 +101,8 @@ namespace SmartAlarm.Infrastructure.Tests.UnitOfWork
             userAfterCommit.Should().NotBeNull();
         }
 
-        [Fact, Category("Integration")]
+        [Fact]
+        [Trait("Category", "Integration")]
         // [Fact, Category("Integration")]
         // public async Task UnitOfWork_Should_RollbackTransactions()
         // {

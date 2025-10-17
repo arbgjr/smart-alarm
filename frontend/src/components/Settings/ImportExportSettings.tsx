@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Download, Upload, FileText, Calendar, Settings, Database, AlertCircle, CheckCircle, RefreshCw } from 'lucide-react';
+import { Download, FileText, Calendar, Settings, Database, AlertCircle, CheckCircle, RefreshCw } from 'lucide-react';
 
 interface ImportExportSettingsProps {
   onSettingsChange: () => void;

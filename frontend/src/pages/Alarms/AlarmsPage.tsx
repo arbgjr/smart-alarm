@@ -361,7 +361,7 @@ export const AlarmsPage: React.FC<AlarmsPageProps> = () => {
 
       <ExceptionPeriodModal
         isOpen={showExceptionModal}
-        alarms={filteredAlarms}
+        alarms={filteredAlarms.map(alarm => ({ id: alarm.id, name: alarm.name, time: alarm.triggerTime }))}
         onSave={handleExceptionSave}
         onCancel={() => setShowExceptionModal(false)}
       />
@@ -370,7 +370,7 @@ export const AlarmsPage: React.FC<AlarmsPageProps> = () => {
         isOpen={showHolidayModal}
         holidays={[]}
         preferences={{ disableAlarms: true }}
-        alarms={filteredAlarms}
+        alarms={filteredAlarms.map(alarm => ({ id: alarm.id, name: alarm.name, time: alarm.triggerTime }))}
         onSave={handleHolidaySave}
         onCancel={() => setShowHolidayModal(false)}
       />

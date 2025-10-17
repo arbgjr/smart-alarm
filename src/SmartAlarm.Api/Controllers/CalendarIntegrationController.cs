@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using SmartAlarm.Api.Services;
 using SmartAlarm.Application.Abstractions;
 using SmartAlarm.Application.Services.External;
+using SmartAlarm.Application.DTOs.Calendar;
 
 namespace SmartAlarm.Api.Controllers;
 

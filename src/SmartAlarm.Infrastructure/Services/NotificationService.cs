@@ -2,34 +2,85 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using SmartAlarm.Application.Abstractions;
 using SmartAlarm.Application.DTOs.Notifications;
+using SmartAlarm.Observability.Metrics;
+using SmartAlarm.Observability.Tracing;
+using System.Diagnostics;
 
 namespace SmartAlarm.Infrastructure.Services;
 
-public class NotificationService : INotificationService
+public class SignalRNotificationService : SmartAlarm.Application.Abstractions.INotificationService
 {
     private readonly IHubContext<Hub> _hubContext;
-    private readonly ILogger<NotificationService> _logger;
+    private readonly IPushNotificationService _pushNotificationService;
+    private readonly ILogger<SignalRNotificationService> _logger;
+    private readonly SmartAlarmMeter _meter;
+    private readonly SmartAlarmActivitySource _activitySource;
 
-    public NotificationService(IHubContext<Hub> hubContext, ILogger<NotificationService> logger)
+    public SignalRNotificationService(
+        IHubContext<Hub> hubContext,
+        IPushNotificationService pushNotificationService,
+        ILogger<SignalRNotificationService> logger,
+        SmartAlarmMeter meter,
+        SmartAlarmActivitySource activitySource)
     {
         _hubContext = hubContext;
+        _pushNotificationService = pushNotificationService;
         _logger = logger;
+        _meter = meter;
+        _activitySource = activitySource;
     }
 
     public async Task SendNotificationAsync(string userId, NotificationDto notification, CancellationToken cancellationToken = default)
     {
+        using var activity = _activitySource.StartActivity("SendNotification");
+        activity?.SetTag("user.id", userId);
+        activity?.SetTag("notification.type", notification.Type.ToString());
+        activity?.SetTag("notification.priority", notification.Priority.ToString());
+
+        var stopwatch = Stopwatch.StartNew();
+
         try
         {
-            await _hubContext.Clients.Group($"user_{userId}")
+            // Send real-time notification via SignalR
+            var signalRTask = _hubContext.Clients.Group($"user_{userId}")
                 .SendAsync("ReceiveNotification", notification, cancellationToken);
 
-            _logger.LogInformation("Notification {NotificationId} sent to user {UserId}",
-                notification.Id, userId);
+            // Send push notification for high priority or alarm notifications
+            Task? pushTask = null;
+            if (ShouldSendPushNotification(notification))
+            {
+                var pushNotification = ConvertToPushNotification(notification);
+                pushTask = _pushNotificationService.SendPushNotificationAsync(userId, pushNotification, cancellationToken);
+            }
+
+            // Wait for both notifications to complete
+            var tasks = new List<Task> { signalRTask };
+            if (pushTask != null)
+            {
+                tasks.Add(pushTask);
+            }
+
+            await Task.WhenAll(tasks);
+
+            stopwatch.Stop();
+
+            _meter.IncrementCounter("notification_sent", 1,
+                new KeyValuePair<string, object?>("type", notification.Type.ToString()),
+                new KeyValuePair<string, object?>("duration_ms", stopwatch.ElapsedMilliseconds));
+            activity?.SetTag("notification.execution_time_ms", stopwatch.ElapsedMilliseconds);
+            activity?.SetStatus(ActivityStatusCode.Ok);
+
+            _logger.LogInformation("Notification {NotificationId} sent to user {UserId} in {ElapsedMs}ms (SignalR: true, Push: {HasPush})",
+                notification.Id, userId, stopwatch.ElapsedMilliseconds, pushTask != null);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to send notification {NotificationId} to user {UserId}",
-                notification.Id, userId);
+            stopwatch.Stop();
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+            _meter.IncrementErrorCount("NOTIFICATION", "SignalRNotificationService", "SendNotificationError");
+
+            _logger.LogError(ex, "Failed to send notification {NotificationId} to user {UserId} in {ElapsedMs}ms",
+                notification.Id, userId, stopwatch.ElapsedMilliseconds);
             throw;
         }
     }
@@ -155,5 +206,45 @@ public class NotificationService : INotificationService
         };
 
         await SendNotificationAsync(userId.ToString(), notification);
+    }
+
+    public async Task SendNotificationAsync(string userId, string title, string message, CancellationToken cancellationToken = default)
+    {
+        var notification = new NotificationDto
+        {
+            Id = Guid.NewGuid().ToString(),
+            Title = title,
+            Message = message,
+            Type = NotificationType.Info,
+            Timestamp = DateTime.UtcNow
+        };
+
+        await SendNotificationAsync(userId, notification, cancellationToken);
+    }
+
+    private bool ShouldSendPushNotification(NotificationDto notification)
+    {
+        // Send push notifications for:
+        // 1. High priority notifications (3 or 4)
+        // 2. Alarm-related notifications
+        // 3. Security alerts
+        return notification.Priority >= 3 ||
+               notification.Type == NotificationType.AlarmTriggered ||
+               notification.Type == NotificationType.SecurityAlert ||
+               notification.Type == NotificationType.SystemMaintenance;
+    }
+
+    private PushNotificationDto ConvertToPushNotification(NotificationDto notification)
+    {
+        return new PushNotificationDto
+        {
+            Title = notification.Title,
+            Body = notification.Message,
+            Priority = notification.Priority,
+            Sound = notification.Type == NotificationType.AlarmTriggered ? "alarm" : "default",
+            ClickAction = notification.ActionUrl,
+            Data = notification.Data.ToDictionary(kvp => kvp.Key, kvp => kvp.Value?.ToString() ?? string.Empty),
+            TimeToLive = notification.Priority >= 3 ? 3600 : 1800 // Higher TTL for important notifications
+        };
     }
 }

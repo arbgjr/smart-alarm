@@ -77,6 +77,15 @@ namespace SmartAlarm.Application.Services
             CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Registra evento de escalação de alarme
+        /// </summary>
+        Task RecordAlarmEscalatedAsync(
+            Guid alarmId,
+            Guid userId,
+            int escalationLevel,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// Obtém histórico de eventos de um usuário
         /// </summary>
         Task<List<AlarmEvent>> GetUserEventHistoryAsync(

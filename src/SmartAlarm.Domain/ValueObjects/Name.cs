@@ -19,6 +19,10 @@ namespace SmartAlarm.Domain.ValueObjects
         public override string ToString() => Value;
         public override bool Equals(object? obj) => obj is Name other && Value == other.Value;
         public override int GetHashCode() => Value.GetHashCode();
+
+        // Implicit conversions
+        public static implicit operator string(Name name) => name?.Value ?? string.Empty;
+        public static implicit operator Name(string value) => new Name(value);
     }
 }
 

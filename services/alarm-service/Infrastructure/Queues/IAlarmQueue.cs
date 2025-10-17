@@ -66,11 +66,22 @@ namespace SmartAlarm.AlarmService.Infrastructure.Queues
         Guid AlarmId,
         Guid UserId,
         string TriggerType,
+        AlarmPriority Priority,
         DateTime ScheduledTime,
-        DateTime EnqueuedAt,
         int RetryCount = 0,
         Dictionary<string, object>? Metadata = null
     );
+
+    /// <summary>
+    /// Prioridade do alarme na fila
+    /// </summary>
+    public enum AlarmPriority
+    {
+        Low = 0,
+        Normal = 1,
+        High = 2,
+        Critical = 3
+    }
 
     /// <summary>
     /// Estatísticas da fila

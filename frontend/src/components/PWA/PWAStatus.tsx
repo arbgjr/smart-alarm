@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Wifi, WifiOff, Smartphone, Bell, BellOff, Download, RefreshCw } from 'lucide-react';
 import { usePWA } from '../../utils/pwaManager';
 
@@ -44,7 +44,7 @@ export const PWAStatus: React.FC<PWAStatusProps> = ({
   const handleUpdate = async () => {
     setIsUpdating(true);
     try {
-      updateServiceWorker(true);
+      updateServiceWorker();
     } catch (error) {
       console.error('Update failed:', error);
     } finally {
@@ -59,22 +59,32 @@ export const PWAStatus: React.FC<PWAStatusProps> = ({
         {/* Online/Offline Status */}
         <div className="flex items-center space-x-1">
           {capabilities.isOnline ? (
-            <Wifi className="w-4 h-4 text-green-600" title="Online" />
+            <div title="Online">
+              <Wifi className="w-4 h-4 text-green-600" />
+            </div>
           ) : (
-            <WifiOff className="w-4 h-4 text-red-600" title="Offline" />
+            <div title="Offline">
+              <WifiOff className="w-4 h-4 text-red-600" />
+            </div>
           )}
         </div>
 
         {/* PWA Status */}
         {capabilities.isInstalled && (
-          <Smartphone className="w-4 h-4 text-blue-600" title="Installed as PWA" />
+          <div title="Installed as PWA">
+            <Smartphone className="w-4 h-4 text-blue-600" />
+          </div>
         )}
 
         {/* Notification Status */}
         {capabilities.hasNotificationPermission ? (
-          <Bell className="w-4 h-4 text-green-600" title="Notifications enabled" />
+          <div title="Notifications enabled">
+            <Bell className="w-4 h-4 text-green-600" />
+          </div>
         ) : (
-          <BellOff className="w-4 h-4 text-gray-400" title="Notifications disabled" />
+          <div title="Notifications disabled">
+            <BellOff className="w-4 h-4 text-gray-400" />
+          </div>
         )}
 
         {/* Update Available */}

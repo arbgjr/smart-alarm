@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using SmartAlarm.Domain.Abstractions;
 using FluentAssertions;
 using SmartAlarm.Domain.Entities;
@@ -12,7 +14,7 @@ public class UserOAuthTests
     public void SetExternalProvider_ValidData_ShouldSetProviderInfo()
     {
         // Arrange
-        var user = new User(Guid.NewGuid(), "Test User", "test@example.com");
+        var user = new User(Guid.NewGuid(), new Name("Test User"), new Email("test@example.com"));
         var provider = "Google";
         var providerId = "google_user_123";
 

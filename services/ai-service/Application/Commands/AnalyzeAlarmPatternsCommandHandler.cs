@@ -11,59 +11,6 @@ using System.Diagnostics;
 namespace SmartAlarm.AiService.Application.Commands
 {
     /// <summary>
-    /// Command para analisar padrões de uso de alarmes do usuário
-    /// </summary>
-    public record AnalyzeAlarmPatternsCommand(
-        Guid UserId,
-        DateTime? StartDate = null,
-        DateTime? EndDate = null,
-        int MaxDaysToAnalyze = 30
-    ) : IRequest<AnalyzeAlarmPatternsResponse>;
-
-    /// <summary>
-    /// Response da análise de padrões de alarmes
-    /// </summary>
-    public record AnalyzeAlarmPatternsResponse(
-        Guid UserId,
-        DateTime AnalysisDate,
-        AlarmUsagePatterns Patterns,
-        IEnumerable<SmartRecommendation> Recommendations,
-        AnalysisMetrics Metrics
-    );
-
-    /// <summary>
-    /// Padrões de uso identificados pela IA
-    /// </summary>
-    public record AlarmUsagePatterns(
-        TimeSpan MostCommonAlarmTime,
-        IEnumerable<DayOfWeek> MostActiveDays,
-        double AverageSnoozeCount,
-        TimeSpan AverageWakeupDelay,
-        string SleepPattern // "Early Bird", "Night Owl", "Irregular"
-    );
-
-    /// <summary>
-    /// Recomendação inteligente gerada pela IA
-    /// </summary>
-    public record SmartRecommendation(
-        string Type, // "TIME_ADJUSTMENT", "SCHEDULE_OPTIMIZATION", "SLEEP_HYGIENE"
-        string Title,
-        string Description,
-        double ConfidenceScore,
-        DateTime SuggestedImplementationDate
-    );
-
-    /// <summary>
-    /// Métricas da análise realizada
-    /// </summary>
-    public record AnalysisMetrics(
-        int AlarmsAnalyzed,
-        int DaysAnalyzed,
-        double PatternConfidence,
-        DateTime LastAlarmActivity
-    );
-
-    /// <summary>
     /// Validator para comando de análise de padrões
     /// </summary>
     public class AnalyzeAlarmPatternsCommandValidator : AbstractValidator<AnalyzeAlarmPatternsCommand>
@@ -141,11 +88,11 @@ namespace SmartAlarm.AiService.Application.Commands
                 {
                     activity?.SetTag("validation.failed", true);
                     _meter.IncrementErrorCount("command", "analyze_alarm_patterns", "validation");
-                    
+
                     var errors = string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage));
                     _logger.LogWarning("Validação falhou para análise de padrões: {Errors} - CorrelationId: {CorrelationId}",
                         errors, _correlationContext.CorrelationId);
-                    
+
                     throw new ValidationException($"Dados inválidos: {errors}");
                 }
 
@@ -155,10 +102,10 @@ namespace SmartAlarm.AiService.Application.Commands
                 {
                     activity?.SetTag("user.found", false);
                     _meter.IncrementErrorCount("command", "analyze_alarm_patterns", "user_not_found");
-                    
+
                     _logger.LogWarning("Usuário {UserId} não encontrado para análise de padrões - CorrelationId: {CorrelationId}",
                         request.UserId, _correlationContext.CorrelationId);
-                    
+
                     throw new InvalidOperationException($"Usuário {request.UserId} não encontrado");
                 }
 
@@ -174,7 +121,7 @@ namespace SmartAlarm.AiService.Application.Commands
                     activity?.SetTag("alarms.found", false);
                     _logger.LogWarning("Nenhum alarme ativo encontrado para análise - UserId: {UserId} - CorrelationId: {CorrelationId}",
                         request.UserId, _correlationContext.CorrelationId);
-                    
+
                     throw new InvalidOperationException("Nenhum alarme ativo encontrado para análise");
                 }
 
@@ -252,13 +199,13 @@ namespace SmartAlarm.AiService.Application.Commands
                 stopwatch.Stop();
                 _meter.RecordRequestDuration(stopwatch.ElapsedMilliseconds, "analyze_alarm_patterns", "error", "500");
                 _meter.IncrementErrorCount("command", "analyze_alarm_patterns", "exception");
-                
+
                 activity?.SetTag("error", true);
                 activity?.SetTag("error.message", ex.Message);
-                
+
                 _logger.LogError(ex, "Erro inesperado na análise de padrões para usuário {UserId} - CorrelationId: {CorrelationId}",
                     request.UserId, _correlationContext.CorrelationId);
-                
+
                 throw;
             }
         }

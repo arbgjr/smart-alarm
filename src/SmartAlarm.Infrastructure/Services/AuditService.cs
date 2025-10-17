@@ -235,7 +235,7 @@ public class AuditService : IAuditService
                     Id = x.Id,
                     Timestamp = x.Timestamp,
                     UserId = x.UserId,
-                    UserName = x.User != null ? x.User.Name : null,
+                    UserName = x.User != null ? x.User.Name.Value : null,
                     EventType = x.EventType,
                     Level = x.Level,
                     EntityType = x.EntityType,
@@ -418,25 +418,185 @@ public class AuditService : IAuditService
         try
         {
             var data = JsonSerializer.Deserialize<Dictionary<string, object>>(jsonData);
-            if (data == null)
-                return jsonData;
+            if (data == null) return jsonData;
 
-            // Campos que devem ser anonimizados
-            var fieldsToAnonymize = new[] { "email", "name", "phone", "address", "userId", "UserId" };
-
-            foreach (var field in fieldsToAnonymize)
+            // Replace sensitive data with anonymized values
+            var anonymizedData = new Dictionary<string, object>();
+            foreach (var kvp in data)
             {
-                if (data.ContainsKey(field))
+                anonymizedData[kvp.Key] = kvp.Key.ToLowerInvariant() switch
                 {
-                    data[field] = "[ANONYMIZED]";
-                }
+                    "userid" => "[ANONYMIZED]",
+                    "email" => "[ANONYMIZED_EMAIL]",
+                    "name" => "[ANONYMIZED_NAME]",
+                    "phone" => "[ANONYMIZED_PHONE]",
+                    "address" => "[ANONYMIZED_ADDRESS]",
+                    _ => kvp.Value
+                };
             }
 
-            return JsonSerializer.Serialize(data);
+            return JsonSerializer.Serialize(anonymizedData);
         }
-        catch
+        catch (Exception ex)
         {
-            return "[ANONYMIZED]";
+            _logger.LogWarning(ex, "Failed to anonymize JSON data, returning original");
+            return jsonData;
+        }
+    }
+
+    public async Task<IEnumerable<AuditLogEntry>> GetUserAuditTrailAsync(Guid userId, DateTime? startDate = null, DateTime? endDate = null)
+    {
+        try
+        {
+            var query = _context.AuditLogs.Where(x => x.UserId == userId);
+
+            if (startDate.HasValue)
+                query = query.Where(x => x.Timestamp >= startDate.Value);
+
+            if (endDate.HasValue)
+                query = query.Where(x => x.Timestamp <= endDate.Value);
+
+            return await query
+                .OrderByDescending(x => x.Timestamp)
+                .Select(x => new AuditLogEntry
+                {
+                    Id = x.Id,
+                    Timestamp = x.Timestamp,
+                    UserId = x.UserId,
+                    UserName = x.User != null ? x.User.Name.Value : null,
+                    EventType = x.EventType,
+                    Level = x.Level,
+                    EntityType = x.EntityType,
+                    EntityId = x.EntityId,
+                    Action = x.Action,
+                    OldValue = x.OldValue,
+                    NewValue = x.NewValue,
+                    OldValues = x.OldValue, // Alternative property name
+                    NewValues = x.NewValue, // Alternative property name
+                    Details = x.Details,
+                    IpAddress = x.IpAddress,
+                    UserAgent = x.UserAgent,
+                    CorrelationId = x.CorrelationId
+                })
+                .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get user audit trail for user {UserId}", userId);
+            return new List<AuditLogEntry>();
+        }
+    }
+
+    public async Task<IEnumerable<AuditLogEntry>> GetEntityAuditTrailAsync(string entityType, string entityId)
+    {
+        try
+        {
+            return await _context.AuditLogs
+                .Where(x => x.EntityType == entityType && x.EntityId == entityId)
+                .OrderByDescending(x => x.Timestamp)
+                .Select(x => new AuditLogEntry
+                {
+                    Id = x.Id,
+                    Timestamp = x.Timestamp,
+                    UserId = x.UserId,
+                    UserName = x.User != null ? x.User.Name.Value : null,
+                    EventType = x.EventType,
+                    Level = x.Level,
+                    EntityType = x.EntityType,
+                    EntityId = x.EntityId,
+                    Action = x.Action,
+                    OldValue = x.OldValue,
+                    NewValue = x.NewValue,
+                    OldValues = x.OldValue,
+                    NewValues = x.NewValue,
+                    Details = x.Details,
+                    IpAddress = x.IpAddress,
+                    UserAgent = x.UserAgent,
+                    CorrelationId = x.CorrelationId
+                })
+                .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get entity audit trail for {EntityType} {EntityId}", entityType, entityId);
+            return new List<AuditLogEntry>();
+        }
+    }
+
+    public async Task<IEnumerable<AuditLogEntry>> GetSecurityEventsAsync(DateTime? startDate = null, DateTime? endDate = null)
+    {
+        try
+        {
+            var query = _context.AuditLogs.Where(x => x.Level == AuditLogLevel.Security);
+
+            if (startDate.HasValue)
+                query = query.Where(x => x.Timestamp >= startDate.Value);
+
+            if (endDate.HasValue)
+                query = query.Where(x => x.Timestamp <= endDate.Value);
+
+            return await query
+                .OrderByDescending(x => x.Timestamp)
+                .Select(x => new AuditLogEntry
+                {
+                    Id = x.Id,
+                    Timestamp = x.Timestamp,
+                    UserId = x.UserId,
+                    UserName = x.User != null ? x.User.Name.Value : null,
+                    EventType = x.EventType,
+                    Level = x.Level,
+                    EntityType = x.EntityType,
+                    EntityId = x.EntityId,
+                    Action = x.Action,
+                    OldValue = x.OldValue,
+                    NewValue = x.NewValue,
+                    OldValues = x.OldValue,
+                    NewValues = x.NewValue,
+                    Details = x.Details,
+                    IpAddress = x.IpAddress,
+                    UserAgent = x.UserAgent,
+                    CorrelationId = x.CorrelationId
+                })
+                .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get security events");
+            return new List<AuditLogEntry>();
+        }
+    }
+
+    public async Task CleanupOldLogsAsync(int retentionDays)
+    {
+        try
+        {
+            var cutoffDate = DateTime.UtcNow.AddDays(-retentionDays);
+
+            var oldLogs = await _context.AuditLogs
+                .Where(x => x.Timestamp < cutoffDate)
+                .ToListAsync();
+
+            if (oldLogs.Any())
+            {
+                _context.AuditLogs.RemoveRange(oldLogs);
+                await _context.SaveChangesAsync();
+
+                await LogSystemEventAsync("AuditLogCleanup", JsonSerializer.Serialize(new
+                {
+                    DeletedCount = oldLogs.Count,
+                    CutoffDate = cutoffDate,
+                    RetentionDays = retentionDays,
+                    Timestamp = DateTime.UtcNow
+                }));
+
+                _logger.LogInformation("Cleaned up {Count} old audit logs older than {CutoffDate}",
+                    oldLogs.Count, cutoffDate);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to cleanup old audit logs");
+            throw;
         }
     }
 }

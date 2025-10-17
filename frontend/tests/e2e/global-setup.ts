@@ -2,8 +2,16 @@ import { chromium, FullConfig } from '@playwright/test';
 import { execSync } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import os from 'os';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// ES module compatibility
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Windows compatibility helpers
+const isWindows = os.platform() === 'win32';
+const dockerCmd = isWindows ? 'docker.exe' : 'docker';
+const dockerComposeCmd = isWindows ? 'docker-compose.exe' : 'docker-compose';
 
 async function globalSetup(config: FullConfig) {
   console.log('🚀 Starting E2E test setup...');
@@ -46,40 +54,44 @@ async function setupTestDatabase(): Promise<void> {
   try {
     // Check if test database container is running
     try {
-      execSync('docker ps --format "table {{.Names}}" | grep smart-alarm-test-db', { stdio: 'pipe' });
+      const checkCmd = isWindows
+        ? `${dockerCmd} ps --format "table {{.Names}}" | findstr smart-alarm-test-db`
+        : `${dockerCmd} ps --format "table {{.Names}}" | grep smart-alarm-test-db`;
+
+      execSync(checkCmd, { stdio: 'pipe' });
       console.log('📦 Test database container already running');
       return;
     } catch {
       // Container not running, need to start it
     }
 
-    // Start PostgreSQL test database
-    const dbCommand = `
-      docker run -d \
-        --name smart-alarm-test-db \
-        --rm \
-        -e POSTGRES_DB=smartalarm_test \
-        -e POSTGRES_USER=testuser \
-        -e POSTGRES_PASSWORD=testpass \
-        -p 5433:5432 \
-        postgres:15-alpine
-    `;
+    // Start PostgreSQL test database with Windows-compatible command
+    const dbArgs = [
+      'run', '-d',
+      '--name', 'smart-alarm-test-db',
+      '--rm',
+      '-e', 'POSTGRES_DB=smartalarm_test',
+      '-e', 'POSTGRES_USER=testuser',
+      '-e', 'POSTGRES_PASSWORD=testpass',
+      '-p', '5433:5432',
+      'postgres:15-alpine'
+    ];
 
-    execSync(dbCommand, { stdio: 'inherit' });
-    
-    // Wait for database to be ready
+    execSync(`${dockerCmd} ${dbArgs.join(' ')}`, { stdio: 'inherit' });
+
+    // Wait for database to be ready with shorter timeout and more frequent checks
     let attempts = 0;
-    const maxAttempts = 30;
-    
+    const maxAttempts = 60; // Increased attempts but shorter intervals
+
     while (attempts < maxAttempts) {
       try {
-        execSync(`docker exec smart-alarm-test-db pg_isready -U testuser -d smartalarm_test`, { stdio: 'pipe' });
+        execSync(`${dockerCmd} exec smart-alarm-test-db pg_isready -U testuser -d smartalarm_test`, { stdio: 'pipe' });
         console.log('✅ Test database is ready');
         break;
       } catch {
         attempts++;
         console.log(`⏳ Waiting for database... (${attempts}/${maxAttempts})`);
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Reduced to 1 second
       }
     }
 
@@ -102,7 +114,7 @@ async function startBackendServices(): Promise<void> {
   try {
     // Check if backend services are already running
     const backendUrl = process.env.E2E_BACKEND_URL || 'http://localhost:5000';
-    
+
     try {
       const response = await fetch(`${backendUrl}/health`, { signal: AbortSignal.timeout(5000) });
       if (response.ok) {
@@ -115,9 +127,9 @@ async function startBackendServices(): Promise<void> {
 
     // Start backend in test mode using Docker Compose
     const composeFile = path.resolve(__dirname, '../../docker-compose.full.yml');
-    
+
     try {
-      execSync(`docker-compose -f ${composeFile} up -d`, { 
+      execSync(`${dockerComposeCmd} -f "${composeFile}" up -d`, {
         stdio: 'inherit',
         env: {
           ...process.env,
@@ -145,16 +157,16 @@ async function waitForServices(): Promise<void> {
   for (const service of services) {
     let attempts = 0;
     const maxAttempts = 30;
-    
+
     console.log(`⏳ Waiting for ${service.name}...`);
-    
+
     while (attempts < maxAttempts) {
       try {
-        const response = await fetch(service.url, { 
+        const response = await fetch(service.url, {
           signal: AbortSignal.timeout(5000),
           headers: { 'Accept': 'application/json' }
         });
-        
+
         if (response.ok || response.status === 404) { // 404 is ok for frontend root
           console.log(`✅ ${service.name} is ready`);
           break;
@@ -178,7 +190,7 @@ async function setupTestData(): Promise<void> {
   try {
     // Create test user accounts
     const backendUrl = process.env.E2E_BACKEND_URL || 'http://localhost:5000';
-    
+
     const testUsers = [
       {
         email: 'testuser@example.com',
@@ -187,7 +199,7 @@ async function setupTestData(): Promise<void> {
         role: 'user'
       },
       {
-        email: 'admin@example.com', 
+        email: 'admin@example.com',
         password: 'AdminPassword123!',
         name: 'Admin User',
         role: 'admin'
@@ -217,10 +229,10 @@ async function setupTestData(): Promise<void> {
     // Set up test data in localStorage for offline tests
     const browser = await chromium.launch();
     const page = await browser.newPage();
-    
+
     try {
       await page.goto(process.env.E2E_BASE_URL || 'http://localhost:5173');
-      
+
       // Set up test authentication state
       await page.evaluate(() => {
         const testAuthState = {
@@ -237,9 +249,9 @@ async function setupTestData(): Promise<void> {
           },
           version: 0
         };
-        
+
         localStorage.setItem('smart-alarm-auth', JSON.stringify(testAuthState));
-        
+
         // Set up test alarms
         const testAlarms = {
           state: {
@@ -282,12 +294,12 @@ async function setupTestData(): Promise<void> {
           },
           version: 0
         };
-        
+
         localStorage.setItem('smart-alarm-alarms', JSON.stringify(testAlarms));
-        
+
         // Enable ML data collection for testing
         localStorage.setItem('ml-data-collection-consent', 'true');
-        
+
         console.log('✅ Test data initialized in localStorage');
       });
 

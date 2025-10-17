@@ -19,6 +19,9 @@ namespace SmartAlarm.Domain.Entities
         public Name Name { get; private set; } = null!;
         public DateTime Time { get; private set; }
         public bool Enabled { get; private set; }
+        public bool IsActive { get; private set; }
+        public bool IsRecurring { get; private set; }
+        public Dictionary<string, object> Metadata { get; private set; } = new();
         public Guid UserId { get; private set; }
         public DateTime CreatedAt { get; private set; }
         public DateTime? LastTriggeredAt { get; private set; }
@@ -38,6 +41,9 @@ namespace SmartAlarm.Domain.Entities
             Name = name;
             Time = time;
             Enabled = enabled;
+            IsActive = enabled; // Initialize IsActive with same value as Enabled
+            IsRecurring = false; // Default to non-recurring
+            Metadata = new Dictionary<string, object>();
             UserId = userId;
             CreatedAt = DateTime.UtcNow;
         }
@@ -48,8 +54,46 @@ namespace SmartAlarm.Domain.Entities
         {
         }
 
-        public void Enable() => Enabled = true;
-        public void Disable() => Enabled = false;
+        public void Enable()
+        {
+            Enabled = true;
+            IsActive = true;
+        }
+
+        public void Disable()
+        {
+            Enabled = false;
+            IsActive = false;
+        }
+
+        public void SetActive(bool isActive) => IsActive = isActive;
+
+        public void SetRecurring(bool isRecurring) => IsRecurring = isRecurring;
+
+        public void UpdateMetadata(string key, object value)
+        {
+            if (string.IsNullOrWhiteSpace(key)) throw new ArgumentException("Key cannot be null or empty.", nameof(key));
+            Metadata[key] = value;
+        }
+
+        public void RemoveMetadata(string key)
+        {
+            if (string.IsNullOrWhiteSpace(key)) return;
+            Metadata.Remove(key);
+        }
+
+        public T? GetMetadata<T>(string key)
+        {
+            if (string.IsNullOrWhiteSpace(key) || !Metadata.ContainsKey(key)) return default;
+            try
+            {
+                return (T)Metadata[key];
+            }
+            catch
+            {
+                return default;
+            }
+        }
 
         public void UpdateName(Name newName)
         {

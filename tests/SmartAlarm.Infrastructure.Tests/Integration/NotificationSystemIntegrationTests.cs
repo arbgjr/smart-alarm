@@ -18,7 +18,7 @@ public class NotificationSystemIntegrationTests : IDisposable
     private readonly Mock<IHubCallerClients> _mockClients;
     private readonly Mock<IClientProxy> _mockClientProxy;
     private readonly Mock<IPushNotificationService> _mockPushNotificationService;
-    private readonly NotificationService _notificationService;
+    private readonly SmartAlarm.Application.Abstractions.INotificationService _notificationService;
 
     public NotificationSystemIntegrationTests()
     {
@@ -43,10 +43,10 @@ public class NotificationSystemIntegrationTests : IDisposable
         services.AddSingleton(_mockPushNotificationService.Object);
 
         // Register service under test
-        services.AddScoped<NotificationService>();
+        services.AddScoped<SmartAlarm.Application.Abstractions.INotificationService, SignalRNotificationService>();
 
         _serviceProvider = services.BuildServiceProvider();
-        _notificationService = _serviceProvider.GetRequiredService<NotificationService>();
+        _notificationService = _serviceProvider.GetRequiredService<SmartAlarm.Application.Abstractions.INotificationService>();
     }
     [Fact]
     public async Task SendNotificationAsync_WithValidUser_ShouldSendToUserGroup()

@@ -3,6 +3,7 @@ using SmartAlarm.Application.Abstractions;
 using SmartAlarm.Infrastructure.Data;
 using SmartAlarm.Domain.Entities;
 using SmartAlarm.Domain.Enums;
+using SmartAlarm.Domain.ValueObjects;
 using System.Text.Json;
 
 namespace SmartAlarm.Api.Services;
@@ -168,8 +169,8 @@ public class UserConsentService : IUserConsentService
             // Dados do perfil
             export.Profile = new UserProfile
             {
-                Name = user.Name,
-                Email = user.Email,
+                Name = user.Name.Value,
+                Email = user.Email.Address,
                 CreatedAt = user.CreatedAt,
                 LastLoginAt = user.LastLoginAt,
                 PreferredLanguage = user.PreferredLanguage,
@@ -182,9 +183,9 @@ public class UserConsentService : IUserConsentService
                 .Select(x => new AlarmData
                 {
                     Id = x.Id,
-                    Title = x.Title,
+                    Title = x.Name.Value,
                     CreatedAt = x.CreatedAt,
-                    LastModifiedAt = x.UpdatedAt,
+                    LastModifiedAt = x.CreatedAt, // Alarm doesn't have UpdatedAt, using CreatedAt
                     IsActive = x.IsActive
                 })
                 .ToListAsync();
@@ -287,8 +288,8 @@ public class UserConsentService : IUserConsentService
             var user = await _context.Users.FirstOrDefaultAsync(x => x.Id == userId);
             if (user != null)
             {
-                user.Name = "[ANONYMIZED]";
-                user.Email = $"anonymized_{userId}@deleted.local";
+                user.UpdateName(new Name("[ANONYMIZED]"));
+                user.UpdateEmail(new Email($"anonymized_{userId}@deleted.local"));
                 user.IsAnonymized = true;
                 user.AnonymizedAt = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
@@ -397,6 +398,23 @@ public class UserConsentService : IUserConsentService
                 }
             };
         }
+    }
+
+    public void RegisterConsent(string userId, bool consentGiven)
+    {
+        if (Guid.TryParse(userId, out var userGuid))
+        {
+            RecordConsentAsync(userGuid, ConsentType.DataProcessing, consentGiven).GetAwaiter().GetResult();
+        }
+    }
+
+    public bool HasConsent(string userId)
+    {
+        if (Guid.TryParse(userId, out var userGuid))
+        {
+            return HasConsentAsync(userGuid, ConsentType.DataProcessing).GetAwaiter().GetResult();
+        }
+        return false;
     }
 
     private string ExtractPurposeFromDetails(string details)

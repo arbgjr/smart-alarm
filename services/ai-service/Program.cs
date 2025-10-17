@@ -24,6 +24,7 @@ builder.Services.AddObservability(builder.Configuration, "SmartAlarm.AiService",
 
 // Registrar serviço de Machine Learning
 builder.Services.AddSingleton<IMachineLearningService, MachineLearningService>();
+builder.Services.AddScoped<IRecommendationEngine, RecommendationEngine>();
 
 // Registrar MediatR apontando para os handlers do AI Service e Application Layer
 builder.Services.AddMediatR(cfg =>

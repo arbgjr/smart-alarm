@@ -372,7 +372,7 @@ namespace SmartAlarm.Infrastructure.Repositories.EntityFramework
                     .Include(a => a.Routines)
                     .Include(a => a.Integrations)
                     .Where(a => a.Enabled &&
-                               a.Schedules.Any(s => s.IsActive && s.Time < cutoffTime.TimeOfDay))
+                               a.Schedules.Any(s => s.IsActive && s.Time.ToTimeSpan() < cutoffTime.TimeOfDay))
                     .ToListAsync(cancellationToken);
 
                 _meter.RecordDatabaseQueryDuration(stopwatch.ElapsedMilliseconds, "GetMissedAlarmsAsync", "Alarms");

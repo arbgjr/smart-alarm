@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
@@ -15,6 +16,13 @@ namespace SmartAlarm.Infrastructure.Services
         public LoggingNotificationService(ILogger<LoggingNotificationService> logger)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        }
+
+        public Task SendNotificationAsync(string userId, string title, string message, CancellationToken cancellationToken = default)
+        {
+            _logger.LogInformation("Sending notification to user {UserId} with title '{Title}' and message '{Message}'",
+                userId, title, message);
+            return Task.CompletedTask;
         }
 
         public Task SendPushNotificationAsync(string deviceToken, string title, string message)

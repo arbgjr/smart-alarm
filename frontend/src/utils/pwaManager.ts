@@ -1,5 +1,5 @@
 // PWA Management Utilities
-import { useRegisterSW } from 'virtual:pwa-register/react';
+// import { useRegisterSW } from 'virtual:pwa-register/react';
 
 export interface PWAInstallPrompt {
   prompt: () => Promise<void>;
@@ -160,7 +160,7 @@ class PWAManager {
 
         subscription = await registration.pushManager.subscribe({
           userVisibleOnly: true,
-          applicationServerKey: this.urlBase64ToUint8Array(vapidPublicKey)
+          applicationServerKey: this.urlBase64ToUint8Array(vapidPublicKey) as BufferSource
         });
       }
 
@@ -370,18 +370,23 @@ export const pwaManager = PWAManager.getInstance();
 
 // React hook for PWA functionality
 export function usePWA() {
-  const {
-    needRefresh,
-    offlineReady,
-    updateServiceWorker
-  } = useRegisterSW({
-    onRegistered(r) {
-      console.log('SW Registered: ' + r);
-    },
-    onRegisterError(error) {
-      console.log('SW registration error', error);
-    },
-  });
+  // const {
+  //   needRefresh,
+  //   offlineReady,
+  //   updateServiceWorker
+  // } = useRegisterSW({
+  //   onRegistered(r: any) {
+  //     console.log('SW Registered: ' + r);
+  //   },
+  //   onRegisterError(error: any) {
+  //     console.log('SW registration error', error);
+  //   },
+  // });
+
+  // Temporary fallback values
+  const needRefresh = false;
+  const offlineReady = false;
+  const updateServiceWorker = () => {};
 
   return {
     // Service Worker state

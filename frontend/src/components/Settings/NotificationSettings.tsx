@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bell, Smartphone, Mail, Volume2, Vibrate, Clock, Calendar, AlertTriangle } from 'lucide-react';
+import { Smartphone, Mail, Volume2, Vibrate, Clock } from 'lucide-react';
 
 interface NotificationSettingsProps {
   onSettingsChange: () => void;

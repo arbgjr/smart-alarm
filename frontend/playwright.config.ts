@@ -23,19 +23,19 @@ export default defineConfig({
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
     baseURL: process.env.E2E_BASE_URL || 'http://localhost:5173',
-    
+
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
-    
+
     /* Capture screenshot on failure */
     screenshot: 'only-on-failure',
-    
+
     /* Capture video on failure */
     video: 'retain-on-failure',
-    
+
     /* Global test timeout */
     actionTimeout: 30000,
-    
+
     /* Ignore HTTPS errors */
     ignoreHTTPSErrors: true,
   },
@@ -100,16 +100,16 @@ export default defineConfig({
 
   /* Test output directories */
   outputDir: 'test-results/artifacts',
-  
+
   /* Global setup and teardown */
-  globalSetup: './tests/e2e/global-setup.ts',
-  globalTeardown: './tests/e2e/global-teardown.ts',
-  
+  globalSetup: './tests/e2e/global-setup-simple.ts',
+  globalTeardown: './tests/e2e/global-teardown-simple.ts',
+
   /* Expect options */
   expect: {
     /* Maximum time expect() should wait for the condition to be met */
     timeout: 10000,
-    
+
     /* Threshold for pixel comparisons */
     threshold: 0.2,
   },

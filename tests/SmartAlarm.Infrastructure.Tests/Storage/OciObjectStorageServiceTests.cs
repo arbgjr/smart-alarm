@@ -43,10 +43,10 @@ namespace SmartAlarm.Infrastructure.Tests.Storage
             SetupConfiguration("OCI:PrivateKey", GenerateTestRsaPrivateKey());
 
             _service = new OciObjectStorageService(
-                _mockConfiguration.Object, 
-                _mockLogger.Object, 
-                _mockMeter.Object, 
-                _activitySource, 
+                _mockConfiguration.Object,
+                _mockLogger.Object,
+                _mockMeter.Object,
+                _activitySource,
                 _httpClient);
         }
 
@@ -62,7 +62,8 @@ namespace SmartAlarm.Infrastructure.Tests.Storage
             return $"-----BEGIN PRIVATE KEY-----\n{Convert.ToBase64String(pkcs8PrivateKey)}\n-----END PRIVATE KEY-----";
         }
 
-        [Fact, Category("Integration")]
+        [Fact]
+        [Trait("Category", "Integration")]
         public async Task UploadAsync_ValidPath_ShouldCompleteSuccessfully()
         {
             // Arrange
@@ -77,7 +78,8 @@ namespace SmartAlarm.Infrastructure.Tests.Storage
             VerifyLogCalled("OCIUpload");
         }
 
-        [Fact, Category("Integration")]
+        [Fact]
+        [Trait("Category", "Integration")]
         public async Task DownloadAsync_ValidPath_ShouldReturnStream()
         {
             // Arrange
@@ -91,7 +93,8 @@ namespace SmartAlarm.Infrastructure.Tests.Storage
             VerifyLogCalled("OCIDownload");
         }
 
-        [Fact, Category("Integration")]
+        [Fact]
+        [Trait("Category", "Integration")]
         public async Task DeleteAsync_ValidPath_ShouldCompleteSuccessfully()
         {
             // Arrange
@@ -105,7 +108,8 @@ namespace SmartAlarm.Infrastructure.Tests.Storage
             VerifyLogCalled("OCIDelete");
         }
 
-        [Fact, Category("Integration")]
+        [Fact]
+        [Trait("Category", "Integration")]
         public void Constructor_MissingNamespace_ShouldThrowException()
         {
             // Arrange
@@ -127,20 +131,21 @@ namespace SmartAlarm.Infrastructure.Tests.Storage
             // Act & Assert
             var exception = Assert.Throws<InvalidOperationException>(() =>
                 new OciObjectStorageService(
-                    mockConfig.Object, 
-                    mockLogger.Object, 
-                    mockMeter.Object, 
-                    activitySource, 
+                    mockConfig.Object,
+                    mockLogger.Object,
+                    mockMeter.Object,
+                    activitySource,
                     httpClient));
-            
+
             Assert.Contains("Namespace não configurado", exception.Message);
-            
+
             // Cleanup
             httpClient.Dispose();
             activitySource.Dispose();
         }
 
-        [Fact, Category("Integration")]
+        [Fact]
+        [Trait("Category", "Integration")]
         public void Constructor_MissingBucketName_ShouldThrowException()
         {
             // Arrange
@@ -162,14 +167,14 @@ namespace SmartAlarm.Infrastructure.Tests.Storage
             // Act & Assert
             var exception = Assert.Throws<InvalidOperationException>(() =>
                 new OciObjectStorageService(
-                    mockConfig.Object, 
-                    mockLogger.Object, 
-                    mockMeter.Object, 
-                    activitySource, 
+                    mockConfig.Object,
+                    mockLogger.Object,
+                    mockMeter.Object,
+                    activitySource,
                     httpClient));
-            
+
             Assert.Contains("BucketName não configurado", exception.Message);
-            
+
             // Cleanup
             httpClient.Dispose();
             activitySource.Dispose();

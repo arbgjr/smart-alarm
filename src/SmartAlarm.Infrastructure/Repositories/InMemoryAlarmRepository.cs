@@ -79,7 +79,7 @@ namespace SmartAlarm.Infrastructure.Repositories
                 try
                 {
                     // Simple logic: alarm time is before cutoff and hasn't been triggered recently
-                    return alarm.Time < cutoffTime.TimeOfDay;
+                    return alarm.Time.TimeOfDay < cutoffTime.TimeOfDay;
                 }
                 catch
                 {

@@ -69,7 +69,7 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ onClose }) =
   };
 
   const handleUpdateApp = () => {
-    updateServiceWorker(true);
+    updateServiceWorker();
   };
 
   if (!showPrompt && !needRefresh && !offlineReady) {
@@ -96,7 +96,7 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ onClose }) =
                   Update Now
                 </button>
                 <button
-                  onClick={() => updateServiceWorker(false)}
+                  onClick={() => updateServiceWorker()}
                   className="text-blue-100 hover:text-white px-3 py-1 rounded text-sm transition-colors"
                 >
                   Later

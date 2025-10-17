@@ -152,26 +152,29 @@ namespace SmartAlarm.Domain.Entities
     {
         [Display(Name = "Criado")]
         Created,
-        
+
         [Display(Name = "Disparado")]
         Triggered,
-        
+
         [Display(Name = "Soneca")]
         Snoozed,
-        
+
         [Display(Name = "Desativado")]
         Disabled,
-        
+
         [Display(Name = "Ignorado")]
         Dismissed,
-        
+
         [Display(Name = "Modificado")]
         Modified,
-        
+
         [Display(Name = "Ativado")]
         Enabled,
-        
+
         [Display(Name = "Excluído")]
-        Deleted
+        Deleted,
+
+        [Display(Name = "Escalado")]
+        Escalated
     }
 }

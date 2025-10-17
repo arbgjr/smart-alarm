@@ -34,7 +34,7 @@ public class BackendServicesIntegrationTests : IDisposable
     private readonly Mock<IIntegrationRepository> _mockIntegrationRepository;
 
     private readonly AlarmTriggerService _alarmTriggerService;
-    private readonly NotificationService _notificationService;
+    private readonly SmartAlarm.Application.Abstractions.INotificationService _notificationService;
     private readonly CalendarIntegrationService _calendarIntegrationService;
 
     public BackendServicesIntegrationTests()
@@ -74,12 +74,12 @@ public class BackendServicesIntegrationTests : IDisposable
 
         // Register services under test
         services.AddScoped<AlarmTriggerService>();
-        services.AddScoped<NotificationService>();
+        services.AddScoped<SmartAlarm.Application.Abstractions.INotificationService, SignalRNotificationService>();
         services.AddScoped<CalendarIntegrationService>();
 
         _serviceProvider = services.BuildServiceProvider();
         _alarmTriggerService = _serviceProvider.GetRequiredService<AlarmTriggerService>();
-        _notificationService = _serviceProvider.GetRequiredService<NotificationService>();
+        _notificationService = _serviceProvider.GetRequiredService<SmartAlarm.Application.Abstractions.INotificationService>();
         _calendarIntegrationService = _serviceProvider.GetRequiredService<CalendarIntegrationService>();
     }
     [Fact]

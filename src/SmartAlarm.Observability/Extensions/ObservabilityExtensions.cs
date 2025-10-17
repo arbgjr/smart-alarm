@@ -118,13 +118,12 @@ namespace SmartAlarm.Observability.Extensions
                         });
                     }
 
-                    // Configurar Jaeger exporter se habilitado
+                    // Configurar OTLP exporter (Jaeger via OTLP)
                     if (observabilityConfig.Tracing?.Jaeger?.Enabled == true)
                     {
-                        tracerProvider.AddJaegerExporter(options =>
+                        tracerProvider.AddOtlpExporter(options =>
                         {
-                            options.AgentHost = observabilityConfig.Tracing.Jaeger.AgentHost;
-                            options.AgentPort = observabilityConfig.Tracing.Jaeger.AgentPort;
+                            options.Endpoint = new Uri($"http://{observabilityConfig.Tracing.Jaeger.AgentHost}:4317");
                         });
                     }
                 })

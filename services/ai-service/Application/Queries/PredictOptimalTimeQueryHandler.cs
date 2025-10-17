@@ -11,48 +11,6 @@ using System.Diagnostics;
 namespace SmartAlarm.AiService.Application.Queries
 {
     /// <summary>
-    /// Query para predizer horários ótimos para alarmes usando IA
-    /// </summary>
-    public record PredictOptimalTimeQuery(
-        Guid UserId,
-        System.DayOfWeek TargetDay,
-        string? Context = null, // "work", "exercise", "appointment"
-        TimeSpan? PreferredTimeRange = null
-    ) : IRequest<PredictOptimalTimeResponse>;
-
-    /// <summary>
-    /// Response da predição de horários ótimos
-    /// </summary>
-    public record PredictOptimalTimeResponse(
-        Guid UserId,
-        System.DayOfWeek TargetDay,
-        IEnumerable<OptimalTimeSlot> Predictions,
-        PredictionMetrics Metrics,
-        DateTime PredictionDate
-    );
-
-    /// <summary>
-    /// Slot de horário otimizado previsto pela IA
-    /// </summary>
-    public record OptimalTimeSlot(
-        TimeSpan SuggestedTime,
-        double ConfidenceScore,
-        string Reasoning,
-        string Category, // "sleep_pattern", "historical_data", "context_based"
-        TimeSpan? AlternativeTime = null
-    );
-
-    /// <summary>
-    /// Métricas da predição realizada
-    /// </summary>
-    public record PredictionMetrics(
-        int HistoricalDataPoints,
-        double ModelAccuracy,
-        string ModelVersion,
-        IEnumerable<string> FactorsConsidered
-    );
-
-    /// <summary>
     /// Validator para query de predição de horários
     /// </summary>
     public class PredictOptimalTimeQueryValidator : AbstractValidator<PredictOptimalTimeQuery>
@@ -130,11 +88,11 @@ namespace SmartAlarm.AiService.Application.Queries
                 {
                     activity?.SetTag("validation.failed", true);
                     _meter.IncrementErrorCount("query", "predict_optimal_time", "validation");
-                    
+
                     var errors = string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage));
                     _logger.LogWarning("Validação falhou para predição de horário: {Errors} - CorrelationId: {CorrelationId}",
                         errors, _correlationContext.CorrelationId);
-                    
+
                     throw new ValidationException($"Dados inválidos: {errors}");
                 }
 
@@ -144,10 +102,10 @@ namespace SmartAlarm.AiService.Application.Queries
                 {
                     activity?.SetTag("user.found", false);
                     _meter.IncrementErrorCount("query", "predict_optimal_time", "user_not_found");
-                    
+
                     _logger.LogWarning("Usuário {UserId} não encontrado para predição de horário - CorrelationId: {CorrelationId}",
                         request.UserId, _correlationContext.CorrelationId);
-                    
+
                     throw new InvalidOperationException($"Usuário {request.UserId} não encontrado");
                 }
 
@@ -169,7 +127,7 @@ namespace SmartAlarm.AiService.Application.Queries
 
                 // Converter resultado do ML.NET para múltiplos slots
                 var predictions = CreateOptimalTimeSlotsFromMLResult(mlResult, request.TargetDay, request.Context);
-                
+
                 var metrics = new PredictionMetrics(
                     HistoricalDataPoints: relevantAlarms.Count,
                     ModelAccuracy: mlResult.ModelAccuracy,
@@ -216,13 +174,13 @@ namespace SmartAlarm.AiService.Application.Queries
                 stopwatch.Stop();
                 _meter.RecordRequestDuration(stopwatch.ElapsedMilliseconds, "predict_optimal_time", "error", "500");
                 _meter.IncrementErrorCount("query", "predict_optimal_time", "exception");
-                
+
                 activity?.SetTag("error", true);
                 activity?.SetTag("error.message", ex.Message);
-                
+
                 _logger.LogError(ex, "Erro inesperado na predição de horário para usuário {UserId} - CorrelationId: {CorrelationId}",
                     request.UserId, _correlationContext.CorrelationId);
-                
+
                 throw;
             }
         }
@@ -231,8 +189,8 @@ namespace SmartAlarm.AiService.Application.Queries
         /// Cria múltiplos slots de horário ótimo baseado no resultado do ML.NET
         /// </summary>
         private static IEnumerable<OptimalTimeSlot> CreateOptimalTimeSlotsFromMLResult(
-            OptimalTimePredictionResult mlResult, 
-            DayOfWeek targetDay, 
+            OptimalTimePredictionResult mlResult,
+            DayOfWeek targetDay,
             string? context)
         {
             var slots = new List<OptimalTimeSlot>();
@@ -262,7 +220,7 @@ namespace SmartAlarm.AiService.Application.Queries
             {
                 var contextTime = GetContextBasedTime(context);
                 var contextConfidence = CalculateContextConfidence(mlResult.SuggestedTime, contextTime, mlResult.ModelAccuracy);
-                
+
                 if (contextConfidence > 0.5) // Só adicionar se tiver confiança razoável
                 {
                     slots.Add(new OptimalTimeSlot(
@@ -277,7 +235,7 @@ namespace SmartAlarm.AiService.Application.Queries
             // Slot baseado no dia da semana (refinado com ML.NET)
             var dayBasedTime = GetDayBasedTime(targetDay, mlResult.SuggestedTime);
             var dayConfidence = CalculateDayConfidence(targetDay, mlResult.ModelAccuracy);
-            
+
             slots.Add(new OptimalTimeSlot(
                 SuggestedTime: dayBasedTime,
                 ConfidenceScore: dayConfidence,
@@ -310,7 +268,7 @@ namespace SmartAlarm.AiService.Application.Queries
         private static double CalculateContextConfidence(TimeSpan mlTime, TimeSpan contextTime, double baseAccuracy)
         {
             var timeDifference = Math.Abs((mlTime - contextTime).TotalHours);
-            
+
             // Menor diferença = maior confiança
             var proximityScore = Math.Max(0, 1 - (timeDifference / 12)); // Normalizar em 12h
             return Math.Min(0.95, baseAccuracy * proximityScore);
@@ -361,7 +319,7 @@ namespace SmartAlarm.AiService.Application.Queries
             return day switch
             {
                 DayOfWeek.Monday => "segunda-feira",
-                DayOfWeek.Tuesday => "terça-feira", 
+                DayOfWeek.Tuesday => "terça-feira",
                 DayOfWeek.Wednesday => "quarta-feira",
                 DayOfWeek.Thursday => "quinta-feira",
                 DayOfWeek.Friday => "sexta-feira",

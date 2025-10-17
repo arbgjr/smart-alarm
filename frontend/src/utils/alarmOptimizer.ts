@@ -1,6 +1,6 @@
 // Intelligent Alarm Timing Optimization
 import { mlDataCollector } from './mlDataCollector';
-import type { AlarmDto } from '@/services/alarmService';
+// import type { AlarmDto } from '@/services/alarmService';
 
 export interface OptimalAlarmWindow {
   originalTime: string;
@@ -30,7 +30,7 @@ export interface UserSleepProfile {
 
 class AlarmOptimizer {
   private static instance: AlarmOptimizer;
-  private readonly SLEEP_CYCLE_LENGTH = 90; // minutes
+  // private readonly SLEEP_CYCLE_LENGTH = 90; // minutes
   private readonly LIGHT_SLEEP_WINDOW = 15; // minutes before/after optimal time
 
   private constructor() {}
@@ -51,7 +51,7 @@ class AlarmOptimizer {
   ): OptimalAlarmWindow {
     const userProfile = this.buildUserSleepProfile();
     const sleepDuration = this.calculateSleepDuration(estimatedBedtime, desiredWakeTime);
-    
+
     if (!userProfile || sleepDuration < 4) {
       // Not enough data or too short sleep - return original time
       return {
@@ -79,7 +79,7 @@ class AlarmOptimizer {
 
     // Analyze user's historical data to build sleep profile
     const chronotype = this.determineChronotype(analytics);
-    
+
     return {
       averageSleepCycles: Math.round(analytics.avgSleepDuration / 1.5), // 90min cycles
       cycleLength: this.calculatePersonalCycleLength(analytics),
@@ -97,7 +97,7 @@ class AlarmOptimizer {
   private determineChronotype(analytics: any): 'morning' | 'evening' | 'intermediate' {
     const avgBedtimeHour = this.timeToMinutes(analytics.avgBedtime) / 60;
     const avgWakeHour = this.timeToMinutes(analytics.avgWakeupTime) / 60;
-    
+
     if (avgBedtimeHour <= 22 && avgWakeHour <= 6) {
       return 'morning';
     } else if (avgBedtimeHour >= 24 && avgWakeHour >= 8) {
@@ -114,7 +114,7 @@ class AlarmOptimizer {
     // Most people have 90-minute cycles, but it can vary from 70-120 minutes
     // Use sleep consistency and duration patterns to estimate
     const consistencyFactor = analytics.sleepConsistency;
-    
+
     if (consistencyFactor > 0.8) {
       // Highly consistent sleepers often have stable 90-minute cycles
       return 90;
@@ -134,7 +134,7 @@ class AlarmOptimizer {
     // Estimate based on sleep consistency
     // More consistent sleepers typically have shorter sleep latency
     const consistencyFactor = analytics.sleepConsistency;
-    
+
     if (consistencyFactor > 0.8) {
       return 10; // 10 minutes for good sleepers
     } else if (consistencyFactor > 0.6) {
@@ -156,7 +156,7 @@ class AlarmOptimizer {
 
     for (let cycle = 0; cycle < numberOfCycles; cycle++) {
       const cycleStartMinutes = sleepStartMinutes + (cycle * profile.cycleLength);
-      
+
       // Each cycle has different phases
       const phases_in_cycle = [
         {
@@ -202,10 +202,10 @@ class AlarmOptimizer {
     // Find light sleep phases within the window
     const optimalPhases = sleepPhases.filter(phase => {
       if (phase.phase !== 'light') return false;
-      
+
       const phaseStartMinutes = this.timeToMinutes(phase.startTime);
       const phaseEndMinutes = this.timeToMinutes(phase.endTime);
-      
+
       return (phaseStartMinutes >= windowStart && phaseStartMinutes <= windowEnd) ||
              (phaseEndMinutes >= windowStart && phaseEndMinutes <= windowEnd) ||
              (phaseStartMinutes <= windowStart && phaseEndMinutes >= windowEnd);
@@ -214,7 +214,7 @@ class AlarmOptimizer {
     if (optimalPhases.length === 0) {
       // No light sleep phases in window - find closest transition
       const nearestTransition = this.findNearestTransition(desiredMinutes, sleepPhases);
-      
+
       return {
         originalTime: desiredWakeTime,
         optimizedTime: nearestTransition.time,
@@ -226,7 +226,7 @@ class AlarmOptimizer {
     }
 
     // Find the best light sleep phase
-    const bestPhase = optimalPhases.reduce((best, current) => 
+    const bestPhase = optimalPhases.reduce((best, current) =>
       current.probability > best.probability ? current : best
     );
 
@@ -258,11 +258,11 @@ class AlarmOptimizer {
   } {
     let nearestDistance = Infinity;
     let nearestTime = desiredMinutes;
-    
+
     for (let i = 0; i < sleepPhases.length - 1; i++) {
       const currentPhaseEnd = this.timeToMinutes(sleepPhases[i].endTime);
       const distance = Math.abs(currentPhaseEnd - desiredMinutes);
-      
+
       if (distance < nearestDistance) {
         nearestDistance = distance;
         nearestTime = currentPhaseEnd;
@@ -270,7 +270,7 @@ class AlarmOptimizer {
     }
 
     const adjustmentMinutes = nearestTime - desiredMinutes;
-    
+
     return {
       time: this.minutesToTime(nearestTime),
       confidence: Math.max(0.3, 0.7 - (nearestDistance / 30)), // Lower confidence for distant transitions
@@ -289,13 +289,13 @@ class AlarmOptimizer {
 
     const bedMinutes = this.timeToMinutes(bedtime);
     const wakeMinutes = this.timeToMinutes(wakeTime);
-    
+
     // Handle overnight sleep (bedtime after midnight)
     let durationMinutes = wakeMinutes - bedMinutes;
     if (durationMinutes <= 0) {
       durationMinutes += 24 * 60; // Add 24 hours
     }
-    
+
     return durationMinutes / 60; // Convert to hours
   }
 
@@ -305,15 +305,15 @@ class AlarmOptimizer {
   private estimateBedtime(wakeTime: string): string {
     const analytics = mlDataCollector.getLocalAnalytics();
     const avgSleepDuration = analytics?.avgSleepDuration || 8;
-    
+
     const wakeMinutes = this.timeToMinutes(wakeTime);
     const estimatedBedtimeMinutes = wakeMinutes - (avgSleepDuration * 60);
-    
+
     // Handle negative times (previous day)
-    const bedtimeMinutes = estimatedBedtimeMinutes < 0 
+    const bedtimeMinutes = estimatedBedtimeMinutes < 0
       ? estimatedBedtimeMinutes + (24 * 60)
       : estimatedBedtimeMinutes;
-    
+
     return this.minutesToTime(bedtimeMinutes);
   }
 
@@ -331,10 +331,10 @@ class AlarmOptimizer {
   private minutesToTime(minutes: number): string {
     // Handle overflow/underflow
     const normalizedMinutes = ((minutes % (24 * 60)) + (24 * 60)) % (24 * 60);
-    
+
     const hours = Math.floor(normalizedMinutes / 60);
     const mins = normalizedMinutes % 60;
-    
+
     return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
   }
 
@@ -347,7 +347,7 @@ class AlarmOptimizer {
     userMessage: string;
   } {
     const optimization = this.calculateOptimalAlarmTime(desiredTime);
-    
+
     let userMessage = '';
     if (optimization.confidenceScore > 0.7) {
       if (Math.abs(optimization.adjustmentMinutes) <= 5) {
@@ -372,7 +372,7 @@ class AlarmOptimizer {
    * Analyze alarm effectiveness after dismissal
    */
   public analyzeAlarmEffectiveness(
-    alarmId: string,
+    _alarmId: string,
     originalTime: string,
     actualDismissalTime: string,
     userRating?: 1 | 2 | 3 | 4 | 5
@@ -433,10 +433,10 @@ export function useAlarmOptimization() {
   return {
     calculateOptimalTime: (desiredTime: string, bedtime?: string) =>
       alarmOptimizer.calculateOptimalAlarmTime(desiredTime, bedtime),
-    
+
     getSmartRecommendation: (desiredTime: string) =>
       alarmOptimizer.getSmartAlarmRecommendation(desiredTime),
-    
+
     analyzeEffectiveness: (
       alarmId: string,
       originalTime: string,

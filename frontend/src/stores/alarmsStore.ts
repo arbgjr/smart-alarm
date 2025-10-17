@@ -25,7 +25,7 @@ interface AlarmFilters {
   dayOfWeek?: string;
 }
 
-interface AlarmFormData {
+export interface AlarmFormData {
   name: string;
   time: string;
   isEnabled?: boolean;
@@ -48,7 +48,7 @@ interface AlarmsState {
   isLoading: boolean;
   error: string | null;
   lastSync: string | null;
-  
+
   // Pagination
   currentPage: number;
   totalPages: number;
@@ -66,18 +66,18 @@ interface AlarmsState {
   setError: (error: string | null) => void;
   setPagination: (page: number, totalPages: number, totalCount: number) => void;
   setLastSync: (timestamp: string) => void;
-  
+
   // CRUD Operations (with offline support)
   createAlarm: (data: AlarmFormData) => Promise<Alarm>;
   editAlarm: (id: string, data: Partial<AlarmFormData>) => Promise<Alarm>;
   deleteAlarm: (id: string) => Promise<void>;
   toggleAlarm: (id: string) => Promise<void>;
-  
+
   // Bulk operations
   enableMultipleAlarms: (ids: string[]) => Promise<void>;
   disableMultipleAlarms: (ids: string[]) => Promise<void>;
   deleteMultipleAlarms: (ids: string[]) => Promise<void>;
-  
+
   // Utility functions
   getAlarmById: (id: string) => Alarm | undefined;
   getActiveAlarms: () => Alarm[];
@@ -180,7 +180,7 @@ export const useAlarmsStore = create<AlarmsState>()(
       // CRUD Operations with offline support
       createAlarm: async (data) => {
         const { setLoading, setError, addAlarm } = get();
-        
+
         setLoading(true);
         setError(null);
 
@@ -226,10 +226,10 @@ export const useAlarmsStore = create<AlarmsState>()(
             };
             const realAlarmDto = await alarmService.createAlarm(alarmData);
             const realAlarm = convertAlarmDtoToAlarm(realAlarmDto);
-            
+
             // Replace optimistic alarm with real one
             get().updateAlarm(optimisticAlarm.id, realAlarm);
-            
+
             setLoading(false);
             return realAlarm;
           } else {
@@ -240,13 +240,13 @@ export const useAlarmsStore = create<AlarmsState>()(
           }
         } catch (error: any) {
           console.error('Error creating alarm:', error);
-          
+
           // Remove optimistic alarm on error
           get().removeAlarm(data.name); // fallback identification
-          
+
           // Queue for background sync as fallback
           backgroundSync.addToSyncQueue('create', 'alarm', data);
-          
+
           setError(error.message || 'Failed to create alarm');
           throw error;
         }
@@ -254,7 +254,7 @@ export const useAlarmsStore = create<AlarmsState>()(
 
       editAlarm: async (id, data) => {
         const { setLoading, setError, updateAlarm, getAlarmById } = get();
-        
+
         const existingAlarm = getAlarmById(id);
         if (!existingAlarm) {
           throw new Error('Alarm not found');
@@ -274,7 +274,7 @@ export const useAlarmsStore = create<AlarmsState>()(
             const { alarmService } = await import('@/services/alarmService');
             const updatedAlarmDto = await alarmService.updateAlarm(id, data);
             const updatedAlarm = convertAlarmDtoToAlarm(updatedAlarmDto);
-            
+
             updateAlarm(id, updatedAlarm);
             setLoading(false);
             return updatedAlarm;
@@ -286,13 +286,13 @@ export const useAlarmsStore = create<AlarmsState>()(
           }
         } catch (error: any) {
           console.error('Error updating alarm:', error);
-          
+
           // Rollback optimistic update
           updateAlarm(id, originalAlarm);
-          
+
           // Queue for background sync as fallback
           backgroundSync.addToSyncQueue('update', 'alarm', { id, ...data });
-          
+
           setError(error.message || 'Failed to update alarm');
           throw error;
         }
@@ -300,7 +300,7 @@ export const useAlarmsStore = create<AlarmsState>()(
 
       deleteAlarm: async (id) => {
         const { setLoading, setError, removeAlarm, getAlarmById } = get();
-        
+
         const alarm = getAlarmById(id);
         if (!alarm) return;
 
@@ -322,13 +322,13 @@ export const useAlarmsStore = create<AlarmsState>()(
           }
         } catch (error: any) {
           console.error('Error deleting alarm:', error);
-          
+
           // Restore alarm on error
           get().addAlarm(alarm);
-          
+
           // Queue for background sync as fallback
           backgroundSync.addToSyncQueue('delete', 'alarm', { id });
-          
+
           setError(error.message || 'Failed to delete alarm');
           throw error;
         }
@@ -378,15 +378,15 @@ export const useAlarmsStore = create<AlarmsState>()(
       getUpcomingAlarms: (hours = 24) => {
         const now = new Date();
         const upcoming = new Date(now.getTime() + hours * 60 * 60 * 1000);
-        
+
         return get().alarms.filter((alarm) => {
           if (!alarm.isEnabled) return false;
-          
+
           // Simple time comparison (would need more sophisticated logic for recurring alarms)
           const [alarmHours, alarmMinutes] = alarm.time.split(':').map(Number);
           const alarmDate = new Date(now);
           alarmDate.setHours(alarmHours, alarmMinutes, 0, 0);
-          
+
           return alarmDate >= now && alarmDate <= upcoming;
         });
       },
