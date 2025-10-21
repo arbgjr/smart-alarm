@@ -25,6 +25,7 @@ The platform consists of three main microservices:
 ## Features
 
 ### Backend Infrastructure
+
 - **Serverless Architecture**: Built for OCI Functions with full serverless deployment capabilities
 - **Clean Architecture**: Strict separation of concerns across Domain, Application, Infrastructure, and API layers
 - **Multi-Provider Support**: Database (PostgreSQL/Oracle), storage (MinIO/OCI), and secrets management (Vault/Azure/OCI)
@@ -35,6 +36,7 @@ The platform consists of three main microservices:
 - **Resilient Integrations**: External API integration with circuit breakers, retries, and bulkhead patterns
 
 ### Progressive Web Application (PWA) ✨ COMPLETE
+
 - **Offline-First Experience**: Complete PWA implementation with service worker and background sync
 - **Cross-Platform Installation**: Installable on mobile devices and desktop platforms
 - **Smart Caching**: Network-first caching for API calls with intelligent fallback strategies
@@ -42,6 +44,7 @@ The platform consists of three main microservices:
 - **Responsive Design**: Mobile-optimized interface with accessibility-first approach
 
 ### Modern State Management ✨ COMPLETE
+
 - **Zustand Integration**: Centralized state management with persistent storage
 - **Optimistic Updates**: Immediate UI feedback with server synchronization
 - **React Query Optimization**: Intelligent caching and data synchronization
@@ -49,6 +52,7 @@ The platform consists of three main microservices:
 - **Theme & Accessibility**: Complete UI state management with user preferences
 
 ### AI-Powered Sleep Intelligence ✨ NEW
+
 - **ML Data Collection**: Privacy-first behavioral tracking with local processing
 - **Sleep Pattern Analysis**: Intelligent sleep cycle detection and chronotype identification
 - **Smart Alarm Optimization**: Automatic timing optimization for light sleep phases
@@ -56,6 +60,7 @@ The platform consists of three main microservices:
 - **Sleep Analytics Dashboard**: Comprehensive insights with confidence scoring
 
 ### Real-time Multi-Device Sync ✨ NEW
+
 - **SignalR Hub Integration**: Real-time alarm synchronization across devices
 - **Push Notifications**: Web Push API with VAPID keys for native notifications
 - **Conflict Resolution**: Last-writer-wins with automatic conflict handling
@@ -63,6 +68,7 @@ The platform consists of three main microservices:
 - **Offline Queue**: Intelligent sync queuing for offline scenarios
 
 ### Production-Grade Testing ✨ NEW
+
 - **Comprehensive E2E Testing**: Playwright-based testing with Docker infrastructure
 - **Cross-Browser Compatibility**: Testing across Chrome, Firefox, Safari, and mobile devices
 - **Accessibility Testing**: WCAG AAA compliance validation
@@ -125,6 +131,7 @@ To run Smart Alarm locally, you need:
    ```
 
 The applications will be available at:
+
 - **Frontend**: `http://localhost:5173` (Vite dev server)
 - **Backend API**: `https://localhost:8080` with Swagger at `https://localhost:8080/swagger`
 
