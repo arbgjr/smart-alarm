@@ -7,6 +7,7 @@ Este documento detalha o design técnico para finalizar o projeto Smart Alarm, t
 ## Architecture
 
 ### Current State Analysis
+
 - **Backend**: .NET 8 com Clean Architecture (Domain, Application, Infrastructure, API)
 - **Frontend**: React 18 + TypeScript + Vite + Tailwind CSS
 - **Database**: PostgreSQL com Entity Framework Core
@@ -16,17 +17,18 @@ Este documento detalha o design técnico para finalizar o projeto Smart Alarm, t
 - **Infrastructure**: Docker + Kubernetes configurado
 
 ### Target Architecture
+
 ```mermaid
 graph TB
     subgraph "Frontend Layer"
         PWA[PWA React App]
         Mobile[Mobile Responsive]
     end
-    
+
     subgraph "API Gateway"
         Gateway[API Gateway/Load Balancer]
     end
-    
+
     subgraph "Core Services"
         API[Main API Service]
         Auth[Auth Service]
@@ -34,26 +36,26 @@ graph TB
         AI[AI Service]
         Integration[Integration Service]
     end
-    
+
     subgraph "Data Layer"
         DB[(PostgreSQL)]
         Cache[(Redis Cache)]
         Storage[Object Storage]
     end
-    
+
     subgraph "External Services"
         Calendar[Calendar APIs]
         Notifications[Push Notifications]
         KeyVault[Key Vault]
     end
-    
+
     subgraph "Observability"
         Metrics[Prometheus]
         Logs[Grafana/Loki]
         Traces[Jaeger]
         Alerts[AlertManager]
     end
-    
+
     PWA --> Gateway
     Mobile --> Gateway
     Gateway --> API
@@ -61,15 +63,15 @@ graph TB
     Gateway --> Alarm
     Gateway --> AI
     Gateway --> Integration
-    
+
     API --> DB
     API --> Cache
     API --> Storage
-    
+
     Integration --> Calendar
     Alarm --> Notifications
     API --> KeyVault
-    
+
     API --> Metrics
     API --> Logs
     API --> Traces
@@ -78,7 +80,9 @@ graph TB
 ## Components and Interfaces
 
 ### 1. Frontend Completion
+
 **Components to Complete:**
+
 - Dashboard with real-time metrics
 - Alarm management (CRUD operations)
 - Calendar integration view
@@ -88,6 +92,7 @@ graph TB
 - Import/Export functionality
 
 **Technical Implementation:**
+
 - React Query for state management and caching
 - React Router for navigation
 - Tailwind CSS for responsive design
@@ -95,7 +100,9 @@ graph TB
 - SignalR for real-time updates
 
 ### 2. Backend API Stabilization
+
 **Core Controllers:**
+
 - AlarmController (complete CRUD + scheduling)
 - AuthController (JWT + FIDO2 + refresh tokens)
 - UserController (profile management)
@@ -105,6 +112,7 @@ graph TB
 - ImportController (CSV processing)
 
 **Service Layer Enhancements:**
+
 - Background services for alarm triggering
 - Notification service integration
 - Calendar synchronization service
@@ -112,19 +120,23 @@ graph TB
 - Audit logging service
 
 ### 3. Microservices Completion
+
 **AI Service:**
+
 - ML models for optimal alarm timing
 - Pattern analysis for user behavior
 - Recommendation engine
 - Performance optimization suggestions
 
 **Alarm Service:**
+
 - Real-time alarm triggering
 - Notification delivery
 - Escalation policies
 - Snooze and dismiss handling
 
 **Integration Service:**
+
 - Google Calendar integration
 - Outlook Calendar integration
 - Apple Calendar integration
@@ -132,13 +144,16 @@ graph TB
 - External API rate limiting
 
 ### 4. Database Optimization
+
 **Performance Improvements:**
+
 - Index optimization for frequent queries
 - Query performance analysis
 - Connection pooling configuration
 - Read replicas for reporting
 
 **Data Integrity:**
+
 - Foreign key constraints validation
 - Data validation rules
 - Backup and recovery procedures
@@ -147,6 +162,7 @@ graph TB
 ## Data Models
 
 ### Enhanced Entity Relationships
+
 ```mermaid
 erDiagram
     User ||--o{ Alarm : creates
@@ -155,20 +171,21 @@ erDiagram
     User ||--o{ ExceptionPeriod : sets
     User ||--o{ Integration : connects
     User ||--o{ Webhook : registers
-    
+
     Alarm ||--o{ AlarmHistory : generates
     Alarm }o--|| Routine : follows
-    
+
     Routine ||--o{ RoutineSchedule : contains
-    
+
     Holiday ||--o{ UserHolidayPreference : referenced_by
-    
+
     Integration ||--o{ CalendarEvent : syncs
-    
+
     Webhook ||--o{ WebhookDelivery : triggers
 ```
 
 ### New Entities for Production
+
 - **AlarmHistory**: Track alarm executions and user interactions
 - **AuditLog**: System-wide audit trail
 - **SystemConfiguration**: Runtime configuration management
@@ -179,13 +196,16 @@ erDiagram
 ## Error Handling
 
 ### Comprehensive Error Strategy
+
 1. **Client-Side Errors**
+
    - Form validation with real-time feedback
    - Network error handling with retry logic
    - Offline state management
    - User-friendly error messages
 
 2. **Server-Side Errors**
+
    - Global exception handling middleware
    - Structured error responses
    - Error correlation IDs
@@ -198,6 +218,7 @@ erDiagram
    - Dead letter queues for failed operations
 
 ### Error Response Format
+
 ```json
 {
   "error": {
@@ -215,35 +236,124 @@ erDiagram
 }
 ```
 
-## Testing Strategy
+## Build and Testing Strategy
 
-### 1. Unit Testing
-- **Target Coverage**: 80%+ for business logic
-- **Frameworks**: xUnit for .NET, Vitest for React
+### Mandatory Build Process
+
+The system implements a strict build-first testing approach to ensure code integrity:
+
+```mermaid
+flowchart TD
+    A[Start Activity] --> B[Execute Full Build]
+    B --> C{Build Success?}
+    C -->|No| D[Block Activity - Fix Build Issues]
+    C -->|Yes| E[Execute Critical Tests]
+    E --> F{Tests Pass?}
+    F -->|No| G[Block Progression - Fix Test Issues]
+    F -->|Yes| H[Allow Activity Progression]
+    D --> B
+    G --> B
+```
+
+**Build Process Components:**
+
+1. **Backend Build**: `dotnet build` for all .NET projects and services
+2. **Frontend Build**: `npm run build` for React application
+3. **Microservices Build**: Individual service compilation and validation
+4. **Infrastructure Validation**: Docker image builds and Kubernetes manifest validation
+
+**Build Failure Handling:**
+
+- Any build failure blocks all testing activities
+- Clear error reporting with actionable feedback
+- Automatic retry mechanisms for transient failures
+- Build logs aggregation for debugging
+
+**Quality Gates:**
+
+- Build success is mandatory before any testing phase
+- Critical tests must pass before activity progression
+- Failed builds trigger immediate notification to development team
+- Build metrics tracked for continuous improvement
+
+**Build Automation:**
+
+```bash
+# Example build script structure
+#!/bin/bash
+set -e  # Exit on any error
+
+echo "Starting full build process..."
+
+# Backend build
+dotnet restore
+dotnet build --configuration Release --no-restore
+
+# Frontend build
+cd frontend
+npm ci
+npm run build
+cd ..
+
+# Microservices build
+docker-compose -f docker-compose.build.yml build
+
+echo "Full build completed successfully"
+```
+
+### Testing Strategy
+
+### 1. Critical Tests (Mandatory)
+
+**Core Functionality Tests** - Must pass before progression:
+
+- **Authentication Flow**: JWT + FIDO2 login/logout cycles
+- **Alarm CRUD Operations**: Create, read, update, delete alarms
+- **Alarm Triggering**: Scheduled alarm execution and notification delivery
+- **Routine Management**: Recurring pattern creation and application
+- **Holiday Processing**: Holiday detection and alarm behavior modification
+- **Exception Periods**: Temporary alarm suspension functionality
+- **CSV Import**: File processing and data validation
+
+**Test Execution Order:**
+
+1. Full build completion (mandatory prerequisite)
+2. Unit tests for critical business logic
+3. Integration tests for core workflows
+4. API endpoint validation tests
+5. Database integrity tests
+
+### 2. Unit Testing
+
+- **Framework**: xUnit for .NET, Vitest for React
+- **Coverage**: No minimum percentage required, focus on critical paths
 - **Mocking**: Moq for .NET, MSW for React
-- **Test Categories**: Domain logic, API controllers, Services
+- **Priority**: Business logic, domain services, critical algorithms
 
-### 2. Integration Testing
+### 3. Integration Testing
+
 - **Database Tests**: TestContainers with PostgreSQL
 - **API Tests**: WebApplicationFactory with test database
-- **External Service Tests**: WireMock for API mocking
-- **Message Queue Tests**: TestContainers with RabbitMQ
+- **Service Communication**: Inter-service integration validation
+- **External APIs**: Mock-based testing for third-party integrations
 
-### 3. End-to-End Testing
+### 4. End-to-End Testing
+
 - **Framework**: Playwright for cross-browser testing
-- **Scenarios**: Complete user workflows
-- **Data Management**: Test data seeding and cleanup
-- **Environment**: Dedicated test environment
+- **Critical Scenarios**: Complete user workflows for core features
+- **Data Management**: Automated test data seeding and cleanup
+- **Environment**: Isolated test environment with full stack
 
-### 4. Performance Testing
-- **Load Testing**: Artillery.js or k6
-- **Stress Testing**: Gradual load increase
-- **Endurance Testing**: Extended duration tests
-- **Metrics**: Response time, throughput, error rate
+### 5. Performance Testing (Optional)
+
+- **Load Testing**: Artillery.js or k6 for performance validation
+- **Stress Testing**: System behavior under high load
+- **Baseline Metrics**: Response time, throughput benchmarks
 
 ## Security Implementation
 
 ### Authentication & Authorization
+
 - **JWT Tokens**: Short-lived access tokens (15 minutes)
 - **Refresh Tokens**: Long-lived, securely stored (7 days)
 - **FIDO2**: Passwordless authentication option
@@ -251,6 +361,7 @@ erDiagram
 - **API Keys**: For external integrations
 
 ### Data Protection
+
 - **Encryption at Rest**: Database encryption
 - **Encryption in Transit**: TLS 1.3 for all communications
 - **Sensitive Data**: Key Vault for secrets management
@@ -258,6 +369,7 @@ erDiagram
 - **Audit Trail**: All data access logged
 
 ### Security Headers
+
 ```
 Content-Security-Policy: default-src 'self'
 X-Frame-Options: DENY
@@ -269,6 +381,7 @@ X-XSS-Protection: 1; mode=block
 ## Deployment Strategy
 
 ### Container Strategy
+
 ```dockerfile
 # Multi-stage build for production optimization
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
@@ -279,6 +392,7 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 ```
 
 ### Kubernetes Deployment
+
 - **Namespace Isolation**: Separate environments
 - **Resource Limits**: CPU and memory constraints
 - **Health Checks**: Liveness and readiness probes
@@ -286,32 +400,52 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 - **Secrets Management**: Kubernetes secrets + External Secrets Operator
 
 ### CI/CD Pipeline
-1. **Build Stage**: Compile, test, security scan
-2. **Test Stage**: Unit, integration, E2E tests
-3. **Security Stage**: Vulnerability scanning, SAST/DAST
-4. **Deploy Stage**: Blue-green deployment
-5. **Monitoring Stage**: Health checks, smoke tests
+
+1. **Full Build Stage**:
+   - Compile all components (backend, frontend, microservices)
+   - Validate infrastructure configurations
+   - Block pipeline on any build failures
+2. **Critical Testing Stage**:
+   - Execute mandatory tests only after successful build
+   - Run core functionality validation
+   - Block progression on critical test failures
+3. **Extended Testing Stage**:
+   - Integration tests, E2E tests, performance tests
+   - Optional but recommended for production deployments
+4. **Security Stage**:
+   - Vulnerability scanning, SAST/DAST
+   - Security compliance validation
+5. **Deploy Stage**:
+   - Blue-green deployment with health checks
+   - Automated rollback on deployment failures
+6. **Monitoring Stage**:
+   - Post-deployment validation
+   - Smoke tests and health monitoring
 
 ## Monitoring and Observability
 
 ### Metrics Collection
+
 - **Application Metrics**: Custom business metrics
 - **Infrastructure Metrics**: CPU, memory, disk, network
 - **Database Metrics**: Query performance, connections
 - **External API Metrics**: Response times, error rates
 
 ### Logging Strategy
+
 - **Structured Logging**: JSON format with correlation IDs
 - **Log Levels**: Appropriate use of Debug, Info, Warn, Error
 - **Log Aggregation**: Centralized logging with Grafana Loki
 - **Log Retention**: 30 days for debug, 1 year for audit
 
 ### Alerting Rules
+
 - **Critical Alerts**: System down, high error rate (>5%)
 - **Warning Alerts**: High response time (>2s), resource usage (>80%)
 - **Info Alerts**: Deployment notifications, scheduled maintenance
 
 ### Dashboards
+
 - **System Overview**: Health, performance, usage metrics
 - **Business Metrics**: Active users, alarms created, success rate
 - **Infrastructure**: Resource utilization, scaling events
@@ -320,18 +454,21 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 ## Performance Optimization
 
 ### Backend Optimizations
+
 - **Database**: Query optimization, indexing strategy
 - **Caching**: Redis for session data and frequent queries
 - **Connection Pooling**: Optimized database connections
 - **Async Operations**: Non-blocking I/O operations
 
 ### Frontend Optimizations
+
 - **Code Splitting**: Lazy loading of routes and components
 - **Bundle Optimization**: Tree shaking, minification
 - **Caching Strategy**: Service worker for offline support
 - **Image Optimization**: WebP format, lazy loading
 
 ### Infrastructure Optimizations
+
 - **CDN**: Static asset delivery
 - **Load Balancing**: Traffic distribution
 - **Auto Scaling**: Dynamic resource allocation

@@ -24,6 +24,17 @@ public class Role
     // Navegação
     public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
 
+    // Constructor for tests and manual creation
+    public Role(Guid id, string name, string? description = null)
+    {
+        Id = id == Guid.Empty ? Guid.NewGuid() : id;
+        Name = name ?? throw new ArgumentNullException(nameof(name));
+        Description = description;
+        CreatedAt = DateTime.UtcNow;
+        IsActive = true;
+        UserRoles = new List<UserRole>();
+    }
+
     /// <summary>
     /// Desativa role
     /// </summary>

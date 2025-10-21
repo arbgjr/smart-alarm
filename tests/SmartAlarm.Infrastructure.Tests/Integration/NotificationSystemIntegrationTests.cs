@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using SmartAlarm.Application.Abstractions;
 using SmartAlarm.Application.DTOs.Notifications;
-using SmartAlarm.Api.Hubs;
+
 using SmartAlarm.Infrastructure.Services;
 using Xunit;
 
@@ -14,8 +14,8 @@ namespace SmartAlarm.Infrastructure.Tests.Integration;
 public class NotificationSystemIntegrationTests : IDisposable
 {
     private readonly ServiceProvider _serviceProvider;
-    private readonly Mock<IHubContext<NotificationHub>> _mockHubContext;
-    private readonly Mock<IHubCallerClients> _mockClients;
+    private readonly Mock<IHubContext<Hub>> _mockHubContext;
+    private readonly Mock<IHubClients> _mockClients;
     private readonly Mock<IClientProxy> _mockClientProxy;
     private readonly Mock<IPushNotificationService> _mockPushNotificationService;
     private readonly SmartAlarm.Application.Abstractions.INotificationService _notificationService;
@@ -28,8 +28,8 @@ public class NotificationSystemIntegrationTests : IDisposable
         services.AddLogging(builder => builder.AddConsole());
 
         // Create SignalR mocks
-        _mockHubContext = new Mock<IHubContext<NotificationHub>>();
-        _mockClients = new Mock<IHubCallerClients>();
+        _mockHubContext = new Mock<IHubContext<Hub>>();
+        _mockClients = new Mock<IHubClients>();
         _mockClientProxy = new Mock<IClientProxy>();
         _mockPushNotificationService = new Mock<IPushNotificationService>();
 
@@ -55,7 +55,7 @@ public class NotificationSystemIntegrationTests : IDisposable
         var userId = "user_123";
         var notification = new NotificationDto
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.NewGuid().ToString(),
             Title = "Test Notification",
             Message = "This is a test notification",
             Type = NotificationType.Info,
@@ -90,7 +90,7 @@ public class NotificationSystemIntegrationTests : IDisposable
         var groupName = "admin_group";
         var notification = new NotificationDto
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.NewGuid().ToString(),
             Title = "Admin Notification",
             Message = "System maintenance scheduled",
             Type = NotificationType.Warning,
@@ -122,7 +122,7 @@ public class NotificationSystemIntegrationTests : IDisposable
         // Arrange
         var notification = new NotificationDto
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.NewGuid().ToString(),
             Title = "System Announcement",
             Message = "System will be updated tonight",
             Type = NotificationType.Info,
@@ -156,7 +156,7 @@ public class NotificationSystemIntegrationTests : IDisposable
         var userId = "user_123";
         var notification = new NotificationDto
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.NewGuid().ToString(),
             Title = "Test Notification",
             Message = "This will fail",
             Type = NotificationType.Error

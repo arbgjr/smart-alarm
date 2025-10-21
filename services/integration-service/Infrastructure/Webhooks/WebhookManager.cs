@@ -96,7 +96,9 @@ namespace SmartAlarm.IntegrationService.Infrastructure.Webhooks
                 stopwatch.Stop();
 
                 // Métricas
-                _meter.IncrementWebhookRegistered(request.Provider, "success");
+                _meter.IncrementCounter("webhook_registered", 1,
+                    new KeyValuePair<string, object?>("provider", request.Provider),
+                    new KeyValuePair<string, object?>("status", "success"));
 
                 _logger.LogInformation("Webhook {WebhookId} registrado com sucesso para usuário {UserId} - Provider: {Provider} - Duração: {Duration}ms - CorrelationId: {CorrelationId}",
                     webhookId, request.UserId, request.Provider, stopwatch.ElapsedMilliseconds, _correlationContext.CorrelationId);
@@ -106,7 +108,9 @@ namespace SmartAlarm.IntegrationService.Infrastructure.Webhooks
             catch (Exception ex)
             {
                 stopwatch.Stop();
-                _meter.IncrementWebhookRegistered(request.Provider, "failed");
+                _meter.IncrementCounter("webhook_registered", 1,
+                    new KeyValuePair<string, object?>("provider", request.Provider),
+                    new KeyValuePair<string, object?>("status", "failed"));
 
                 activity?.SetTag("error", true);
                 activity?.SetTag("error.message", ex.Message);
@@ -251,7 +255,10 @@ namespace SmartAlarm.IntegrationService.Infrastructure.Webhooks
                 stopwatch.Stop();
 
                 // Métricas
-                _meter.IncrementWebhookProcessed(webhook.Provider, webhook.EventType, "success");
+                _meter.IncrementCounter("webhook_processed", 1,
+                    new KeyValuePair<string, object?>("provider", webhook.Provider),
+                    new KeyValuePair<string, object?>("event_type", webhook.EventType),
+                    new KeyValuePair<string, object?>("status", "success"));
 
                 _logger.LogInformation("Webhook {WebhookId} processado com sucesso - Ações: {ActionsCount} - Duração: {Duration}ms - CorrelationId: {CorrelationId}",
                     webhookId, actionsTriggered.Count(), stopwatch.ElapsedMilliseconds, _correlationContext.CorrelationId);
@@ -262,7 +269,10 @@ namespace SmartAlarm.IntegrationService.Infrastructure.Webhooks
             catch (Exception ex)
             {
                 stopwatch.Stop();
-                _meter.IncrementWebhookProcessed("unknown", "unknown", "failed");
+                _meter.IncrementCounter("webhook_processed", 1,
+                    new KeyValuePair<string, object?>("provider", "unknown"),
+                    new KeyValuePair<string, object?>("event_type", "unknown"),
+                    new KeyValuePair<string, object?>("status", "failed"));
 
                 activity?.SetTag("error", true);
                 activity?.SetTag("error.message", ex.Message);

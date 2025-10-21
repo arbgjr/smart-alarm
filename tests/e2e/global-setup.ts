@@ -1,41 +1,42 @@
 import { chromium, FullConfig } from '@playwright/test';
 
 async function globalSetup(config: FullConfig) {
-  console.log('🚀 Starting global setup for E2E tests...');
+  console.log('🚀 Starting E2E test environment setup...');
 
-  // Start services if needed
-  const baseURL = config.projects[0].use.baseURL || 'http://localhost:3001';
+  // Check if the application is running
+  const baseURL = config.projects[0].use.baseURL || 'http://localhost:5000';
 
   try {
-    // Launch browser to check if services are running
     const browser = await chromium.launch();
     const page = await browser.newPage();
 
     // Try to connect to the application
-    console.log(`📡 Checking if application is running at ${baseURL}...`);
+    console.log(`🔍 Checking if application is running at ${baseURL}...`);
 
-    try {
-      await page.goto(baseURL, { timeout: 10000 });
-      console.log('✅ Application is running');
-    } catch (error) {
-      console.log('⚠️  Application not running, tests may fail');
-      console.log('💡 Make sure to start the frontend with: npm run dev');
+    const response = await page.goto(`${baseURL}/health`, {
+      waitUntil: 'networkidle',
+      timeout: 10000
+    });
+
+    if (response?.ok()) {
+      console.log('✅ Application is running and healthy');
+    } else {
+      console.log('⚠️  Application health check failed, but continuing with tests');
     }
 
     await browser.close();
-
-    // Setup test data or authentication if needed
-    console.log('📝 Setting up test data...');
-
-    // Create test users, clear test database, etc.
-    // This would typically involve API calls to setup test state
-
-    console.log('✅ Global setup completed');
-
   } catch (error) {
-    console.error('❌ Global setup failed:', error);
-    throw error;
+    console.log('⚠️  Could not connect to application. Make sure it\'s running at', baseURL);
+    console.log('   You can start it with: dotnet run --project src/SmartAlarm.Api');
   }
+
+  // Set up test data or authentication if needed
+  console.log('🔧 Setting up test environment...');
+
+  // Store any global test data
+  process.env.E2E_TEST_TIMESTAMP = new Date().toISOString();
+
+  console.log('✅ E2E test environment setup complete');
 }
 
 export default globalSetup;

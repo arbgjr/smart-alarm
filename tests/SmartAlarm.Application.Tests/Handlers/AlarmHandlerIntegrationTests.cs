@@ -116,14 +116,8 @@ namespace SmartAlarm.Application.Tests.Handlers
             public TestAlarm(Guid id, string name, DateTime time, bool enabled, Guid userId)
                 : base(id, name, time, enabled, userId) { }
 
-            protected override bool ExceptionPeriodIsActiveForUser(Guid userId, DateTime date)
-                => ExceptionPeriodActive;
-
-            protected override Holiday? GetHolidayForDate(DateTime date)
-                => HolidayActive ? new Holiday(date, "Feriado Teste") : null;
-
-            protected override SmartAlarm.Domain.Entities.UserHolidayPreference? GetUserHolidayPreference(Guid userId, Guid holidayId)
-                => HolidayPreference;
+            // These methods are no longer virtual in the base class, so we remove the override
+            // The test logic should be handled through mocked repositories instead
         }
     }
 }

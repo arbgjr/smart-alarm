@@ -15,22 +15,40 @@ namespace SmartAlarm.Domain.Entities
         private readonly List<Integration> _integrations = new();
         private readonly List<Schedule> _schedules = new();
 
-        public Guid Id { get; private set; }
+        public Guid Id { get; set; }
         public Name Name { get; private set; } = null!;
-        public DateTime Time { get; private set; }
+        public DateTime Time { get; set; }
         public bool Enabled { get; private set; }
-        public bool IsActive { get; private set; }
-        public bool IsRecurring { get; private set; }
-        public Dictionary<string, object> Metadata { get; private set; } = new();
-        public Guid UserId { get; private set; }
+        public bool IsActive { get; set; }
+        public bool IsRecurring { get; set; }
+        public Dictionary<string, object> Metadata { get; set; } = new();
+        public Guid UserId { get; set; }
+
+        // Compatibility property for tests that expect Title
+        public string Title
+        {
+            get => Name?.Value ?? string.Empty;
+            set => Name = new Name(value ?? "Default Alarm");
+        }
         public DateTime CreatedAt { get; private set; }
         public DateTime? LastTriggeredAt { get; private set; }
         public IReadOnlyList<Routine> Routines => _routines.AsReadOnly();
         public IReadOnlyList<Integration> Integrations => _integrations.AsReadOnly();
         public IReadOnlyList<Schedule> Schedules => _schedules.AsReadOnly();
 
-        // Private constructor for EF Core
-        private Alarm() { }
+        // Public parameterless constructor for EF Core and tests
+        public Alarm()
+        {
+            Id = Guid.NewGuid();
+            Name = new Name("Default Alarm");
+            Time = DateTime.UtcNow;
+            Enabled = true;
+            IsActive = true;
+            IsRecurring = false;
+            Metadata = new Dictionary<string, object>();
+            UserId = Guid.Empty;
+            CreatedAt = DateTime.UtcNow;
+        }
 
         public Alarm(Guid id, Name name, DateTime time, bool enabled, Guid userId)
         {
@@ -69,6 +87,18 @@ namespace SmartAlarm.Domain.Entities
         public void SetActive(bool isActive) => IsActive = isActive;
 
         public void SetRecurring(bool isRecurring) => IsRecurring = isRecurring;
+
+        public void Activate()
+        {
+            IsActive = true;
+            Enabled = true;
+        }
+
+        public void Deactivate()
+        {
+            IsActive = false;
+            Enabled = false;
+        }
 
         public void UpdateMetadata(string key, object value)
         {

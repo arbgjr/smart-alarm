@@ -72,7 +72,9 @@ namespace SmartAlarm.IntegrationService.Infrastructure.RateLimiting
                 {
                     var resetTime = window.GetWindowResetTime(now);
 
-                    _meter.IncrementRateLimitBlocked(provider, key);
+                    _meter.IncrementCounter("rate_limit_blocked", 1,
+                        new KeyValuePair<string, object?>("provider", provider),
+                        new KeyValuePair<string, object?>("key", key));
 
                     _logger.LogWarning("Rate limit excedido para {Provider}:{Key} - Requests: {Requests}/{Limit} - Reset em: {ResetTime} - CorrelationId: {CorrelationId}",
                         provider, key, requestsInWindow, config.RequestsPerWindow, resetTime, _correlationContext.CorrelationId);
@@ -92,7 +94,9 @@ namespace SmartAlarm.IntegrationService.Infrastructure.RateLimiting
                     var burstRequests = window.CountRequestsInWindow(now, config.BurstWindow);
                     if (burstRequests >= config.BurstLimit)
                     {
-                        _meter.IncrementRateLimitBlocked(provider, key);
+                        _meter.IncrementCounter("rate_limit_blocked", 1,
+                            new KeyValuePair<string, object?>("provider", provider),
+                            new KeyValuePair<string, object?>("key", key));
 
                         _logger.LogWarning("Burst limit excedido para {Provider}:{Key} - Burst: {Burst}/{Limit} - CorrelationId: {CorrelationId}",
                             provider, key, burstRequests, config.BurstLimit, _correlationContext.CorrelationId);
@@ -108,7 +112,7 @@ namespace SmartAlarm.IntegrationService.Infrastructure.RateLimiting
                 }
 
                 var remaining = Math.Max(0, config.RequestsPerWindow - requestsInWindow - 1);
-                var resetTime = window.GetWindowResetTime(now);
+                var windowResetTime = window.GetWindowResetTime(now);
 
                 _logger.LogDebug("Rate limit OK para {Provider}:{Key} - Remaining: {Remaining} - CorrelationId: {CorrelationId}",
                     provider, key, remaining, _correlationContext.CorrelationId);
@@ -117,7 +121,7 @@ namespace SmartAlarm.IntegrationService.Infrastructure.RateLimiting
                 return new RateLimitResult(
                     IsAllowed: true,
                     RequestsRemaining: remaining,
-                    ResetTime: resetTime
+                    ResetTime: windowResetTime
                 );
             }
             catch (Exception ex)
@@ -150,7 +154,7 @@ namespace SmartAlarm.IntegrationService.Infrastructure.RateLimiting
                 window.RecordRequest(DateTime.UtcNow, success, duration);
 
                 // Métricas
-                _meter.RecordRateLimitRequest(provider, key, success ? "success" : "failed", duration.TotalMilliseconds);
+                _meter.RecordRequestDuration(duration.TotalMilliseconds, "rate_limit_request", provider, success ? "success" : "failed");
 
                 _logger.LogDebug("Requisição registrada para {Provider}:{Key} - Success: {Success}, Duration: {Duration}ms",
                     provider, key, success, duration.TotalMilliseconds);

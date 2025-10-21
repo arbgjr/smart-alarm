@@ -2,6 +2,7 @@ using MediatR;
 using SmartAlarm.AlarmService.Infrastructure.DistributedProcessing;
 using SmartAlarm.AlarmService.Infrastructure.Queues;
 using SmartAlarm.AlarmService.Infrastructure.Metrics;
+using SmartAlarm.AlarmService.Application.Models;
 using SmartAlarm.Observability.Context;
 using SmartAlarm.Observability.Tracing;
 using FluentValidation;
@@ -20,18 +21,7 @@ namespace SmartAlarm.AlarmService.Application.Commands
         TimeSpan? Delay = null
     ) : IRequest<ProcessDistributedAlarmResponse>;
 
-    /// <summary>
-    /// Response do processamento distribuído
-    /// </summary>
-    public record ProcessDistributedAlarmResponse(
-        Guid AlarmId,
-        Guid UserId,
-        bool Success,
-        string Message,
-        string? JobId = null,
-        AlarmProcessingResult? ProcessingResult = null,
-        DateTime ProcessedAt = default
-    );
+
 
 
 }

@@ -139,8 +139,8 @@ namespace SmartAlarm.IntegrationService.Controllers
                 stopwatch.Stop();
                 _meter.RecordRequestDuration(stopwatch.ElapsedMilliseconds, "get_user_integrations", "success", "200");
 
-                _logger.LogInformation("Integrações recuperadas para usuário {UserId}: {IntegrationCount} integrações em {Duration}ms",
-                    userId, result.Integrations.Count, stopwatch.ElapsedMilliseconds);
+                _logger.LogInformation("Integrações recuperadas para usuário {UserId} em {Duration}ms",
+                    userId, stopwatch.ElapsedMilliseconds);
 
                 return Ok(result);
             }

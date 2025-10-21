@@ -106,9 +106,8 @@ public class AppleCalendarAndCalDAVProvidersTests : IDisposable
         var command = new SyncExternalCalendarCommand(
             UserId: Guid.NewGuid(),
             Provider: "apple",
-            AccessToken: "valid-apple-token",
-            SyncFromDate: DateTime.UtcNow.Date,
-            SyncToDate: DateTime.UtcNow.Date.AddDays(7));
+            StartDate: DateTime.UtcNow.Date,
+            EndDate: DateTime.UtcNow.Date.AddDays(7));
 
         var mockAppleResponse = """
         {
@@ -171,9 +170,8 @@ public class AppleCalendarAndCalDAVProvidersTests : IDisposable
         var command = new SyncExternalCalendarCommand(
             UserId: Guid.NewGuid(),
             Provider: "apple",
-            AccessToken: "valid-but-failing-token",
-            SyncFromDate: DateTime.UtcNow.Date,
-            SyncToDate: DateTime.UtcNow.Date.AddDays(7));
+            StartDate: DateTime.UtcNow.Date,
+            EndDate: DateTime.UtcNow.Date.AddDays(7));
 
         _mockHttpMessageHandler
             .Protected()

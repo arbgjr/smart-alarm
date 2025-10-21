@@ -208,10 +208,10 @@ namespace SmartAlarm.AlarmService.Infrastructure.Queues
 
                 var statistics = new QueueStatistics(
                     QueueName: queueName,
-                    TotalMessages: enqueuedCount + processingCount + failedCount,
-                    PendingMessages: enqueuedCount,
-                    ProcessingMessages: processingCount,
-                    FailedMessages: failedCount,
+                    TotalMessages: (int)(enqueuedCount + processingCount + failedCount),
+                    PendingMessages: (int)enqueuedCount,
+                    ProcessingMessages: (int)processingCount,
+                    FailedMessages: (int)failedCount,
                     LastActivity: DateTime.UtcNow,
                     AverageProcessingTime: TimeSpan.FromSeconds(30), // Estimativa
                     ThroughputPerMinute: throughput
@@ -409,8 +409,9 @@ namespace SmartAlarm.AlarmService.Infrastructure.Queues
                 };
 
                 // Enfileirar na DLQ (sem delay)
+                var serializedItem = JsonSerializer.Serialize(dlqItem);
                 var dlqJobId = _backgroundJobClient.Enqueue(
-                    () => ProcessDeadLetterAlarmAsync(JsonSerializer.Serialize(dlqItem)));
+                    () => ProcessDeadLetterAlarmAsync(serializedItem));
 
                 _logger.LogWarning("Alarme {AlarmId} enviado para dead letter queue - JobId: {JobId}",
                     item.AlarmId, dlqJobId);

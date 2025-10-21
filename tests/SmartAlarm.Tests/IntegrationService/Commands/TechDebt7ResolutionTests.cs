@@ -1,3 +1,4 @@
+using SmartAlarm.IntegrationService.Application.Commands;
 using SmartAlarm.Domain.Abstractions;
 using Xunit;
 using FluentAssertions;
@@ -31,7 +32,8 @@ public class TechDebt7ResolutionTests
             StartTime: DateTime.UtcNow,
             EndTime: DateTime.UtcNow.AddHours(1),
             Location: "Test Location",
-            Description: "Test Description"
+            Description: "Test Description",
+            Provider: "test-provider" // Added Provider argument
         );
 
         // Assert
@@ -53,8 +55,8 @@ public class TechDebt7ResolutionTests
             UserId: Guid.NewGuid(),
             Provider: provider,
             AccessToken: "valid-test-token-12345",
-            SyncFromDate: DateTime.UtcNow.Date,
-            SyncToDate: DateTime.UtcNow.Date.AddDays(7));
+            StartDate: DateTime.UtcNow.Date,
+            EndDate: DateTime.UtcNow.Date.AddDays(7));
 
         // Act
         var validationResult = validator.Validate(command);

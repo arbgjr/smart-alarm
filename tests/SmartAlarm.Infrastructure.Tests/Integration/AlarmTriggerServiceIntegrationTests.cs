@@ -75,7 +75,7 @@ public class AlarmTriggerServiceIntegrationTests : IClassFixture<IntegrationTest
         var originalJobId = alarm.Metadata["HangfireJobId"];
 
         // Modify alarm time
-        alarm.UpdateTime(TimeOnly.FromDateTime(DateTime.Now.AddHours(2)));
+        alarm.UpdateTime(DateTime.Now.AddHours(2));
 
         // Act
         await alarmTriggerService.RescheduleAlarmAsync(alarm);
@@ -126,7 +126,7 @@ public class AlarmTriggerServiceIntegrationTests : IClassFixture<IntegrationTest
 
         // Create an alarm that should be considered "missed"
         var missedAlarm = CreateTestAlarm();
-        missedAlarm.UpdateTime(TimeOnly.FromDateTime(DateTime.Now.AddMinutes(-15))); // 15 minutes ago
+        missedAlarm.UpdateTime(DateTime.Now.AddMinutes(-15)); // 15 minutes ago
         await alarmRepository.AddAsync(missedAlarm);
 
         // Act & Assert - Should not throw
@@ -187,14 +187,14 @@ public class AlarmTriggerServiceIntegrationTests : IClassFixture<IntegrationTest
     {
         var userId = Guid.NewGuid();
         var alarmName = new Name("Test Alarm");
-        var alarmTime = TimeOnly.FromDateTime(DateTime.Now.AddHours(1));
+        var alarmTime = DateTime.Now.AddHours(1);
 
         return new Alarm(
             Guid.NewGuid(),
-            userId,
             alarmName,
             alarmTime,
-            enabled: true
+            true,
+            userId
         );
     }
 }

@@ -34,6 +34,16 @@ namespace SmartAlarm.Infrastructure.Data
             // Apply all entity configurations
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(SmartAlarmDbContext).Assembly);
 
+            // Configure Alarm.Metadata as JSON column
+            modelBuilder.Entity<Alarm>(entity =>
+            {
+                entity.Property(e => e.Metadata)
+                    .HasConversion(
+                        v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions)null),
+                        v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(v, (System.Text.Json.JsonSerializerOptions)null) ?? new Dictionary<string, object>()
+                    );
+            });
+
             // Ensure UserRole has composite primary key (explicit configuration for tests)
             modelBuilder.Entity<UserRole>(entity =>
             {

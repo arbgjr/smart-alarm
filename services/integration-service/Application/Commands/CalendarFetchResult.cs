@@ -46,4 +46,21 @@ namespace SmartAlarm.IntegrationService.Application.Commands
         Exception? OriginalException = null,
         string? CalendarId = null
     );
+
+    /// <summary>
+    /// Evento de calendário externo
+    /// </summary>
+    public record ExternalCalendarEvent(
+        string Id,
+        string Title,
+        string? Description,
+        DateTime StartTime,
+        DateTime? EndTime,
+        string? Location,
+        string Provider,
+        string? CalendarId = null,
+        bool IsAllDay = false,
+        string? TimeZone = null,
+        IEnumerable<string>? Attendees = null
+    );
 }

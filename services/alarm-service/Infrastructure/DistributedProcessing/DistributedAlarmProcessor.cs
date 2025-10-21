@@ -130,7 +130,7 @@ namespace SmartAlarm.AlarmService.Infrastructure.DistributedProcessing
 
                 // Métricas de sucesso
                 _meter.IncrementAlarmTriggered(triggerType, userId.ToString(), "success");
-                _meter.RecordAlarmProcessingDuration(stopwatch.ElapsedMilliseconds, triggerType, "success");
+                _meter.RecordRequestDuration(stopwatch.ElapsedMilliseconds, "process_alarm", triggerType, "success");
 
                 var result = new AlarmProcessingResult(
                     alarmId, userId, true,
@@ -154,7 +154,7 @@ namespace SmartAlarm.AlarmService.Infrastructure.DistributedProcessing
 
                 // Métricas de erro
                 _meter.IncrementAlarmTriggered(triggerType, userId.ToString(), "failed");
-                _meter.RecordAlarmProcessingDuration(stopwatch.ElapsedMilliseconds, triggerType, "error");
+                _meter.RecordRequestDuration(stopwatch.ElapsedMilliseconds, "process_alarm", triggerType, "error");
                 _meter.IncrementErrorCount("distributed_processor", "process_alarm", "exception");
 
                 activity?.SetTag("error", true);
@@ -289,12 +289,12 @@ namespace SmartAlarm.AlarmService.Infrastructure.DistributedProcessing
                 // Simular execução de ações do alarme
                 actions.Add("sound_notification");
 
-                if (alarm.Description?.Contains("vibrate") == true)
+                if (alarm.Name.Value?.Contains("vibrate") == true)
                 {
                     actions.Add("vibration");
                 }
 
-                if (alarm.Description?.Contains("light") == true)
+                if (alarm.Name.Value?.Contains("light") == true)
                 {
                     actions.Add("light_activation");
                 }
@@ -457,7 +457,7 @@ namespace SmartAlarm.AlarmService.Infrastructure.DistributedProcessing
             }
         }
 
-        private DateTime? CalculateNextExecution(Alarm alarm, IEnumerable<AlarmSchedule> schedules)
+        private DateTime? CalculateNextExecution(Alarm alarm, IEnumerable<Schedule> schedules)
         {
             // Implementação simplificada - em produção seria mais complexa
             var now = DateTime.Now;

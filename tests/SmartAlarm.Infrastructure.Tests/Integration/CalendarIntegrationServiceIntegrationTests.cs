@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using SmartAlarm.Application.Abstractions;
+using SmartAlarm.Application.DTOs.Calendar;
 using SmartAlarm.Application.Services.External;
 using SmartAlarm.Domain.Entities;
 using SmartAlarm.Domain.Enums;
@@ -144,7 +145,7 @@ public class CalendarIntegrationServiceIntegrationTests : IClassFixture<Integrat
         await alarmRepository.AddAsync(alarm);
 
         // Create a mock integration
-        var integration = new Integration(
+        var integration = new SmartAlarm.Domain.Entities.Integration(
             Guid.NewGuid(),
             alarm.Id,
             "GoogleCalendar",
@@ -182,7 +183,7 @@ public class CalendarIntegrationServiceIntegrationTests : IClassFixture<Integrat
         await alarmRepository.AddAsync(alarm);
 
         // Create mock integrations
-        var googleIntegration = new Integration(
+        var googleIntegration = new SmartAlarm.Domain.Entities.Integration(
             Guid.NewGuid(),
             alarm.Id,
             "GoogleCalendar",
@@ -195,7 +196,7 @@ public class CalendarIntegrationServiceIntegrationTests : IClassFixture<Integrat
         );
         googleIntegration.Enable();
 
-        var outlookIntegration = new Integration(
+        var outlookIntegration = new SmartAlarm.Domain.Entities.Integration(
             Guid.NewGuid(),
             alarm.Id,
             "OutlookCalendar",
@@ -268,14 +269,14 @@ public class CalendarIntegrationServiceIntegrationTests : IClassFixture<Integrat
     private Alarm CreateTestAlarm(Guid userId)
     {
         var alarmName = new Name("Test Alarm for Calendar Integration");
-        var alarmTime = TimeOnly.FromDateTime(DateTime.Now.AddHours(1));
+        var alarmTime = DateTime.Now.AddHours(1);
 
         return new Alarm(
             Guid.NewGuid(),
-            userId,
             alarmName,
             alarmTime,
-            enabled: true
+            true,
+            userId
         );
     }
 }

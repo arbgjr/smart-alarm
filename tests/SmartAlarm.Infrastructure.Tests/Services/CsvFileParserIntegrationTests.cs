@@ -1,6 +1,7 @@
 using SmartAlarm.Domain.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using SmartAlarm.Application.Services;
 using SmartAlarm.Infrastructure.Services;
 using Xunit;
 

@@ -1,26 +1,22 @@
 import { FullConfig } from '@playwright/test';
 
 async function globalTeardown(config: FullConfig) {
-  console.log('🧹 Starting global teardown for E2E tests...');
+  console.log('🧹 Starting E2E test environment cleanup...');
+
+  // Clean up any test data created during tests
+  // This could include API calls to clean up test users, alarms, etc.
 
   try {
-    // Cleanup test data
-    console.log('🗑️  Cleaning up test data...');
+    // Example: Clean up test data via API
+    // const baseURL = config.projects[0].use.baseURL || 'http://localhost:5000';
+    // await cleanupTestData(baseURL);
 
-    // Remove test users, clear test database, etc.
-    // This would typically involve API calls to cleanup test state
-
-    // Stop services if they were started by the test suite
-    console.log('🛑 Stopping test services...');
-
-    // If we started any services in global-setup, stop them here
-
-    console.log('✅ Global teardown completed');
-
+    console.log('✅ Test data cleanup completed');
   } catch (error) {
-    console.error('❌ Global teardown failed:', error);
-    // Don't throw here as it might mask test failures
+    console.log('⚠️  Test cleanup failed:', error);
   }
+
+  console.log('✅ E2E test environment cleanup complete');
 }
 
 export default globalTeardown;

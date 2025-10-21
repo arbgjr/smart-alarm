@@ -27,10 +27,11 @@
     <!-- Infrastructure Testing -->
     <PackageReference Include="Minio" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
     <PackageReference Include="Testcontainers" />
     <PackageReference Include="Testcontainers.PostgreSql" />
     <PackageReference Include="Testcontainers.Redis" />
-    <PackageReference Include="Testcontainers.MinIO" />
+    <PackageReference Include="Testcontainers.Minio" />
     <PackageReference Include="Testcontainers.RabbitMq" />
 
     <!-- System Dependencies -->

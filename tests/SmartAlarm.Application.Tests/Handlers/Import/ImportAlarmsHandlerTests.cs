@@ -9,7 +9,7 @@ using SmartAlarm.Application.Handlers.Import;
 using SmartAlarm.Domain.Entities;
 using SmartAlarm.Domain.Repositories;
 using SmartAlarm.Domain.ValueObjects;
-using SmartAlarm.Infrastructure.Services;
+using SmartAlarm.Application.Services;
 using Xunit;
 
 namespace SmartAlarm.Application.Tests.Handlers.Import;

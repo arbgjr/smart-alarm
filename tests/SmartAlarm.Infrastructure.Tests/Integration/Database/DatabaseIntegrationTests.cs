@@ -113,12 +113,11 @@ public class DatabaseIntegrationTests : IClassFixture<IntegrationTestFixture>
         var user = new User(Guid.NewGuid(), "Test User", "test@example.com");
         var role = new Role(Guid.NewGuid(), "TestRole", "Test Role Description");
         var alarm = new Alarm(
-            id: Guid.NewGuid(),
-            userId: user.Id,
-            time: TimeOnly.FromDateTime(DateTime.Now),
-            isActive: true,
-            isRecurring: false,
-            metadata: new Dictionary<string, object>()
+            Guid.NewGuid(),
+            "Test Alarm",
+            DateTime.Now.AddHours(1),
+            true,
+            user.Id
         );
         var holiday = new Holiday(DateTime.Today.AddDays(30), "Test Holiday");
         var userRole = new UserRole(user.Id, role.Id);

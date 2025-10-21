@@ -7,8 +7,9 @@ using SmartAlarm.Application.Abstractions;
 using SmartAlarm.Application.DTOs.Notifications;
 using SmartAlarm.Application.Services;
 using SmartAlarm.Application.Services.External;
-using SmartAlarm.Api.Hubs;
+
 using SmartAlarm.Domain.Entities;
+using SmartAlarm.Domain.Enums;
 using SmartAlarm.Domain.Repositories;
 using SmartAlarm.Infrastructure.Services;
 using SmartAlarm.Observability.Metrics;
@@ -26,8 +27,8 @@ public class BackendServicesIntegrationTests : IDisposable
     private readonly Mock<IAlarmRepository> _mockAlarmRepository;
     private readonly Mock<IAlarmEventService> _mockAlarmEventService;
     private readonly Mock<IBackgroundJobService> _mockBackgroundJobService;
-    private readonly Mock<IHubContext<NotificationHub>> _mockHubContext;
-    private readonly Mock<IHubCallerClients> _mockClients;
+    private readonly Mock<IHubContext<Hub>> _mockHubContext;
+    private readonly Mock<IHubClients> _mockClients;
     private readonly Mock<IClientProxy> _mockClientProxy;
     private readonly Mock<IPushNotificationService> _mockPushNotificationService;
     private readonly Mock<IGoogleCalendarService> _mockGoogleCalendarService;
@@ -52,8 +53,8 @@ public class BackendServicesIntegrationTests : IDisposable
         _mockAlarmRepository = new Mock<IAlarmRepository>();
         _mockAlarmEventService = new Mock<IAlarmEventService>();
         _mockBackgroundJobService = new Mock<IBackgroundJobService>();
-        _mockHubContext = new Mock<IHubContext<NotificationHub>>();
-        _mockClients = new Mock<IHubCallerClients>();
+        _mockHubContext = new Mock<IHubContext<Hub>>();
+        _mockClients = new Mock<IHubClients>();
         _mockClientProxy = new Mock<IClientProxy>();
         _mockPushNotificationService = new Mock<IPushNotificationService>();
         _mockGoogleCalendarService = new Mock<IGoogleCalendarService>();
@@ -115,7 +116,7 @@ public class BackendServicesIntegrationTests : IDisposable
             .Returns("job_123");
 
         _mockAlarmEventService
-            .Setup(x => x.RecordAlarmTriggeredAsync(alarmId, userId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.RecordAlarmTriggeredAsync(alarmId, userId, It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
         _mockAlarmEventService
@@ -159,7 +160,7 @@ public class BackendServicesIntegrationTests : IDisposable
 
         // Verify alarm trigger was recorded
         _mockAlarmEventService.Verify(
-            x => x.RecordAlarmTriggeredAsync(alarmId, userId, It.IsAny<CancellationToken>()),
+            x => x.RecordAlarmTriggeredAsync(alarmId, userId, It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Once);
 
         // Verify SignalR notifications were sent (2 escalations)
@@ -228,7 +229,7 @@ public class BackendServicesIntegrationTests : IDisposable
         var userId = Guid.NewGuid();
         var notification = new NotificationDto
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.NewGuid().ToString(),
             Title = "System Alert",
             Message = "Multiple channel test",
             Type = NotificationType.Warning,
@@ -281,25 +282,25 @@ public class BackendServicesIntegrationTests : IDisposable
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var integration = new Integration
-        {
-            Id = Guid.NewGuid(),
-            UserId = userId,
-            Type = "GoogleCalendar",
-            IsEnabled = true,
-            AccessToken = "invalid_token"
-        };
+        var integration = new SmartAlarm.Domain.Entities.Integration(
+            Guid.NewGuid(),
+            userId,
+            "GoogleCalendar",
+            IntegrationType.GoogleCalendar,
+            "Test Integration",
+            new Dictionary<string, string> { { "AccessToken", "invalid_token" } }
+        );
 
         _mockIntegrationRepository
             .Setup(x => x.GetByUserIdAsync(userId))
-            .ReturnsAsync(new List<Integration> { integration });
+            .ReturnsAsync(new List<SmartAlarm.Domain.Entities.Integration> { integration });
 
         _mockGoogleCalendarService
             .Setup(x => x.SyncCalendarAsync(userId, "invalid_token", It.IsAny<CancellationToken>()))
             .ThrowsAsync(new UnauthorizedAccessException("Token expired"));
 
         _mockIntegrationRepository
-            .Setup(x => x.UpdateAsync(It.IsAny<Integration>()))
+            .Setup(x => x.UpdateAsync(It.IsAny<SmartAlarm.Domain.Entities.Integration>()))
             .Returns(Task.CompletedTask);
 
         // Act
@@ -310,7 +311,7 @@ public class BackendServicesIntegrationTests : IDisposable
 
         // Verify that the integration was still updated (for last sync attempt time)
         _mockIntegrationRepository.Verify(
-            x => x.UpdateAsync(It.IsAny<Integration>()),
+            x => x.UpdateAsync(It.IsAny<SmartAlarm.Domain.Entities.Integration>()),
             Times.Once);
     }
 

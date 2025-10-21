@@ -1,6 +1,7 @@
 using MediatR;
 using SmartAlarm.AlarmService.Infrastructure.DistributedProcessing;
 using SmartAlarm.AlarmService.Infrastructure.Queues;
+using SmartAlarm.AlarmService.Application.Models;
 using SmartAlarm.Observability.Context;
 using SmartAlarm.Observability.Tracing;
 using SmartAlarm.Observability.Metrics;

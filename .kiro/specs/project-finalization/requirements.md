@@ -4,6 +4,14 @@
 
 Este documento define os requisitos para finalizar e entregar o projeto Smart Alarm, transformando-o de um estado funcional atual para um produto completo pronto para produção. O projeto já possui uma base sólida com backend .NET compilando e executando, frontend React funcional, e infraestrutura de observabilidade gerando métricas.
 
+## Glossary
+
+- **Smart_Alarm_System**: O sistema completo incluindo backend .NET, frontend React, microserviços e infraestrutura
+- **Full_Build**: Compilação completa de todos os componentes do sistema (backend, frontend, microserviços) sem erros
+- **Critical_Tests**: Testes que cobrem funcionalidades principais como autenticação, CRUD de alarmes, disparo de alarmes e rotinas
+- **Activity_Progression**: Movimento de uma fase de desenvolvimento para a próxima no processo de finalização
+- **Core_Functionalities**: Funcionalidades essenciais do sistema: autenticação, gerenciamento de alarmes, rotinas, feriados e notificações
+
 ## Requirements
 
 ### Requirement 1 - Correção de Problemas Críticos
@@ -45,7 +53,21 @@ Este documento define os requisitos para finalizar e entregar o projeto Smart Al
 5. WHEN uso o sistema THEN deve funcionar como PWA (Progressive Web App)
 6. WHEN recebo notificações THEN elas devem aparecer adequadamente
 
-### Requirement 4 - Integração e Testes End-to-End
+### Requirement 4 - Build e Testes Obrigatórios
+
+**User Story:** Como desenvolvedor, eu quero que todos os testes sejam executados apenas após um full build bem-sucedido para garantir a integridade do sistema antes de prosseguir para próximas atividades.
+
+#### Acceptance Criteria
+
+1. WHEN qualquer teste é executado THEN um full build completo deve ser executado primeiro e passar sem erros
+2. WHEN o full build falha THEN nenhum teste deve ser executado e a atividade deve ser bloqueada
+3. WHEN o full build passa THEN os testes podem ser executados na sequência
+4. WHEN os testes são executados THEN as funcionalidades principais e críticas devem ser testadas obrigatoriamente
+5. WHEN uma atividade é concluída THEN só pode prosseguir para próxima atividade após full build + testes passarem
+6. WHEN há falhas nos testes críticos THEN a progressão deve ser bloqueada até correção
+7. WHERE cobertura de testes é medida THEN não há requisito de cobertura mínima desde que rotinas críticas estejam testadas
+
+### Requirement 5 - Integração e Testes End-to-End
 
 **User Story:** Como desenvolvedor, eu quero que todos os componentes funcionem integrados para garantir a qualidade do sistema.
 
@@ -57,7 +79,7 @@ Este documento define os requisitos para finalizar e entregar o projeto Smart Al
 4. WHEN uso integrações externas THEN devem estar funcionais (calendários, notificações)
 5. WHEN o sistema está sob carga THEN deve manter performance adequada
 
-### Requirement 5 - Documentação e Deploy
+### Requirement 6 - Documentação e Deploy
 
 **User Story:** Como desenvolvedor/usuário, eu quero documentação completa e processo de deploy automatizado para facilitar uso e manutenção.
 
@@ -69,7 +91,7 @@ Este documento define os requisitos para finalizar e entregar o projeto Smart Al
 4. WHEN uso as APIs THEN deve haver documentação Swagger atualizada
 5. WHEN preciso de troubleshooting THEN deve haver runbooks e logs adequados
 
-### Requirement 6 - Monitoramento e Observabilidade
+### Requirement 7 - Monitoramento e Observabilidade
 
 **User Story:** Como administrador do sistema, eu quero monitoramento completo para garantir a saúde e performance do sistema em produção.
 
@@ -81,7 +103,7 @@ Este documento define os requisitos para finalizar e entregar o projeto Smart Al
 4. WHEN preciso debugar THEN logs estruturados devem estar disponíveis
 5. WHEN monitoro saúde THEN health checks devem reportar status correto
 
-### Requirement 7 - Segurança e Compliance
+### Requirement 8 - Segurança e Compliance
 
 **User Story:** Como administrador, eu quero que o sistema seja seguro e esteja em compliance com boas práticas.
 
@@ -93,7 +115,7 @@ Este documento define os requisitos para finalizar e entregar o projeto Smart Al
 4. WHEN há tentativas de acesso THEN devem ser logadas e monitoradas
 5. WHEN dados pessoais são processados THEN deve estar em compliance com LGPD/GDPR
 
-### Requirement 8 - Performance e Escalabilidade
+### Requirement 9 - Performance e Escalabilidade
 
 **User Story:** Como usuário, eu quero que o sistema seja rápido e suporte crescimento de usuários.
 

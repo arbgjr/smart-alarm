@@ -87,7 +87,7 @@ namespace SmartAlarm.IntegrationService.Infrastructure.Calendars
                 stopwatch.Stop();
 
                 // Métricas
-                _meter.RecordCalendarSync(Provider, "success", stopwatch.ElapsedMilliseconds, processedEvents.EventsProcessed);
+                _meter.RecordRequestDuration(stopwatch.ElapsedMilliseconds, "calendar_sync", Provider, "success");
 
                 var result = new CalendarSyncResult(
                     UserId: request.UserId,
@@ -115,7 +115,7 @@ namespace SmartAlarm.IntegrationService.Infrastructure.Calendars
                 await _rateLimiter.RecordRequestAsync(rateLimitKey, Provider, false, stopwatch.Elapsed, cancellationToken);
 
                 // Métricas
-                _meter.RecordCalendarSync(Provider, "failed", stopwatch.ElapsedMilliseconds, 0);
+                _meter.RecordRequestDuration(stopwatch.ElapsedMilliseconds, "calendar_sync", Provider, "failed");
 
                 activity?.SetTag("error", true);
                 activity?.SetTag("error.message", ex.Message);
