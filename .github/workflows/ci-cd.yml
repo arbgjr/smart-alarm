@@ -278,11 +278,17 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    - name: Set up Kubeconfig
+      run: |
+        mkdir -p $HOME/.kube
+        echo "${{ secrets.KUBE_CONFIG_DATA_DEV }}" | base64 --decode > $HOME/.kube/config
+
     - name: Deploy to development cluster
       run: |
         echo "🚀 Deploying to development environment"
-        # Add actual deployment commands here
-        # kubectl apply -f infrastructure/kubernetes/
+        # Exemplo de comando de deploy usando Kustomize
+        # Idealmente, usar Kustomize ou Helm para gerenciar configurações por ambiente
+        kubectl apply -k infrastructure/kubernetes/overlays/development
         echo "✅ Development deployment completed"
 
   # Deploy to Production
@@ -297,11 +303,16 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    - name: Set up Kubeconfig
+      run: |
+        mkdir -p $HOME/.kube
+        echo "${{ secrets.KUBE_CONFIG_DATA_PROD }}" | base64 --decode > $HOME/.kube/config
+
     - name: Deploy to production cluster
       run: |
         echo "🚀 Deploying to production environment"
-        # Add actual deployment commands here
-        # kubectl apply -f infrastructure/kubernetes/
+        # Exemplo de comando de deploy para produção
+        kubectl apply -k infrastructure/kubernetes/overlays/production
         echo "✅ Production deployment completed"
 
   # Notify Success
@@ -312,9 +323,16 @@ jobs:
     if: always() && (needs.deploy-dev.result == 'success' || needs.deploy-prod.result == 'success')
 
     steps:
-    - name: Notify deployment success
-      run: |
-        echo "🎉 Smart Alarm deployment completed successfully!"
-        echo "Environment: ${{ github.ref == 'refs/heads/main' && 'Production' || 'Development' }}"
-        echo "Commit: ${{ github.sha }}"
-        echo "Branch: ${{ github.ref_name }}"
+    - name: Send Slack Notification
+      uses: slackapi/slack-github-action@v1.24.0
+      with:
+        payload: |
+          {
+            "text": "🎉 Deploy do Smart Alarm concluído com sucesso!",
+            "blocks": [
+              { "type": "section", "text": { "type": "mrkdwn", "text": "🚀 *Ambiente*: ${{ github.ref == 'refs/heads/main' && 'Produção' || 'Desenvolvimento' }}\n📦 *Commit*: `${{ github.sha }}`\n🌿 *Branch*: `${{ github.ref_name }}`" } }
+            ]
+          }
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

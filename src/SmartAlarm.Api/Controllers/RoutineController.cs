@@ -41,7 +41,7 @@ namespace SmartAlarm.Api.Controllers
         /// <param name="pageSize">O número de itens por página.</param>
         [HttpGet]
         [SwaggerOperation(Summary = "Listar rotinas do usuário com paginação", Description = "Retorna uma lista paginada das rotinas do usuário autenticado.")]
-        [ProducesResponseType(typeof(PaginatedList<RoutineDto>), StatusCodes.Status200OK)] // A classe PaginatedList não foi fornecida, mas o tipo está correto.
+        [ProducesResponseType(typeof(PaginatedList<RoutineDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> GetRoutines([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
@@ -178,13 +178,14 @@ namespace SmartAlarm.Api.Controllers
         /// <param name="bulkUpdateDto">Os IDs das rotinas e a ação a ser executada.</param>
         [HttpPost("bulk-update")]
         [SwaggerOperation(Summary = "Executar ações em lote em rotinas", Description = "Permite ativar, desativar ou excluir múltiplas rotinas em uma única requisição.")]
-        [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(typeof(object), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> BulkUpdateRoutines([FromBody] BulkRoutineUpdateDto bulkUpdateDto)
         {
             var userId = _currentUserService.GetUserId();
+
             var command = new BulkUpdateRoutinesCommand(
                 userId,
                 bulkUpdateDto.RoutineIds,
