@@ -28,7 +28,7 @@ jobs:
   build-and-test:
     name: Build and Test
     runs-on: ubuntu-latest
-    
+
     services:
       postgres:
         image: postgres:15-alpine
@@ -43,7 +43,7 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
-      
+
       rabbitmq:
         image: rabbitmq:3.12-management-alpine
         env:
@@ -56,7 +56,7 @@ jobs:
           --health-retries 5
         ports:
           - 5672:5672
-      
+
       minio:
         image: minio/minio:RELEASE.2024-01-13T07-53-03Z
         env:
@@ -80,7 +80,7 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
-        
+
     - name: Cache NuGet packages
       uses: actions/cache@v3
       with:
@@ -142,12 +142,65 @@ jobs:
         files: TestResults/*/coverage.cobertura.xml
         fail_ci_if_error: true
 
+  # E2E Test Phase
+  e2e-tests:
+    name: End-to-End Tests
+    runs-on: ubuntu-latest
+    needs: build-and-test # Só roda se o build e os testes unit/int passarem
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: Start services via Docker Compose
+      run: |
+        # Inicia a infraestrutura (DB, etc.) e a API do backend em background
+        docker-compose -f docker-compose.full.yml up -d api
+
+    - name: Wait for Backend API to be healthy
+      run: |
+        # Espera até que a API esteja respondendo antes de prosseguir
+        until $(curl --output /dev/null --silent --head --fail http://localhost:8080/health); do
+          echo 'Waiting for backend API...'
+          sleep 5
+        done
+      timeout-minutes: 2
+
+    - name: Install frontend dependencies and Playwright browsers
+      working-directory: ./frontend
+      run: |
+        npm install
+        npx playwright install --with-deps
+
+    - name: Build frontend
+      working-directory: ./frontend
+      run: npm run build
+
+    - name: Run Playwright tests
+      working-directory: ./frontend
+      run: |
+        # Inicia o servidor de preview do frontend e executa os testes E2E
+        npm run test:e2e
+
+    - name: Upload Playwright report
+      uses: actions/upload-artifact@v3
+      if: always() # Sempre faz o upload do relatório, mesmo se os testes falharem
+      with:
+        name: playwright-report
+        path: frontend/playwright-report/
+        retention-days: 30
+
   # Security Scanning
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
     needs: build-and-test
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -169,13 +222,13 @@ jobs:
   build-images:
     name: Build Docker Images
     runs-on: ubuntu-latest
-    needs: [build-and-test, security-scan]
+    needs: [e2e-tests, security-scan] # Agora depende dos testes E2E também
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
-    
+
     strategy:
       matrix:
         service: [alarm-service, ai-service, integration-service]
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -220,7 +273,7 @@ jobs:
     needs: build-images
     if: github.ref == 'refs/heads/develop'
     environment: development
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -239,7 +292,7 @@ jobs:
     needs: build-images
     if: github.ref == 'refs/heads/main'
     environment: production
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -257,7 +310,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [deploy-dev, deploy-prod]
     if: always() && (needs.deploy-dev.result == 'success' || needs.deploy-prod.result == 'success')
-    
+
     steps:
     - name: Notify deployment success
       run: |
