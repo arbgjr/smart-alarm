@@ -140,6 +140,8 @@ export const RegisterForm: React.FC = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Name Input */}
             <Input
+              name="name"
+              data-testid="register-name-input"
               label="Nome completo"
               type="text"
               placeholder="Seu nome"
@@ -153,6 +155,8 @@ export const RegisterForm: React.FC = () => {
 
             {/* Email Input */}
             <Input
+              name="email"
+              data-testid="register-email-input"
               label="Email"
               type="email"
               placeholder="seu@email.com"
@@ -166,6 +170,8 @@ export const RegisterForm: React.FC = () => {
 
             {/* Password Input */}
             <Input
+              name="password"
+              data-testid="register-password-input"
               label="Senha"
               type={showPassword ? 'text' : 'password'}
               placeholder="••••••••"
@@ -190,6 +196,8 @@ export const RegisterForm: React.FC = () => {
 
             {/* Confirm Password Input */}
             <Input
+              name="confirmPassword"
+              data-testid="register-confirmPassword-input"
               label="Confirmar senha"
               type={showConfirmPassword ? 'text' : 'password'}
               placeholder="••••••••"
@@ -221,6 +229,7 @@ export const RegisterForm: React.FC = () => {
             {/* Register Button */}
             <Button
               type="submit"
+              data-testid="register-submit-button"
               variant="primary"
               size="lg"
               className="w-full"

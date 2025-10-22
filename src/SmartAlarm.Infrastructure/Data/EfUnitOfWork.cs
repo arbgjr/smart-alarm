@@ -12,7 +12,7 @@ namespace SmartAlarm.Infrastructure.Data
     /// Provides transaction coordination and ensures consistency across repositories.
     /// </summary>
 
-    public class EfUnitOfWork : IUnitOfWork
+    public class EfUnitOfWork : SmartAlarm.Domain.Repositories.IUnitOfWork
     {
         protected readonly SmartAlarmDbContext _context;
         private IDbContextTransaction? _transaction;

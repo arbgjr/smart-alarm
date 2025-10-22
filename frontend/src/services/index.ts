@@ -1,11 +1,15 @@
+// Exportar o serviço e tipos existentes
 export { default as RoutineService } from './routineService';
 export type {
   RoutineDto,
-  RoutineStepDto,
   CreateRoutineRequest,
-  CreateRoutineStepRequest,
   UpdateRoutineRequest,
-  UpdateRoutineStepRequest,
   RoutineListResponse,
   RoutineFilters,
+  CreateRoutinePayload,
+  UpdateRoutinePayload,
+  PaginatedRoutinesResponse,
 } from './routineService';
+
+// Tipos relacionados a Steps não implementados ainda no backend
+// export type { RoutineStepDto, CreateRoutineStepRequest, UpdateRoutineStepRequest } from './routineService';

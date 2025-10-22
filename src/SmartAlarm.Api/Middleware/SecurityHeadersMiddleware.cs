@@ -24,13 +24,23 @@ public class SecurityHeadersMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
-        // Aplicar headers de segurança antes de processar a requisição
-        ApplySecurityHeaders(context);
+        // Garanta que qualquer modificação de header aconteça antes do início da resposta
+        // Isso evita InvalidOperationException: "Headers are read-only, response has already started."
+        context.Response.OnStarting(() =>
+        {
+            try
+            {
+                ApplySecurityHeaders(context);
+                RemoveServerHeaders(context);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to apply security headers before response started");
+            }
+            return Task.CompletedTask;
+        });
 
         await _next(context);
-
-        // Remover headers que podem vazar informações do servidor
-        RemoveServerHeaders(context);
     }
 
     private void ApplySecurityHeaders(HttpContext context)
@@ -98,7 +108,7 @@ public class SecurityHeadersMiddleware
         }
     }
 
-    private void RemoveServerHeaders(HttpContext context)
+    private static void RemoveServerHeaders(HttpContext context)
     {
         var headers = context.Response.Headers;
 

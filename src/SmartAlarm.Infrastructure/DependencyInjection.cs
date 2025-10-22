@@ -43,7 +43,7 @@ namespace SmartAlarm.Infrastructure
                         options.UseInMemoryDatabase("SmartAlarmInMemory");
                 });
                 // UnitOfWork e repositórios específicos para PostgreSQL
-                services.AddScoped<IUnitOfWork, EfUnitOfWork>();
+                services.AddScoped<SmartAlarm.Domain.Repositories.IUnitOfWork, EfUnitOfWork>();
                 services.AddScoped<IAlarmRepository, EfAlarmRepositoryPostgres>();
                 services.AddScoped<IUserRepository, EfUserRepositoryPostgres>();
                 services.AddScoped<IScheduleRepository, EfScheduleRepositoryPostgres>();
@@ -66,7 +66,7 @@ namespace SmartAlarm.Infrastructure
                         options.UseInMemoryDatabase("SmartAlarmInMemory");
                 });
                 // UnitOfWork e repositórios padrão (Oracle)
-                services.AddScoped<IUnitOfWork, EfUnitOfWork>();
+                services.AddScoped<SmartAlarm.Domain.Repositories.IUnitOfWork, EfUnitOfWork>();
                 services.AddScoped<IAlarmRepository, EfAlarmRepository>();
                 services.AddScoped<IUserRepository, EfUserRepository>();
                 services.AddScoped<IScheduleRepository, EfScheduleRepository>();

@@ -32,9 +32,19 @@ namespace SmartAlarm.Infrastructure.Migrations
                         .HasColumnType("INTEGER")
                         .HasColumnName("Enabled");
 
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsRecurring")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime?>("LastTriggeredAt")
                         .HasColumnType("TEXT")
                         .HasColumnName("LastTriggeredAt");
+
+                    b.Property<string>("Metadata")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -45,6 +55,10 @@ namespace SmartAlarm.Infrastructure.Migrations
                     b.Property<DateTime>("Time")
                         .HasColumnType("TEXT")
                         .HasColumnName("Time");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("TEXT")
@@ -118,6 +132,84 @@ namespace SmartAlarm.Infrastructure.Migrations
                         .HasDatabaseName("IX_AlarmEvents_AlarmId_EventType_Timestamp");
 
                     b.ToTable("AlarmEvents", (string)null);
+                });
+
+            modelBuilder.Entity("SmartAlarm.Domain.Entities.AuditLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CorrelationId")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Details")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("EntityId")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EntityType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("IpAddress")
+                        .HasMaxLength(45)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Level")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("NewValue")
+                        .HasColumnType("text");
+
+                    b.Property<string>("OldValue")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UserAgent")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CorrelationId")
+                        .HasDatabaseName("IX_AuditLogs_CorrelationId");
+
+                    b.HasIndex("EventType")
+                        .HasDatabaseName("IX_AuditLogs_EventType");
+
+                    b.HasIndex("Level")
+                        .HasDatabaseName("IX_AuditLogs_Level");
+
+                    b.HasIndex("Timestamp")
+                        .HasDatabaseName("IX_AuditLogs_Timestamp");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("IX_AuditLogs_UserId");
+
+                    b.HasIndex("EntityType", "EntityId")
+                        .HasDatabaseName("IX_AuditLogs_Entity");
+
+                    b.ToTable("AuditLogs", (string)null);
                 });
 
             modelBuilder.Entity("SmartAlarm.Domain.Entities.ExceptionPeriod", b =>
@@ -232,6 +324,9 @@ namespace SmartAlarm.Infrastructure.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("LastExecutedAt");
 
+                    b.Property<DateTime?>("LastSyncTime")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime?>("LastSyncedAt")
                         .HasColumnType("TEXT");
 
@@ -252,6 +347,9 @@ namespace SmartAlarm.Infrastructure.Migrations
 
                     b.Property<DateTime?>("TokenExpiresAt")
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("INTEGER");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("TEXT");
@@ -376,6 +474,9 @@ namespace SmartAlarm.Infrastructure.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("Id");
 
+                    b.Property<DateTime?>("AnonymizedAt")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("City")
                         .HasColumnType("TEXT");
 
@@ -385,6 +486,12 @@ namespace SmartAlarm.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT")
                         .HasColumnName("CreatedAt");
+
+                    b.Property<string>("DeletionReason")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("DeletionRequestedAt")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -410,9 +517,15 @@ namespace SmartAlarm.Infrastructure.Migrations
                         .HasColumnType("INTEGER")
                         .HasColumnName("IsActive");
 
+                    b.Property<bool>("IsAnonymized")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime?>("LastLoginAt")
                         .HasColumnType("TEXT")
                         .HasColumnName("LastLoginAt");
+
+                    b.Property<bool>("MarkedForDeletion")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -424,6 +537,9 @@ namespace SmartAlarm.Infrastructure.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("TEXT")
                         .HasColumnName("PasswordHash");
+
+                    b.Property<string>("PreferredLanguage")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("State")
                         .HasColumnType("TEXT");
@@ -445,6 +561,63 @@ namespace SmartAlarm.Infrastructure.Migrations
                         .HasDatabaseName("IX_Users_ExternalProvider");
 
                     b.ToTable("Users", (string)null);
+                });
+
+            modelBuilder.Entity("SmartAlarm.Domain.Entities.UserConsent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ConsentType")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ConsentVersion")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(10)
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("1.0");
+
+                    b.Property<string>("Details")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("Granted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("GrantedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("IpAddress")
+                        .HasMaxLength(45)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UserAgent")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ConsentType")
+                        .HasDatabaseName("IX_UserConsents_ConsentType");
+
+                    b.HasIndex("GrantedAt")
+                        .HasDatabaseName("IX_UserConsents_GrantedAt");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("IX_UserConsents_UserId");
+
+                    b.HasIndex("UserId", "ConsentType")
+                        .IsUnique()
+                        .HasDatabaseName("IX_UserConsents_User_ConsentType");
+
+                    b.ToTable("UserConsents", (string)null);
                 });
 
             modelBuilder.Entity("SmartAlarm.Domain.Entities.UserCredential", b =>
@@ -588,6 +761,16 @@ namespace SmartAlarm.Infrastructure.Migrations
                     b.Navigation("Alarm");
                 });
 
+            modelBuilder.Entity("SmartAlarm.Domain.Entities.AuditLog", b =>
+                {
+                    b.HasOne("SmartAlarm.Domain.Entities.User", "User")
+                        .WithMany("AuditLogs")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("SmartAlarm.Domain.Entities.Integration", b =>
                 {
                     b.HasOne("SmartAlarm.Domain.Entities.Alarm", null)
@@ -613,6 +796,17 @@ namespace SmartAlarm.Infrastructure.Migrations
                         .HasForeignKey("AlarmId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("SmartAlarm.Domain.Entities.UserConsent", b =>
+                {
+                    b.HasOne("SmartAlarm.Domain.Entities.User", "User")
+                        .WithMany("Consents")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("SmartAlarm.Domain.Entities.UserCredential", b =>
@@ -685,6 +879,10 @@ namespace SmartAlarm.Infrastructure.Migrations
 
             modelBuilder.Entity("SmartAlarm.Domain.Entities.User", b =>
                 {
+                    b.Navigation("AuditLogs");
+
+                    b.Navigation("Consents");
+
                     b.Navigation("Credentials");
 
                     b.Navigation("HolidayPreferences");

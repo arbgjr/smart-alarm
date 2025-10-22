@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using SmartAlarm.Domain.Entities;
 using SmartAlarm.Domain.Repositories;
@@ -33,16 +34,46 @@ namespace SmartAlarm.Infrastructure.Repositories
             return Task.FromResult(routine);
         }
 
+        public Task<Routine?> GetByIdAndUserIdAsync(Guid routineId, Guid userId, CancellationToken cancellationToken = default)
+        {
+            var routine = _routines.Values.FirstOrDefault(r => r.Id == routineId && r.AlarmId == userId);
+            return Task.FromResult(routine);
+        }
+
         public Task<IEnumerable<Routine>> GetByAlarmIdAsync(Guid alarmId)
         {
             var result = _routines.Values.Where(r => r.AlarmId == alarmId);
             return Task.FromResult(result!);
         }
 
+        public Task<List<Routine>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
+        {
+            var result = _routines.Values.Where(r => r.AlarmId == userId).ToList();
+            return Task.FromResult(result);
+        }
+
+        public Task<List<Routine>> GetByIdsAndUserIdAsync(List<Guid> routineIds, Guid userId, CancellationToken cancellationToken = default)
+        {
+            var result = _routines.Values
+                .Where(r => routineIds.Contains(r.Id) && r.AlarmId == userId)
+                .ToList();
+            return Task.FromResult(result);
+        }
+
         public Task UpdateAsync(Routine routine)
         {
             _routines[routine.Id] = routine;
             return Task.CompletedTask;
+        }
+
+        public void Update(Routine routine)
+        {
+            _routines[routine.Id] = routine;
+        }
+
+        public IQueryable<Routine> GetByUserIdQueryable(Guid userId)
+        {
+            return _routines.Values.Where(r => r.AlarmId == userId).AsQueryable();
         }
 
         public Task<IEnumerable<Routine>> GetAllAsync()

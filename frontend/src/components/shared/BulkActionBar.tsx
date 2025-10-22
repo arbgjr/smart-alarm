@@ -1,4 +1,4 @@
-import { TrashIcon, PowerIcon, XMarkIcon, CheckCircleIcon, NoSymbolIcon } from '@heroicons/react/24/outline';
+import { TrashIcon, XMarkIcon, CheckCircleIcon, NoSymbolIcon } from '@heroicons/react/24/outline';
 
 interface BulkActionBarProps {
   selectedCount: number;
@@ -14,7 +14,7 @@ export function BulkActionBar({
   onDelete,
   onEnable,
   onDisable,
-}: BulkActionBarProps) {
+}: Readonly<BulkActionBarProps>) {
   if (selectedCount === 0) {
     return null;
   }

@@ -27,7 +27,7 @@ namespace SmartAlarm.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_UserHolidayPreferences", x => x.Id);
-                    table.CheckConstraint("CK_UserHolidayPreferences_DelayInMinutes", "(Action != 2) OR (Action = 2 AND DelayInMinutes IS NOT NULL AND DelayInMinutes > 0 AND DelayInMinutes <= 1440)");
+                    table.CheckConstraint("CK_UserHolidayPreferences_DelayInMinutes", "(\"Action\" <> 2) OR (\"Action\" = 2 AND \"DelayInMinutes\" IS NOT NULL AND \"DelayInMinutes\" > 0 AND \"DelayInMinutes\" <= 1440)");
                     table.ForeignKey(
                         name: "FK_UserHolidayPreferences_Holidays",
                         column: x => x.HolidayId,

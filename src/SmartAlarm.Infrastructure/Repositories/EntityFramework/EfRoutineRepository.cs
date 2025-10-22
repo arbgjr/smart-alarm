@@ -252,6 +252,213 @@ namespace SmartAlarm.Infrastructure.Repositories.EntityFramework
             }
         }
 
+        public async Task<Routine?> GetByIdAndUserIdAsync(Guid routineId, Guid userId, CancellationToken cancellationToken = default)
+        {
+            using var activity = _activitySource.StartActivity("GetRoutineByIdAndUserId");
+            activity?.SetTag("routine.id", routineId.ToString());
+            activity?.SetTag("user.id", userId.ToString());
+
+            var stopwatch = Stopwatch.StartNew();
+
+            _logger.LogInformation(LogTemplates.QueryStarted,
+                "GetRoutineByIdAndUserId",
+                new { RoutineId = routineId, UserId = userId });
+
+            try
+            {
+                var routine = await _context.Routines
+                    .Where(r => r.Id == routineId && r.AlarmId == userId) // Note: Assuming UserId correlates with AlarmId, adjust as needed
+                    .FirstOrDefaultAsync(cancellationToken);
+                stopwatch.Stop();
+
+                _meter.RecordDatabaseQueryDuration(stopwatch.ElapsedMilliseconds, "GetByIdAndUserId", "Routines");
+
+                _logger.LogInformation(LogTemplates.QueryCompleted,
+                    "GetRoutineByIdAndUserId",
+                    stopwatch.ElapsedMilliseconds,
+                    routine != null ? 1 : 0);
+
+                activity?.SetStatus(ActivityStatusCode.Ok);
+                return routine;
+            }
+            catch (Exception ex)
+            {
+                stopwatch.Stop();
+                activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+                _meter.IncrementErrorCount("DATABASE", "Routines", "QueryError");
+
+                _logger.LogError(LogTemplates.DatabaseQueryFailed,
+                    "GetRoutineByIdAndUserId",
+                    "Routines",
+                    stopwatch.ElapsedMilliseconds,
+                    ex.Message);
+
+                throw;
+            }
+        }
+
+        public async Task<List<Routine>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
+        {
+            using var activity = _activitySource.StartActivity("GetRoutinesByUserId");
+            activity?.SetTag("user.id", userId.ToString());
+
+            var stopwatch = Stopwatch.StartNew();
+
+            _logger.LogInformation(LogTemplates.QueryStarted,
+                "GetRoutinesByUserId",
+                new { UserId = userId });
+
+            try
+            {
+                var routines = await _context.Routines
+                    .Where(r => r.AlarmId == userId) // Note: Assuming UserId correlates with AlarmId, adjust as needed
+                    .ToListAsync(cancellationToken);
+                stopwatch.Stop();
+
+                _meter.RecordDatabaseQueryDuration(stopwatch.ElapsedMilliseconds, "GetByUserId", "Routines");
+
+                _logger.LogInformation(LogTemplates.QueryCompleted,
+                    "GetRoutinesByUserId",
+                    stopwatch.ElapsedMilliseconds,
+                    routines.Count);
+
+                activity?.SetStatus(ActivityStatusCode.Ok);
+                return routines;
+            }
+            catch (Exception ex)
+            {
+                stopwatch.Stop();
+                activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+                _meter.IncrementErrorCount("DATABASE", "Routines", "QueryError");
+
+                _logger.LogError(LogTemplates.DatabaseQueryFailed,
+                    "GetRoutinesByUserId",
+                    "Routines",
+                    stopwatch.ElapsedMilliseconds,
+                    ex.Message);
+
+                throw;
+            }
+        }
+
+        public async Task<List<Routine>> GetByIdsAndUserIdAsync(List<Guid> routineIds, Guid userId, CancellationToken cancellationToken = default)
+        {
+            using var activity = _activitySource.StartActivity("GetRoutinesByIdsAndUserId");
+            activity?.SetTag("user.id", userId.ToString());
+            activity?.SetTag("routine.count", routineIds.Count.ToString());
+
+            var stopwatch = Stopwatch.StartNew();
+
+            _logger.LogInformation(LogTemplates.QueryStarted,
+                "GetRoutinesByIdsAndUserId",
+                new { UserId = userId, RoutineCount = routineIds.Count });
+
+            try
+            {
+                var routines = await _context.Routines
+                    .Where(r => routineIds.Contains(r.Id) && r.AlarmId == userId) // Note: Assuming UserId correlates with AlarmId, adjust as needed
+                    .ToListAsync(cancellationToken);
+                stopwatch.Stop();
+
+                _meter.RecordDatabaseQueryDuration(stopwatch.ElapsedMilliseconds, "GetByIdsAndUserId", "Routines");
+
+                _logger.LogInformation(LogTemplates.QueryCompleted,
+                    "GetRoutinesByIdsAndUserId",
+                    stopwatch.ElapsedMilliseconds,
+                    routines.Count);
+
+                activity?.SetStatus(ActivityStatusCode.Ok);
+                return routines;
+            }
+            catch (Exception ex)
+            {
+                stopwatch.Stop();
+                activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+                _meter.IncrementErrorCount("DATABASE", "Routines", "QueryError");
+
+                _logger.LogError(LogTemplates.DatabaseQueryFailed,
+                    "GetRoutinesByIdsAndUserId",
+                    "Routines",
+                    stopwatch.ElapsedMilliseconds,
+                    ex.Message);
+
+                throw;
+            }
+        }
+
+        public void Update(Routine routine)
+        {
+            using var activity = _activitySource.StartActivity("UpdateRoutineSync");
+            activity?.SetTag("routine.id", routine.Id.ToString());
+
+            _logger.LogInformation(LogTemplates.QueryStarted,
+                "UpdateRoutineSync",
+                new { RoutineId = routine.Id });
+
+            try
+            {
+                _context.Routines.Update(routine);
+                activity?.SetStatus(ActivityStatusCode.Ok);
+
+                _logger.LogInformation(LogTemplates.QueryCompleted,
+                    "UpdateRoutineSync",
+                    0,
+                    "routine marked for update");
+            }
+            catch (Exception ex)
+            {
+                activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+                _meter.IncrementErrorCount("DATABASE", "Routines", "UpdateError");
+
+                _logger.LogError(LogTemplates.DatabaseQueryFailed,
+                    "UpdateRoutineSync",
+                    "Routines",
+                    0,
+                    ex.Message);
+
+                throw;
+            }
+        }
+
+        public IQueryable<Routine> GetByUserIdQueryable(Guid userId)
+        {
+            using var activity = _activitySource.StartActivity("GetRoutinesQueryableByUserId");
+            activity?.SetTag("user.id", userId.ToString());
+
+            _logger.LogInformation(LogTemplates.QueryStarted,
+                "GetRoutinesQueryableByUserId",
+                new { UserId = userId });
+
+            try
+            {
+                var queryable = _context.Routines
+                    .Where(r => r.AlarmId == userId) // Note: Assuming UserId correlates with AlarmId, adjust as needed
+                    .AsQueryable();
+
+                activity?.SetStatus(ActivityStatusCode.Ok);
+
+                _logger.LogInformation(LogTemplates.QueryCompleted,
+                    "GetRoutinesQueryableByUserId",
+                    0,
+                    "queryable returned");
+
+                return queryable;
+            }
+            catch (Exception ex)
+            {
+                activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+                _meter.IncrementErrorCount("DATABASE", "Routines", "QueryError");
+
+                _logger.LogError(LogTemplates.DatabaseQueryFailed,
+                    "GetRoutinesQueryableByUserId",
+                    "Routines",
+                    0,
+                    ex.Message);
+
+                throw;
+            }
+        }
+
         public Task DeleteAsync(Guid id)
         {
             using var activity = _activitySource.StartActivity("DeleteRoutine");

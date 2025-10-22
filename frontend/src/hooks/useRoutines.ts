@@ -7,7 +7,6 @@ import {
   PaginatedRoutinesResponse,
 } from '@/services/routineService';
 import { notificationService } from '@/services/notificationService';
-import { RoutineDto } from '@/services/routineService';
 
 interface UseRoutinesParams {
   search?: string;
@@ -35,8 +34,9 @@ export function useRoutines(params: UseRoutinesParams = {}) {
       notificationService.success('Rotina criada com sucesso!');
       invalidateRoutines();
     },
-    onError: (err) => {
-      notificationService.error(`Falha ao criar rotina: ${err.message}`);
+    onError: (err: unknown) => {
+      const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido';
+      notificationService.error(`Falha ao criar rotina: ${errorMessage}`);
     },
   });
 
@@ -46,8 +46,9 @@ export function useRoutines(params: UseRoutinesParams = {}) {
       notificationService.success('Rotina atualizada com sucesso!');
       invalidateRoutines();
     },
-    onError: (err) => {
-      notificationService.error(`Falha ao atualizar rotina: ${err.message}`);
+    onError: (err: unknown) => {
+      const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido';
+      notificationService.error(`Falha ao atualizar rotina: ${errorMessage}`);
     },
   });
 
@@ -57,8 +58,9 @@ export function useRoutines(params: UseRoutinesParams = {}) {
       notificationService.success('Rotina excluída com sucesso!');
       invalidateRoutines();
     },
-    onError: (err) => {
-      notificationService.error(`Falha ao excluir rotina: ${err.message}`);
+    onError: (err: unknown) => {
+      const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido';
+      notificationService.error(`Falha ao excluir rotina: ${errorMessage}`);
     },
   });
 
@@ -68,8 +70,9 @@ export function useRoutines(params: UseRoutinesParams = {}) {
       notificationService.success('Rotina ativada com sucesso!');
       invalidateRoutines();
     },
-    onError: (err) => {
-      notificationService.error(`Falha ao ativar rotina: ${err.message}`);
+    onError: (err: unknown) => {
+      const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido';
+      notificationService.error(`Falha ao ativar rotina: ${errorMessage}`);
     },
   });
 
@@ -79,20 +82,22 @@ export function useRoutines(params: UseRoutinesParams = {}) {
       notificationService.success('Rotina desativada com sucesso!');
       invalidateRoutines();
     },
-    onError: (err) => {
-      notificationService.error(`Falha ao desativar rotina: ${err.message}`);
+    onError: (err: unknown) => {
+      const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido';
+      notificationService.error(`Falha ao desativar rotina: ${errorMessage}`);
     },
   });
 
   // Novas mutações para ações em lote
   const bulkUpdateMutation = useMutation({
     mutationFn: (payload: BulkUpdateRoutinesPayload) => routineService.bulkUpdateRoutines(payload),
-    onSuccess: (data, variables) => {
+    onSuccess: (_data, variables) => {
       notificationService.success(`${variables.routineIds.length} rotinas foram atualizadas.`);
       invalidateRoutines();
     },
-    onError: (err) => {
-      notificationService.error(`Falha ao executar ação em lote: ${err.message}`);
+    onError: (err: unknown) => {
+      const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido';
+      notificationService.error(`Falha ao executar ação em lote: ${errorMessage}`);
     },
   });
 
@@ -106,8 +111,65 @@ export function useRoutines(params: UseRoutinesParams = {}) {
     enableRoutine,
     disableRoutine,
     // Mutações em lote expostas para o componente
-    deleteMultipleRoutines: { mutate: (ids: string[]) => bulkUpdateMutation.mutate({ routineIds: ids, action: 'Delete' }), ...bulkUpdateMutation },
-    enableMultipleRoutines: { mutate: (ids: string[]) => bulkUpdateMutation.mutate({ routineIds: ids, action: 'Enable' }), ...bulkUpdateMutation },
-    disableMultipleRoutines: { mutate: (ids: string[]) => bulkUpdateMutation.mutate({ routineIds: ids, action: 'Disable' }), ...bulkUpdateMutation },
+    deleteMultipleRoutines: {
+      mutateAsync: (ids: string[]) => bulkUpdateMutation.mutateAsync({ routineIds: ids, action: 'Delete' }),
+      isPending: bulkUpdateMutation.isPending,
+      error: bulkUpdateMutation.error,
+    },
+    enableMultipleRoutines: {
+      mutateAsync: (ids: string[]) => bulkUpdateMutation.mutateAsync({ routineIds: ids, action: 'Enable' }),
+      isPending: bulkUpdateMutation.isPending,
+      error: bulkUpdateMutation.error,
+    },
+    disableMultipleRoutines: {
+      mutateAsync: (ids: string[]) => bulkUpdateMutation.mutateAsync({ routineIds: ids, action: 'Disable' }),
+      isPending: bulkUpdateMutation.isPending,
+      error: bulkUpdateMutation.error,
+    },
   };
 }
+
+// Exports nomeados para resolver erros de hooks faltando
+export const useCreateRoutine = (params: UseRoutinesParams = {}) => {
+  const { createRoutine } = useRoutines(params);
+  return createRoutine;
+};
+
+export const useUpdateRoutine = (params: UseRoutinesParams = {}) => {
+  const { updateRoutine } = useRoutines(params);
+  return updateRoutine;
+};
+
+export const useEnableRoutine = (params: UseRoutinesParams = {}) => {
+  const { enableRoutine } = useRoutines(params);
+  return enableRoutine;
+};
+
+export const useDisableRoutine = (params: UseRoutinesParams = {}) => {
+  const { disableRoutine } = useRoutines(params);
+  return disableRoutine;
+};
+
+export const useDeleteRoutine = (params: UseRoutinesParams = {}) => {
+  const { deleteRoutine } = useRoutines(params);
+  return deleteRoutine;
+};
+
+// Hook específico para rotinas ativas - filtrando apenas isEnabled: true
+export const useActiveRoutines = (params: Omit<UseRoutinesParams, 'status'> = {}) => {
+  return useRoutines({ ...params, status: 'active' });
+};
+
+// Para compatibilidade temporária - será removido quando componentes forem atualizados
+export const useExecuteRoutine = () => {
+  // Funcionalidade de execução de rotinas não implementada ainda no backend
+  return useMutation({
+    mutationFn: async (_id: string) => {
+      throw new Error('Execução de rotinas não implementada ainda');
+    },
+    onError: (err: unknown) => {
+      const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido';
+      notificationService.error(`Erro ao executar rotina: ${errorMessage}`);
+    },
+  });
+};

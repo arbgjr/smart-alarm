@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AuthService } from '../services/authService';
+import { tokenStorage } from '../lib/api';
 import {
   LoginRequest,
   RegisterRequest,
@@ -17,17 +18,25 @@ export const authKeys = {
 export const useAuth = () => {
   const queryClient = useQueryClient();
 
+  // Check if we have an access token to determine if query should run
+  const hasAccessToken = !!tokenStorage.getAccessToken();
+
   // Get current user
   const {
     data: user,
-    isLoading,
+    isLoading: queryIsLoading,
     error: userError,
   } = useQuery({
     queryKey: authKeys.user(),
     queryFn: () => AuthService.getCurrentUser(),
     retry: false,
     staleTime: 5 * 60 * 1000, // 5 minutes
+    // Skip fetching current user if there's no stored access token
+    enabled: hasAccessToken,
   });
+
+  // When query is disabled, isLoading should always be false
+  const isLoading = hasAccessToken ? queryIsLoading : false;
 
   // Login mutation
   const loginMutation = useMutation({

@@ -33,7 +33,7 @@ public class BulkUpdateRoutinesCommandHandler : IRequestHandler<BulkUpdateRoutin
             request.Action, request.RoutineIds.Count, request.UserId);
 
         // Buscar apenas as rotinas que pertencem ao usuário e estão na lista de IDs
-        var routines = await _routineRepository.GetByIdsAndUserIdAsync(request.RoutineIds, request.UserId);
+        var routines = await _routineRepository.GetByIdsAndUserIdAsync(request.RoutineIds.ToList(), request.UserId);
 
         if (!routines.Any())
         {
@@ -48,17 +48,17 @@ public class BulkUpdateRoutinesCommandHandler : IRequestHandler<BulkUpdateRoutin
             switch (request.Action)
             {
                 case BulkRoutineAction.Enable:
-                    routine.Enable();
-                    _routineRepository.Update(routine);
+                    routine.Activate();
+                    await _routineRepository.UpdateAsync(routine);
                     processedCount++;
                     break;
                 case BulkRoutineAction.Disable:
-                    routine.Disable();
-                    _routineRepository.Update(routine);
+                    routine.Deactivate();
+                    await _routineRepository.UpdateAsync(routine);
                     processedCount++;
                     break;
                 case BulkRoutineAction.Delete:
-                    _routineRepository.Remove(routine);
+                    await _routineRepository.DeleteAsync(routine.Id);
                     processedCount++;
                     break;
                 default:
@@ -67,7 +67,7 @@ public class BulkUpdateRoutinesCommandHandler : IRequestHandler<BulkUpdateRoutin
             }
         }
 
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync();
 
         _logger.LogInformation("Ação em lote '{Action}' concluída para {ProcessedCount} de {TotalRequested} rotinas do usuário {UserId}.",
             request.Action, processedCount, request.RoutineIds.Count, request.UserId);

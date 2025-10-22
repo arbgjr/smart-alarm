@@ -10,15 +10,18 @@
     <!-- Security & Authentication -->
     <PackageReference Include="BCrypt.Net-Next" />
     <PackageReference Include="Fido2" />
-    
+
     <!-- Application Framework -->
     <PackageReference Include="MediatR" />
     <PackageReference Include="FluentValidation" />
     <PackageReference Include="Hangfire.Core" />
-    
+    <PackageReference Include="AutoMapper" />
+    <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" />
+
     <!-- Microsoft Extensions -->
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
-    
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+
     <!-- System Dependencies (Resolução NU1107) -->
     <PackageReference Include="System.Diagnostics.DiagnosticSource" />
   </ItemGroup>

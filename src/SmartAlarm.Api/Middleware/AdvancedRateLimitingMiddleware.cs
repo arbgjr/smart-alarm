@@ -9,16 +9,16 @@ namespace SmartAlarm.Api.Middleware;
 public class AdvancedRateLimitingMiddleware
 {
     private readonly RequestDelegate _next;
-    private readonly IRateLimitingService _rateLimitingService;
+    private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<AdvancedRateLimitingMiddleware> _logger;
 
     public AdvancedRateLimitingMiddleware(
         RequestDelegate next,
-        IRateLimitingService rateLimitingService,
+        IServiceProvider serviceProvider,
         ILogger<AdvancedRateLimitingMiddleware> logger)
     {
         _next = next;
-        _rateLimitingService = rateLimitingService;
+        _serviceProvider = serviceProvider;
         _logger = logger;
     }
 
@@ -37,17 +37,21 @@ public class AdvancedRateLimitingMiddleware
 
         try
         {
+            // Criar escopo para resolver serviços com lifetime Scoped
+            using var scope = _serviceProvider.CreateScope();
+            var rateLimitingService = scope.ServiceProvider.GetRequiredService<IRateLimitingService>();
+
             // Verificar se deve aplicar rate limiting
-            var shouldLimit = await _rateLimitingService.ShouldRateLimitAsync(clientKey, endpoint, requestType);
+            var shouldLimit = await rateLimitingService.ShouldRateLimitAsync(clientKey, endpoint, requestType);
 
             if (shouldLimit)
             {
-                await HandleRateLimitExceeded(context, clientKey, endpoint);
+                await HandleRateLimitExceeded(context, clientKey, endpoint, rateLimitingService);
                 return;
             }
 
             // Adicionar headers informativos sobre rate limit
-            await AddRateLimitHeaders(context, clientKey, endpoint);
+            await AddRateLimitHeaders(context, clientKey, endpoint, rateLimitingService);
 
             await _next(context);
         }
@@ -157,9 +161,9 @@ public class AdvancedRateLimitingMiddleware
         return "/" + string.Join("/", normalizedSegments);
     }
 
-    private async Task HandleRateLimitExceeded(HttpContext context, string clientKey, string endpoint)
+    private async Task HandleRateLimitExceeded(HttpContext context, string clientKey, string endpoint, IRateLimitingService rateLimitingService)
     {
-        var rateLimitInfo = await _rateLimitingService.GetRateLimitInfoAsync(clientKey, endpoint);
+        var rateLimitInfo = await rateLimitingService.GetRateLimitInfoAsync(clientKey, endpoint);
 
         context.Response.StatusCode = (int)HttpStatusCode.TooManyRequests;
         context.Response.ContentType = "application/json";
@@ -196,11 +200,11 @@ public class AdvancedRateLimitingMiddleware
         _logger.LogWarning("Rate limit exceeded for {ClientKey} on {Endpoint}", clientKey, endpoint);
     }
 
-    private async Task AddRateLimitHeaders(HttpContext context, string clientKey, string endpoint)
+    private async Task AddRateLimitHeaders(HttpContext context, string clientKey, string endpoint, IRateLimitingService rateLimitingService)
     {
         try
         {
-            var rateLimitInfo = await _rateLimitingService.GetRateLimitInfoAsync(clientKey, endpoint);
+            var rateLimitInfo = await rateLimitingService.GetRateLimitInfoAsync(clientKey, endpoint);
 
             context.Response.Headers["X-RateLimit-Limit"] = rateLimitInfo.TotalRequests.ToString();
             context.Response.Headers["X-RateLimit-Remaining"] = rateLimitInfo.RequestsRemaining.ToString();

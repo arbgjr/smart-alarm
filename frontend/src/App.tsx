@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { LoginForm } from './components/molecules/LoginForm/LoginForm';
 import { RegisterForm } from './components/molecules/RegisterForm/RegisterForm';
@@ -16,21 +15,15 @@ import { LoadingSpinner } from './components/molecules/Loading';
 import { ErrorBoundary } from './components/molecules/ErrorBoundary/ErrorBoundary';
 import { useViewport } from './utils/responsive';
 
-// Create React Query client
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      refetchOnWindowFocus: false,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-    },
-  },
-});
-
 // App Routes Component
 const AppRoutes: React.FC = () => {
   const { user, isLoading } = useAuth();
   const viewport = useViewport();
+
+  // DEBUG: Log auth state
+  useEffect(() => {
+    console.log('[AppRoutes] Auth state:', { user: !!user, isLoading, hasUser: user ? `${user.name} (${user.email})` : 'none' });
+  }, [user, isLoading]);
 
   useEffect(() => {
     // Set CSS custom properties for viewport dimensions
@@ -51,12 +44,15 @@ const AppRoutes: React.FC = () => {
   }, [viewport]);
 
   if (isLoading) {
+    console.log('[AppRoutes] Showing loading state');
     return (
       <div className="min-h-screen flex items-center justify-center bg-neutral-50">
         <LoadingSpinner size="lg" />
       </div>
     );
   }
+
+  console.log('[AppRoutes] Rendering routes, user:', user ? 'authenticated' : 'not authenticated');
 
   return (
     <Routes>
@@ -140,15 +136,13 @@ const AppRoutes: React.FC = () => {
 // Main App Component
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ErrorBoundary>
-        <div className="min-h-screen bg-neutral-50">
-          <AppRoutes />
-          <PWAInstallPrompt />
-        </div>
-      </ErrorBoundary>
+    <ErrorBoundary>
+      <div className="min-h-screen bg-neutral-50">
+        <AppRoutes />
+        <PWAInstallPrompt />
+      </div>
       <ReactQueryDevtools initialIsOpen={false} />
-    </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

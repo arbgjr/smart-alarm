@@ -1,12 +1,15 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Mime;
 using System.Threading.Tasks;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using SmartAlarm.Api.DTOs;
 using SmartAlarm.Api.Services;
+using SmartAlarm.Application.Common;
 using SmartAlarm.Application.DTOs;
 using SmartAlarm.Application.Routines.Commands;
 using SmartAlarm.Application.Routines.Queries;
@@ -66,8 +69,7 @@ namespace SmartAlarm.Api.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetRoutineById(Guid id)
         {
-            var userId = _currentUserService.GetUserId();
-            var query = new GetRoutineByIdQuery(id, userId);
+            var query = new GetRoutineByIdQuery(id);
             var result = await _mediator.Send(query);
             return result != null ? Ok(result) : NotFound();
         }
@@ -87,7 +89,9 @@ namespace SmartAlarm.Api.Controllers
                 createDto.Name,
                 createDto.Description,
                 userId,
-                createDto.AlarmIds);
+                createDto.AlarmIds.FirstOrDefault(), // Using first alarm ID
+                new List<string>(), // Empty actions list for now
+                true);
 
             var result = await _mediator.Send(command);
 
@@ -107,20 +111,20 @@ namespace SmartAlarm.Api.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateRoutine(Guid id, [FromBody] UpdateRoutineDto updateDto)
         {
-            var userId = _currentUserService.GetUserId();
             var command = new UpdateRoutineCommand(
                 id,
                 updateDto.Name,
                 updateDto.Description,
-                userId,
-                updateDto.AlarmIds);
+                new List<string>(), // Empty actions list for now
+                updateDto.IsActive);
 
-            await _mediator.Send(command);
+            var result = await _mediator.Send(command);
+
+            if (result == null)
+                return NotFound();
 
             return NoContent();
-        }
-
-        /// <summary>
+        }        /// <summary>
         /// Exclui uma rotina específica.
         /// </summary>
         /// <param name="id">O ID da rotina a ser excluída.</param>
@@ -131,9 +135,12 @@ namespace SmartAlarm.Api.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteRoutine(Guid id)
         {
-            var userId = _currentUserService.GetUserId();
-            var command = new DeleteRoutineCommand(id, userId);
-            await _mediator.Send(command);
+            var command = new DeleteRoutineCommand(id);
+            var result = await _mediator.Send(command);
+
+            if (!result)
+                return NotFound();
+
             return NoContent();
         }
 
@@ -148,9 +155,12 @@ namespace SmartAlarm.Api.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> ActivateRoutine(Guid id)
         {
-            var userId = _currentUserService.GetUserId();
-            var command = new ActivateRoutineCommand(id, userId);
-            await _mediator.Send(command);
+            var command = new ActivateRoutineCommand(id);
+            var result = await _mediator.Send(command);
+
+            if (!result)
+                return NotFound();
+
             return Ok(new { message = $"Rotina {id} ativada com sucesso." });
         }
 
@@ -165,9 +175,12 @@ namespace SmartAlarm.Api.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeactivateRoutine(Guid id)
         {
-            var userId = _currentUserService.GetUserId();
-            var command = new DeactivateRoutineCommand(id, userId);
-            await _mediator.Send(command);
+            var command = new DeactivateRoutineCommand(id);
+            var result = await _mediator.Send(command);
+
+            if (!result)
+                return NotFound();
+
             return Ok(new { message = $"Rotina {id} desativada com sucesso." });
         }
 
@@ -195,40 +208,6 @@ namespace SmartAlarm.Api.Controllers
             await _mediator.Send(command);
 
             return Ok(new { message = $"{bulkUpdateDto.RoutineIds.Count} rotinas processadas com a ação '{bulkUpdateDto.Action}'." });
-        }
-    }
-}
-
-namespace SmartAlarm.Api.Services
-{
-    public interface ICurrentUserService
-    {
-        Guid GetUserId();
-    }
-
-    // NOTA: Esta é uma implementação de exemplo. Em um projeto real,
-    // este serviço seria implementado para extrair o ID do usuário
-    // a partir do HttpContext e das claims do token JWT.
-    public class CurrentUserService : ICurrentUserService
-    {
-        private readonly IHttpContextAccessor _httpContextAccessor;
-
-        public CurrentUserService(IHttpContextAccessor httpContextAccessor)
-        {
-            _httpContextAccessor = httpContextAccessor;
-        }
-
-        public Guid GetUserId()
-        {
-            var userIdClaim = _httpContextAccessor.HttpContext?.User.FindFirst("sub")?.Value;
-            if (Guid.TryParse(userIdClaim, out var userId))
-            {
-                return userId;
-            }
-
-            // Lançar exceção ou retornar um valor padrão, dependendo da política de segurança.
-            // Para endpoints protegidos por [Authorize], uma exceção é apropriada.
-            throw new UnauthorizedAccessException("Não foi possível identificar o usuário autenticado.");
         }
     }
 }

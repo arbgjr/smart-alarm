@@ -70,7 +70,12 @@ async function setupTestData(): Promise<void> {
     const page = await browser.newPage();
 
     try {
-      await page.goto(process.env.E2E_BASE_URL || 'http://localhost:5173');
+      // Don't wait for full 'load' event as dev servers (Vite/HMR) may keep
+      // connections open; DOMContentLoaded is sufficient for localStorage setup.
+      await page.goto(process.env.E2E_BASE_URL || 'http://localhost:5173', {
+        waitUntil: 'domcontentloaded',
+        timeout: 60000
+      });
 
       // Set up test authentication state
       await page.evaluate(() => {
@@ -90,6 +95,10 @@ async function setupTestData(): Promise<void> {
         };
 
         localStorage.setItem('smart-alarm-auth', JSON.stringify(testAuthState));
+
+        // Also populate API layer token storage (required by useAuth hook)
+        localStorage.setItem('smart_alarm_access_token', 'test-jwt-token');
+        localStorage.setItem('smart_alarm_refresh_token', 'test-refresh-token');
 
         // Set up test alarms
         const testAlarms = {

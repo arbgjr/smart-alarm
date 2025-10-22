@@ -1,36 +1,38 @@
 import api from '../lib/api';
 
+// Alinhado com RoutineDto do backend
 export interface RoutineDto {
   id: string;
   name: string;
-  description?: string;
-  isEnabled: boolean;
-  alarmIds: string[];
+  description: string;
+  alarmIds: string[]; // Mantendo plural conforme APIs Create/Update
+  isActive: boolean; // Alinhado com backend (era isEnabled)
+  actions: string[]; // Adicionado conforme backend
+  createdAt: string;
+  updatedAt: string; // Adicionado conforme backend
 }
 
-export type PaginatedRoutinesResponse = PaginatedResponse<RoutineDto>;
-
-/*
-export interface RoutineStepDto {
-  id: string;
-  routineId: string;
-  name: string;
-  description?: string;
-  stepType: string;
-  configuration: Record<string, any>;
-  order: number;
-  isEnabled: boolean;
+export interface PaginatedRoutinesResponse extends PaginatedResponse<RoutineDto> {
+  routines: RoutineDto[]; // Alias para items - resolve erro de 'routines' não existir
 }
-*/
 
+// Interfaces para Steps - removidas pois não implementadas no backend ainda
+// Funcionalidade de steps será implementada futuramente
+
+// Alinhado com CreateRoutineDto do backend
 export interface CreateRoutinePayload {
   name: string;
   description?: string;
   alarmIds?: string[];
 }
 
-export interface UpdateRoutinePayload extends CreateRoutinePayload {
+// Alinhado com UpdateRoutineDto do backend
+export interface UpdateRoutinePayload {
   id: string;
+  name: string;
+  description?: string;
+  alarmIds: string[];
+  isActive: boolean;
 }
 
 export interface BulkUpdateRoutinesPayload {
@@ -38,23 +40,13 @@ export interface BulkUpdateRoutinesPayload {
   action: 'Enable' | 'Disable' | 'Delete';
 }
 
-/*
+// Aliases para compatibilidade com componentes existentes
+export type CreateRoutineRequest = CreateRoutinePayload;
+export type UpdateRoutineRequest = Omit<UpdateRoutinePayload, 'id'>;
+export type RoutineListResponse = PaginatedRoutinesResponse;
 
-export interface UpdateRoutineRequest {
-  name?: string;
-  description?: string;
-  isEnabled?: boolean;
-}
-
-export interface UpdateRoutineStepRequest {
-  name?: string;
-  description?: string;
-  stepType?: string;
-  configuration?: Record<string, any>;
-  order?: number;
-  isEnabled?: boolean;
-}
-*/
+// Interfaces para Steps - removidas pois não implementadas no backend
+// CreateRoutineStepRequest será implementado quando Steps for adicionado ao backend
 
 export interface PaginatedResponse<T> {
   items: T[];
@@ -69,6 +61,7 @@ export interface RoutineFilters {
   isEnabled?: boolean;
   search?: string;
   page?: number;
+  pageNumber?: number; // Adicionado para resolver erro TS
   pageSize?: number;
 }
 
@@ -94,8 +87,13 @@ export const routineService = {
     const queryString = params.toString();
     const url = queryString ? `${BASE_PATH}?${queryString}` : BASE_PATH;
 
-    const response = await api.get<PaginatedRoutinesResponse>(url);
-    return response.data;
+    const response = await api.get<PaginatedResponse<RoutineDto>>(url);
+
+    // Adiciona alias 'routines' para compatibilidade com componentes
+    return {
+      ...response.data,
+      routines: response.data.items,
+    };
   },
 
   async getRoutine(id: string): Promise<RoutineDto> {
@@ -131,3 +129,6 @@ export const routineService = {
     await api.post(`${BASE_PATH}/bulk-update`, payload);
   },
 };
+
+// Export default para resolver erro TS2305
+export default routineService;

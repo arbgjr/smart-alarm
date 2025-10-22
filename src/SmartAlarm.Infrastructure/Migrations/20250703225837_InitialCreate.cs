@@ -51,7 +51,7 @@ namespace SmartAlarm.Infrastructure.Migrations
                     Id = table.Column<Guid>(type: "TEXT", nullable: false),
                     Name = table.Column<string>(type: "TEXT", maxLength: 255, nullable: false),
                     Provider = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
-                    Configuration = table.Column<string>(type: "CLOB", nullable: false),
+                    Configuration = table.Column<string>(type: "text", nullable: false),
                     IsActive = table.Column<bool>(type: "INTEGER", nullable: false),
                     AlarmId = table.Column<Guid>(type: "TEXT", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
@@ -75,7 +75,7 @@ namespace SmartAlarm.Infrastructure.Migrations
                     Id = table.Column<Guid>(type: "TEXT", nullable: false),
                     Name = table.Column<string>(type: "TEXT", maxLength: 255, nullable: false),
                     AlarmId = table.Column<Guid>(type: "TEXT", nullable: false),
-                    Actions = table.Column<string>(type: "CLOB", nullable: false),
+                    Actions = table.Column<string>(type: "text", nullable: false),
                     IsActive = table.Column<bool>(type: "INTEGER", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
                 },

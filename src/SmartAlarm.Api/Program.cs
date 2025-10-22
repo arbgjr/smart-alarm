@@ -17,6 +17,8 @@ using System.Reflection;
 using SmartAlarm.Observability.Extensions;
 using Hangfire;
 using Hangfire.PostgreSql;
+using Microsoft.EntityFrameworkCore;
+using SmartAlarm.Infrastructure.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,6 +33,13 @@ builder.WebHost.ConfigureKestrel(options =>
 {
     options.AddServerHeader = false;
 });
+
+// Respect --urls or configuration "urls" and wire it explicitly
+var configuredUrls = builder.Configuration["urls"];
+if (!string.IsNullOrWhiteSpace(configuredUrls))
+{
+    builder.WebHost.UseUrls(configuredUrls);
+}
 
 // Configure services to suppress server header completely
 builder.Services.Configure<Microsoft.AspNetCore.Http.Features.IHttpResponseFeature>(options =>
@@ -54,6 +63,9 @@ builder.Host.UseSerilog((context, services, configuration) =>
 // Registrar MediatR apontando para a Application Layer
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(SmartAlarm.Application.Commands.CreateAlarmCommand).Assembly));
 
+// Registrar AutoMapper
+builder.Services.AddAutoMapper(typeof(SmartAlarm.Application.Mappings.RoutineProfile).Assembly);
+
 // Registrar infraestrutura (repositories e serviços) - evitar em ambiente de teste
 if (!builder.Environment.IsEnvironment("Testing"))
 {
@@ -73,8 +85,9 @@ builder.Services.AddControllers();
 // Add SignalR for real-time notifications
 builder.Services.AddSignalR();
 
-// Add Hangfire for background jobs
-if (!builder.Environment.IsEnvironment("Testing"))
+// Add Hangfire for background jobs (guarded by config flag)
+var hangfireEnabled = builder.Configuration.GetValue<bool>("Hangfire:Enabled", true);
+if (!builder.Environment.IsEnvironment("Testing") && hangfireEnabled)
 {
     var dbProvider = builder.Configuration.GetValue<string>("Database:Provider");
     if (string.Equals(dbProvider, "PostgreSQL", StringComparison.OrdinalIgnoreCase))
@@ -99,10 +112,10 @@ if (!builder.Environment.IsEnvironment("Testing"))
     builder.Services.AddHangfireServer();
 }
 
-// Add background services
-builder.Services.AddHostedService<SmartAlarm.Api.Services.MissedAlarmBackgroundService>();
-builder.Services.AddHostedService<SmartAlarm.Api.Services.AuditCleanupBackgroundService>();
-builder.Services.AddHostedService<SmartAlarm.Api.Services.CalendarSyncBackgroundService>();
+// Add background services - TEMPORARILY DISABLED for E2E testing
+// builder.Services.AddHostedService<SmartAlarm.Api.Services.MissedAlarmBackgroundService>();
+// builder.Services.AddHostedService<SmartAlarm.Api.Services.AuditCleanupBackgroundService>();
+// builder.Services.AddHostedService<SmartAlarm.Api.Services.CalendarSyncBackgroundService>();
 
 // Sobrescreve a resposta padrão de erro de modelo inválido
 builder.Services.Configure<Microsoft.AspNetCore.Mvc.ApiBehaviorOptions>(options =>
@@ -197,17 +210,17 @@ if (!builder.Environment.IsEnvironment("Testing"))
 // LGPD: Serviço de consentimento do usuário
 builder.Services.AddScoped<SmartAlarm.Api.Services.IUserConsentService, SmartAlarm.Api.Services.UserConsentService>();
 
+// Notification Service (usando implementação de logging para desenvolvimento)
+builder.Services.AddScoped<SmartAlarm.Infrastructure.Services.INotificationService, SmartAlarm.Infrastructure.Services.LoggingNotificationService>();
+builder.Services.AddScoped<SmartAlarm.Application.Abstractions.INotificationService, SmartAlarm.Infrastructure.Services.SignalRNotificationService>();
+
 // Configure KeyVault services
 
 // Registra IConfigurationResolver para injeção de dependência
 builder.Services.AddScoped<SmartAlarm.Infrastructure.Configuration.IConfigurationResolver, SmartAlarm.Infrastructure.Configuration.ConfigurationResolver>();
 builder.Services.AddKeyVault(builder.Configuration);
 
-// Configure Infrastructure services
-if (!builder.Environment.IsEnvironment("Testing"))
-{
-    builder.Services.AddSmartAlarmInfrastructure(builder.Configuration);
-}
+// (Removed duplicate AddSmartAlarmInfrastructure registration)
 
 // Configurar MediatR
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(SmartAlarm.Application.Handlers.Auth.LoginHandler).Assembly));
@@ -239,7 +252,11 @@ if (!app.Environment.IsEnvironment("Testing"))
 // Segurança: KeyVault, tratamento global de erros, autenticação e RBAC
 app.UseKeyVault();
 app.UseGlobalExceptionHandler();
-app.UseHttpsRedirection();
+// Only enforce HTTPS redirection in Production to avoid dev self-signed issues
+if (app.Environment.IsProduction())
+{
+    app.UseHttpsRedirection();
+}
 app.UseAuthentication();
 
 // JWT Blocklist Middleware - deve vir após UseAuthentication e antes de UseAuthorization
@@ -255,8 +272,9 @@ app.UseSwaggerUI(options =>
     options.RoutePrefix = string.Empty;
 });
 
-// Hangfire Dashboard (only in non-production environments for security)
-if (!app.Environment.IsProduction() && !app.Environment.IsEnvironment("Testing"))
+// Hangfire Dashboard (only when Hangfire is enabled and in non-production environments)
+var dashboardEnabled = app.Services.GetRequiredService<IConfiguration>().GetValue<bool>("Hangfire:Enabled", true);
+if (dashboardEnabled && !app.Environment.IsProduction() && !app.Environment.IsEnvironment("Testing"))
 {
     app.UseHangfireDashboard("/hangfire", new DashboardOptions
     {
@@ -273,6 +291,49 @@ app.MapControllers();
 // SignalR Hubs
 app.MapHub<SmartAlarm.Api.Hubs.NotificationHub>("/hubs/notifications");
 
-app.Run();
+// Apply EF Core migrations automatically in Development to ensure schema is present
+try
+{
+    var autoMigrate = app.Configuration.GetValue<bool>("Database:AutoMigrate", defaultValue: app.Environment.IsDevelopment());
+    if (autoMigrate && !app.Environment.IsEnvironment("Testing"))
+    {
+        using var scope = app.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<SmartAlarmDbContext>();
+        await db.Database.MigrateAsync();
+        Log.Information("Database migration applied successfully.");
+    }
+}
+catch (Exception ex)
+{
+    Log.Error(ex, "Failed to apply database migrations at startup.");
+    throw new InvalidOperationException("Failed to apply database migrations at startup.", ex);
+}
+
+Console.WriteLine("*** ABOUT TO CALL app.RunAsync() ***");
+Console.WriteLine($"*** App Environment: {app.Environment.EnvironmentName}");
+Console.WriteLine($"*** App URLs from config: {builder.Configuration["urls"]}");
+Console.WriteLine($"*** Kestrel configured URLs: {string.Join(", ", app.Urls)}");
+
+// Trace host lifetime to detect early stop triggers
+app.Lifetime.ApplicationStarted.Register(() =>
+{
+    Console.WriteLine("*** Host ApplicationStarted fired");
+    Console.WriteLine($"*** Effective listening URLs: {string.Join(", ", app.Urls)}");
+});
+app.Lifetime.ApplicationStopping.Register(() => Console.WriteLine("*** Host ApplicationStopping fired"));
+app.Lifetime.ApplicationStopped.Register(() => Console.WriteLine("*** Host ApplicationStopped fired"));
+
+try
+{
+    await app.RunAsync();
+    Console.WriteLine("*** app.RunAsync() COMPLETED - Application shut down gracefully ***");
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"*** EXCEPTION during app.RunAsync(): {ex.GetType().Name}: {ex.Message}");
+    Console.WriteLine($"*** Stack Trace: {ex.StackTrace}");
+    Log.Fatal(ex, "Application crashed during RunAsync");
+    throw;
+}
 
 public partial class Program { } // For testing purposes

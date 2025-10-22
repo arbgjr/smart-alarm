@@ -9,5 +9,8 @@ namespace SmartAlarm.Api.Services
         IEnumerable<string> Roles { get; }
         bool IsAuthenticated { get; }
         ClaimsPrincipal Principal { get; }
+
+        // Método para obter UserId como Guid para compatibilidade com controladores
+        Guid GetUserId();
     }
 }

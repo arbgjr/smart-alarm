@@ -83,8 +83,8 @@ namespace SmartAlarm.Infrastructure.Migrations
                     Id = table.Column<Guid>(type: "TEXT", nullable: false),
                     UserId = table.Column<Guid>(type: "TEXT", nullable: false),
                     CredentialId = table.Column<string>(type: "TEXT", maxLength: 500, nullable: false),
-                    PublicKey = table.Column<byte[]>(type: "BLOB", nullable: false),
-                    UserHandle = table.Column<byte[]>(type: "BLOB", nullable: false),
+                    PublicKey = table.Column<byte[]>(type: "bytea", nullable: false),
+                    UserHandle = table.Column<byte[]>(type: "bytea", nullable: false),
                     SignatureCounter = table.Column<uint>(type: "INTEGER", nullable: false),
                     CredType = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
                     AaGuid = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
@@ -135,7 +135,7 @@ namespace SmartAlarm.Infrastructure.Migrations
                 name: "IX_Holidays_Recurring",
                 table: "Holidays",
                 column: "Date",
-                filter: "date(Date) LIKE '0001-%'");
+                filter: "EXTRACT(YEAR FROM \"Date\") = 1");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Roles_IsActive",

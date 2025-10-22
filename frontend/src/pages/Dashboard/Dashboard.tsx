@@ -201,7 +201,7 @@ export const Dashboard: React.FC<DashboardProps> = () => {
               ...metrics,
               activeAlarms: activeAlarms?.length || 0,
               todaysAlarms: todaysAlarms?.length || 0,
-              activeRoutines: activeRoutines?.length || 0,
+              activeRoutines: activeRoutines?.routines?.length || 0,
             }}
             isLoading={
               isLoadingMetrics ||
@@ -361,7 +361,7 @@ export const Dashboard: React.FC<DashboardProps> = () => {
                     }
                   >
                     <RoutineList
-                      routines={activeRoutines || []}
+                      routines={activeRoutines?.routines || []}
                       isLoading={isLoadingActiveRoutines}
                       maxItems={5}
                     />

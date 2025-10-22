@@ -1,1 +1,1 @@
-export { RoutineForm } from './RoutineForm';
+export { RoutineForm } from './RoutineForm.simple';

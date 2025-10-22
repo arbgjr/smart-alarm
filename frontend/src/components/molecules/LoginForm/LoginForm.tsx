@@ -150,6 +150,9 @@ export const LoginForm: React.FC = () => {
             <Input
               label="Email"
               type="email"
+              name="email"
+              id="email"
+              data-testid="email-input"
               placeholder="seu@email.com"
               value={formData.email}
               onChange={updateFormData('email')}
@@ -163,6 +166,9 @@ export const LoginForm: React.FC = () => {
             <Input
               label="Senha"
               type={showPassword ? 'text' : 'password'}
+              name="password"
+              id="password"
+              data-testid="password-input"
               placeholder="••••••••"
               value={formData.password}
               onChange={updateFormData('password')}
@@ -199,14 +205,20 @@ export const LoginForm: React.FC = () => {
 
             {/* Login Error */}
             {loginError && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
+              <div
+                className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm"
+                data-testid="error-message"
+              >
                 {loginError.message || 'Erro ao fazer login. Verifique suas credenciais.'}
               </div>
             )}
 
             {/* FIDO2 Error */}
             {fido2Error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
+              <div
+                className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm"
+                data-testid="error-message"
+              >
                 Erro na autenticação biométrica. Tente novamente.
               </div>
             )}
@@ -219,9 +231,15 @@ export const LoginForm: React.FC = () => {
               className="w-full"
               loading={isLoggingIn}
               disabled={isLoggingIn || isAuthenticatingFIDO2}
+              data-testid="login-button"
             >
               {isLoggingIn ? 'Entrando...' : 'Entrar'}
             </Button>
+
+            {/* Loading indicator for E2E selectors */}
+            {(isLoggingIn || isAuthenticatingFIDO2) && (
+              <div className="sr-only" aria-live="polite" data-testid="loading-spinner">Carregando…</div>
+            )}
 
             {/* FIDO2 Button */}
             <Button
@@ -232,6 +250,7 @@ export const LoginForm: React.FC = () => {
               onClick={handleFIDO2Login}
               loading={isAuthenticatingFIDO2}
               disabled={isLoggingIn || isAuthenticatingFIDO2 || !formData.email}
+              data-testid="fido2-button"
             >
               {isAuthenticatingFIDO2 ? 'Autenticando...' : '🔐 Login Biométrico (FIDO2)'}
             </Button>
